@@ -1,5 +1,5 @@
 import { type FormEvent, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import { login, register, TOKEN_KEY } from '../api/client'
 
 type Mode = 'login' | 'register'
@@ -58,6 +58,10 @@ export default function LoginPage({ onLogin }: Props) {
         <button type="button" onClick={toggleMode} style={{ background: 'none', border: 'none', color: 'blue', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>
           Back to sign in
         </button>
+        <p style={{ marginTop: 12 }}>
+          Didn't receive it?{' '}
+          <Link to="/resend-verification">Resend verification email</Link>
+        </p>
       </main>
     )
   }
@@ -102,7 +106,16 @@ export default function LoginPage({ onLogin }: Props) {
             style={{ display: 'block', width: '100%', marginTop: 4 }}
           />
         </label>
-        {error && <p style={{ color: 'red', margin: 0 }}>{error}</p>}
+        {error && (
+          <>
+            <p style={{ color: 'red', margin: 0 }}>{error}</p>
+            {error.toLowerCase().includes('not verified') && (
+              <p style={{ margin: 0 }}>
+                <Link to="/resend-verification">Resend verification email</Link>
+              </p>
+            )}
+          </>
+        )}
         <button type="submit" disabled={loading}>
           {loading ? 'Please wait…' : mode === 'login' ? 'Sign in' : 'Register'}
         </button>
@@ -113,6 +126,11 @@ export default function LoginPage({ onLogin }: Props) {
           {mode === 'login' ? 'Register' : 'Sign in'}
         </button>
       </p>
+      {mode === 'login' && (
+        <p style={{ marginTop: 8 }}>
+          <Link to="/forgot-password">Forgot password?</Link>
+        </p>
+      )}
     </main>
   )
 }

@@ -1,6 +1,12 @@
+.env
+
 # Backend
 .venv
 __pycache__
+backend/.env
+**/*.egg-info
+
+
 
 
 # Frontend

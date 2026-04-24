@@ -5,12 +5,14 @@ WORKDIR /app
 RUN pip install uv
 
 COPY pyproject.toml .
+RUN uv pip install --system .
+
 COPY app/ ./app/
 COPY migrations/ ./migrations/
 COPY alembic.ini .
 COPY start.sh .
 
-RUN uv pip install --system . && chmod +x start.sh
+RUN chmod +x start.sh
 
 EXPOSE 8000
 

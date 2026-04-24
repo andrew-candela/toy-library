@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
+  <!-- Toy building block -->
+  <rect x="8" y="24" width="48" height="32" rx="4" fill="#E53935"/>
+  <!-- Top face (parallelogram) -->
+  <polygon points="8,24 24,8 56,8 40,24" fill="#EF9A9A"/>
+  <!-- Right face -->
+  <polygon points="56,8 56,40 40,56 40,24" fill="#B71C1C"/>
+  <!-- Stud on top -->
+  <ellipse cx="32" cy="16" rx="8" ry="4" fill="#EF9A9A"/>
+  <rect x="24" y="12" width="16" height="6" fill="#EF9A9A"/>
+  <ellipse cx="32" cy="12" rx="8" ry="4" fill="#FFCDD2"/>
+</svg>

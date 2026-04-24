@@ -1,0 +1,6 @@
+{
+  "[markdown]": {
+    "editor.defaultFormatter": null
+  },
+  "ruff.format.preview": true
+}

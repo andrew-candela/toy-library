@@ -1,14 +1,27 @@
-from fastapi import Depends, FastAPI
+from contextlib import asynccontextmanager
+
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from strawberry.fastapi import GraphQLRouter
 
-from app.logging_config import configure_logging
-from app.auth import get_current_user
-from app.models import User
-from app.routers import auth
+from app.graphql.context import get_graphql_context
+from app.graphql.schema import schema
+from app.lib.logging import configure_structlog
+from app.lib.redis import connect_redis, disconnect_redis
+from app.routers import auth, interests, items, profile, toys, user_items, admin
+from app.middleware.access_log_middleware import AccessLogMiddleware
 
-configure_logging()
+configure_structlog()
 
-app = FastAPI(title="Toy Library API")
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    await connect_redis()
+    yield
+    await disconnect_redis()
+
+
+app = FastAPI(title="Toy Library API", lifespan=lifespan)
 
 app.add_middleware(
     CORSMiddleware,
@@ -20,10 +33,16 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+app.add_middleware(AccessLogMiddleware)
 
+
+app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
+app.include_router(profile.router, prefix="/api/profile", tags=["profile"])
+app.include_router(toys.router, prefix="/api/toys", tags=["toys"])
+app.include_router(interests.router, prefix="/api/items", tags=["interests"])
+app.include_router(items.router, prefix="/api/items", tags=["items"])
+app.include_router(user_items.router, prefix="/api/user-items", tags=["user-items"])
 
-
-@app.get("/api/items")
-def get_items(current_user: User = Depends(get_current_user)) -> list[dict]:
-    return []
+graphql_app = GraphQLRouter(schema, context_getter=get_graphql_context)
+app.include_router(graphql_app, prefix="/graphql")

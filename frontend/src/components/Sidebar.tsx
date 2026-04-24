@@ -52,8 +52,14 @@ export default function Sidebar({ onLogout }: Props) {
       >
         Toy Library
       </Link>
+      <Link to="/toys" style={navLinkStyle}>
+        Toys
+      </Link>
       <Link to="/items" style={navLinkStyle}>
         Items
+      </Link>
+      <Link to="/profile" style={navLinkStyle}>
+        Profile
       </Link>
       <div style={{ flex: 1 }} />
       <button
