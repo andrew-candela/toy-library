@@ -1,6 +1,8 @@
 
 # Toy Library
 
+A way for folks to advertise toys they'd like to give away,
+and to express interest in toys the'd like to borrow.
 
 ## Data Model
 
@@ -13,6 +15,11 @@ When creating a toy, you can assign existing tags or create new ones
 ### Toys
 
 Toys have tags.
+
+### Items
+
+An item is an instance of a Toy.
+For example you can have two of the same toy.
 
 
 ## Semantic search (later)
