@@ -1,12 +1,14 @@
 import { type FormEvent, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { resendVerification } from '../api/client'
+import { useTheme } from '../theme/ThemeContext'
 
 export default function ResendVerificationPage() {
   const [email, setEmail] = useState('')
   const [loading, setLoading] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const [error, setError] = useState<string | null>(null)
+  const { theme } = useTheme()
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -43,10 +45,10 @@ export default function ResendVerificationPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
-                style={{ display: 'block', width: '100%', marginTop: 4 }}
+                style={{ display: 'block', width: '100%', marginTop: 4, background: theme.inputBg, color: theme.textPrimary, border: `1px solid ${theme.inputBorder}`, borderRadius: 4, padding: '6px 8px' }}
               />
             </label>
-            {error && <p style={{ color: 'red', margin: 0 }}>{error}</p>}
+            {error && <p style={{ color: theme.error, margin: 0 }}>{error}</p>}
             <button type="submit" disabled={loading}>
               {loading ? 'Sending…' : 'Resend verification email'}
             </button>

@@ -1,3 +1,5 @@
+import { useTheme } from '../theme/ThemeContext'
+
 const quotes = [
   {
     text: 'Play is often talked about as if it were a relief from serious learning. But for children play is serious learning. Play is really the work of childhood.',
@@ -14,6 +16,7 @@ const quotes = [
 ]
 
 export default function HomePage() {
+  const { theme } = useTheme()
   return (
     <main style={{ padding: '40px 32px' }}>
       <h1>Toy Library Home</h1>
@@ -24,14 +27,14 @@ export default function HomePage() {
             style={{
               margin: 0,
               padding: '16px 20px',
-              borderLeft: '4px solid #ccc',
-              background: '#f9f9f9',
+              borderLeft: `4px solid ${theme.blockquoteBorder}`,
+              background: theme.blockquoteBg,
               borderRadius: '4px',
               fontStyle: 'italic',
             }}
           >
             <p style={{ margin: '0 0 8px' }}>{q.text}</p>
-            <footer style={{ fontStyle: 'normal', fontSize: '0.875rem', color: '#555' }}>
+            <footer style={{ fontStyle: 'normal', fontSize: '0.875rem', color: theme.textSecondary }}>
               — <cite>{q.attribution}</cite>
             </footer>
           </blockquote>

@@ -12,6 +12,7 @@ import Sidebar from './components/Sidebar'
 import ToysPage from './components/ToysPage'
 import ToyDetailPage from './components/ToyDetailPage'
 import VerifyEmailPage from './components/VerifyEmailPage'
+import { useTheme } from './theme/ThemeContext'
 
 function ProtectedLayout({ children, onLogout }: { children: React.ReactNode; onLogout: () => void }) {
   const token = sessionStorage.getItem(TOKEN_KEY)
@@ -31,6 +32,7 @@ function App() {
   const [token, setToken] = useState<string | null>(() =>
     sessionStorage.getItem(TOKEN_KEY),
   )
+  const { theme } = useTheme()
 
   function handleLogout() {
     setToken(null)
@@ -46,7 +48,8 @@ function App() {
   }
 
   return (
-    <Routes>
+    <div style={{ background: theme.bg, color: theme.textPrimary, minHeight: '100vh' }}>
+      <Routes>
       <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
       <Route
         path="/home"
@@ -95,6 +98,7 @@ function App() {
       <Route path="/" element={<Navigate to="/home" replace />} />
       <Route path="*" element={<Navigate to="/home" replace />} />
     </Routes>
+    </div>
   )
 }
 

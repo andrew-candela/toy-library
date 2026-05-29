@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
 import { fetchToy, type Toy } from '../api/client'
+import { useTheme } from '../theme/ThemeContext'
 
 interface Props {
   token: string
@@ -11,6 +12,7 @@ export default function ToyDetailPage({ token }: Props) {
   const [toy, setToy] = useState<Toy | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const { theme } = useTheme()
 
   useEffect(() => {
     if (!id) return
@@ -26,15 +28,15 @@ export default function ToyDetailPage({ token }: Props) {
     display: 'inline-block',
     padding: '3px 10px',
     borderRadius: 12,
-    background: '#e8f0fe',
-    color: '#1a56db',
+    background: theme.chipBg,
+    color: theme.chipText,
     fontSize: 13,
     fontWeight: 500,
   }
 
   const labelStyle: React.CSSProperties = {
     fontSize: 13,
-    color: '#888',
+    color: theme.textMuted,
     fontWeight: 600,
     textTransform: 'uppercase',
     letterSpacing: '0.05em',
@@ -45,13 +47,13 @@ export default function ToyDetailPage({ token }: Props) {
     <main style={{ padding: '40px 32px', maxWidth: 720 }}>
       <Link
         to="/toys"
-        style={{ fontSize: 14, color: '#1a56db', textDecoration: 'none', display: 'inline-block', marginBottom: 24 }}
+        style={{ fontSize: 14, color: theme.link, textDecoration: 'none', display: 'inline-block', marginBottom: 24 }}
       >
         ← Back to Toys
       </Link>
 
-      {loading && <p style={{ color: '#888' }}>Loading…</p>}
-      {error && <p style={{ color: 'red' }}>{error}</p>}
+      {loading && <p style={{ color: theme.textMuted }}>Loading…</p>}
+      {error && <p style={{ color: theme.error }}>{error}</p>}
 
       {toy && (
         <>
@@ -60,7 +62,7 @@ export default function ToyDetailPage({ token }: Props) {
               <img
                 src={toy.image_url}
                 alt={toy.title}
-                style={{ width: 180, height: 180, objectFit: 'cover', borderRadius: 10, border: '1px solid #e4e4e7', flexShrink: 0 }}
+                style={{ width: 180, height: 180, objectFit: 'cover', borderRadius: 10, border: `1px solid ${theme.border}`, flexShrink: 0 }}
               />
             )}
             <div style={{ flex: 1 }}>
@@ -76,7 +78,7 @@ export default function ToyDetailPage({ token }: Props) {
               {toy.description && (
                 <div style={{ marginBottom: 12 }}>
                   <div style={labelStyle}>Description</div>
-                  <p style={{ margin: 0, fontSize: 15, lineHeight: 1.6, color: '#333' }}>{toy.description}</p>
+                  <p style={{ margin: 0, fontSize: 15, lineHeight: 1.6, color: theme.textSecondary }}>{toy.description}</p>
                 </div>
               )}
 
@@ -97,8 +99,8 @@ export default function ToyDetailPage({ token }: Props) {
                   display: 'inline-block',
                   padding: '8px 16px',
                   borderRadius: 6,
-                  background: '#111',
-                  color: '#fff',
+                  background: theme.ctaBg,
+                  color: theme.ctaText,
                   fontSize: 14,
                   fontWeight: 500,
                   textDecoration: 'none',

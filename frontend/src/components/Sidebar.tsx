@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { logout, TOKEN_KEY } from '../api/client'
+import { useTheme } from '../theme/ThemeContext'
 
 interface Props {
   onLogout: () => void
@@ -9,6 +10,7 @@ interface Props {
 export default function Sidebar({ onLogout }: Props) {
   const [loggingOut, setLoggingOut] = useState(false)
   const navigate = useNavigate()
+  const { theme } = useTheme()
 
   async function handleLogout() {
     setLoggingOut(true)
@@ -25,7 +27,7 @@ export default function Sidebar({ onLogout }: Props) {
   const navLinkStyle: React.CSSProperties = {
     display: 'block',
     padding: '10px 16px',
-    color: '#333',
+    color: theme.navLinkColor,
     textDecoration: 'none',
     borderRadius: 6,
     fontWeight: 500,
@@ -36,8 +38,8 @@ export default function Sidebar({ onLogout }: Props) {
       style={{
         width: 200,
         minHeight: '100vh',
-        background: '#f4f4f5',
-        borderRight: '1px solid #e4e4e7',
+        background: theme.surface,
+        borderRight: `1px solid ${theme.border}`,
         display: 'flex',
         flexDirection: 'column',
         padding: '24px 12px',
@@ -48,7 +50,7 @@ export default function Sidebar({ onLogout }: Props) {
     >
       <Link
         to="/home"
-        style={{ fontWeight: 700, fontSize: 16, margin: '0 0 16px 4px', color: '#111', textDecoration: 'none' }}
+        style={{ fontWeight: 700, fontSize: 16, margin: '0 0 16px 4px', color: theme.textPrimary, textDecoration: 'none' }}
       >
         Toy Library
       </Link>
@@ -69,12 +71,12 @@ export default function Sidebar({ onLogout }: Props) {
         style={{
           padding: '10px 16px',
           background: 'none',
-          border: '1px solid #e4e4e7',
+          border: `1px solid ${theme.border}`,
           borderRadius: 6,
           cursor: loggingOut ? 'not-allowed' : 'pointer',
           textAlign: 'left',
           fontWeight: 500,
-          color: '#555',
+          color: theme.textSecondary,
         }}
       >
         {loggingOut ? 'Signing out…' : 'Sign out'}

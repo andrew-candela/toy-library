@@ -1,6 +1,7 @@
 import { type FormEvent, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { login, register, TOKEN_KEY } from '../api/client'
+import { useTheme } from '../theme/ThemeContext'
 
 type Mode = 'login' | 'register'
 
@@ -17,6 +18,7 @@ export default function LoginPage({ onLogin }: Props) {
   const [loading, setLoading] = useState(false)
   const [registered, setRegistered] = useState(false)
   const navigate = useNavigate()
+  const { theme } = useTheme()
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -55,7 +57,7 @@ export default function LoginPage({ onLogin }: Props) {
           A verification link has been sent to <strong>{email}</strong>. Please
           click the link to activate your account before signing in.
         </p>
-        <button type="button" onClick={toggleMode} style={{ background: 'none', border: 'none', color: 'blue', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>
+        <button type="button" onClick={toggleMode} style={{ background: 'none', border: 'none', color: theme.link, cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>
           Back to sign in
         </button>
         <p style={{ marginTop: 12 }}>
@@ -79,7 +81,7 @@ export default function LoginPage({ onLogin }: Props) {
             onChange={(e) => setUsername(e.target.value)}
             required
             autoComplete="username"
-            style={{ display: 'block', width: '100%', marginTop: 4 }}
+            style={{ display: 'block', width: '100%', marginTop: 4, background: theme.inputBg, color: theme.textPrimary, border: `1px solid ${theme.inputBorder}`, borderRadius: 4, padding: '6px 8px' }}
           />
         </label>
         {mode === 'register' && (
@@ -91,7 +93,7 @@ export default function LoginPage({ onLogin }: Props) {
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
-              style={{ display: 'block', width: '100%', marginTop: 4 }}
+              style={{ display: 'block', width: '100%', marginTop: 4, background: theme.inputBg, color: theme.textPrimary, border: `1px solid ${theme.inputBorder}`, borderRadius: 4, padding: '6px 8px' }}
             />
           </label>
         )}
@@ -103,12 +105,12 @@ export default function LoginPage({ onLogin }: Props) {
             onChange={(e) => setPassword(e.target.value)}
             required
             autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-            style={{ display: 'block', width: '100%', marginTop: 4 }}
+            style={{ display: 'block', width: '100%', marginTop: 4, background: theme.inputBg, color: theme.textPrimary, border: `1px solid ${theme.inputBorder}`, borderRadius: 4, padding: '6px 8px' }}
           />
         </label>
         {error && (
           <>
-            <p style={{ color: 'red', margin: 0 }}>{error}</p>
+            <p style={{ color: theme.error, margin: 0 }}>{error}</p>
             {error.toLowerCase().includes('not verified') && (
               <p style={{ margin: 0 }}>
                 <Link to="/resend-verification">Resend verification email</Link>

@@ -1,6 +1,7 @@
 import { type FormEvent, useEffect, useState, useRef } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { verifyEmail, resendVerification } from '../api/client'
+import { useTheme } from '../theme/ThemeContext'
 
 type Status = 'loading' | 'success' | 'error'
 
@@ -9,6 +10,7 @@ export default function VerifyEmailPage() {
   const [status, setStatus] = useState<Status>('loading')
   const [message, setMessage] = useState('')
   const hasFetched = useRef(false)
+  const { theme } = useTheme()
 
 
   // Resend form state
@@ -59,13 +61,13 @@ export default function VerifyEmailPage() {
       {status === 'loading' && <p>Verifying your email…</p>}
       {status === 'success' && (
         <>
-          <p style={{ color: 'green' }}>{message}</p>
+          <p style={{ color: theme.success }}>{message}</p>
           <Link to="/login">Go to sign in</Link>
         </>
       )}
       {status === 'error' && (
         <>
-          <p style={{ color: 'red' }}>{message}</p>
+          <p style={{ color: theme.error }}>{message}</p>
           <h3 style={{ marginTop: 24 }}>Request a new link</h3>
           {resendMessage ? (
             <p>{resendMessage}</p>
@@ -79,7 +81,7 @@ export default function VerifyEmailPage() {
                   onChange={(e) => setResendEmail(e.target.value)}
                   required
                   autoComplete="email"
-                  style={{ display: 'block', width: '100%', marginTop: 4 }}
+                  style={{ display: 'block', width: '100%', marginTop: 4, background: theme.inputBg, color: theme.textPrimary, border: `1px solid ${theme.inputBorder}`, borderRadius: 4, padding: '6px 8px' }}
                 />
               </label>
               <button type="submit" disabled={resendLoading}>

@@ -25,6 +25,7 @@ import {
   type Toy,
   type UserItem,
 } from '../api/client'
+import { useTheme } from '../theme/ThemeContext'
 
 interface Props {
   token: string
@@ -39,6 +40,7 @@ export default function ItemList({ token }: Props) {
   const [toys, setToys] = useState<Toy[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const { theme } = useTheme()
 
   const [formOpen, setFormOpen] = useState(false)
   const [editItem, setEditItem] = useState<Item | null>(null)
@@ -394,24 +396,27 @@ export default function ItemList({ token }: Props) {
   const btnStyle: React.CSSProperties = {
     padding: '6px 14px',
     borderRadius: 6,
-    border: '1px solid #e4e4e7',
-    background: '#fff',
+    border: `1px solid ${theme.border}`,
+    background: theme.bg,
+    color: theme.textPrimary,
     cursor: 'pointer',
     fontSize: 14,
   }
 
   const primaryBtnStyle: React.CSSProperties = {
     ...btnStyle,
-    background: '#111',
-    color: '#fff',
+    background: theme.ctaBg,
+    color: theme.ctaText,
     border: 'none',
   }
 
   const selectStyle: React.CSSProperties = {
     padding: '7px 10px',
     borderRadius: 6,
-    border: '1px solid #e4e4e7',
+    border: `1px solid ${theme.border}`,
     fontSize: 14,
+    background: theme.inputBg,
+    color: theme.textPrimary,
   }
 
   const labelStyle: React.CSSProperties = {
@@ -424,8 +429,10 @@ export default function ItemList({ token }: Props) {
   const inputStyle: React.CSSProperties = {
     padding: '7px 10px',
     borderRadius: 6,
-    border: '1px solid #e4e4e7',
+    border: `1px solid ${theme.border}`,
     fontSize: 14,
+    background: theme.inputBg,
+    color: theme.textPrimary,
   }
 
   const chipStyle: React.CSSProperties = {
@@ -434,8 +441,8 @@ export default function ItemList({ token }: Props) {
     gap: 4,
     padding: '2px 8px',
     borderRadius: 12,
-    background: '#e8f0fe',
-    color: '#1a56db',
+    background: theme.chipBg,
+    color: theme.chipText,
     fontSize: 12,
     fontWeight: 500,
   }
@@ -446,7 +453,7 @@ export default function ItemList({ token }: Props) {
     cursor: 'pointer',
     padding: 0,
     lineHeight: 1,
-    color: '#1a56db',
+    color: theme.chipText,
     fontSize: 14,
   }
 
@@ -456,8 +463,8 @@ export default function ItemList({ token }: Props) {
     left: 0,
     right: 0,
     zIndex: 100,
-    background: '#fff',
-    border: '1px solid #e4e4e7',
+    background: theme.dropdownBg,
+    border: `1px solid ${theme.border}`,
     borderRadius: 6,
     boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
     marginTop: 2,
@@ -467,15 +474,15 @@ export default function ItemList({ token }: Props) {
   const thStyle: React.CSSProperties = {
     textAlign: 'left',
     padding: '8px 12px',
-    borderBottom: '2px solid #e4e4e7',
+    borderBottom: `2px solid ${theme.border}`,
     fontWeight: 600,
     fontSize: 13,
-    color: '#555',
+    color: theme.textSecondary,
   }
 
   const tdStyle: React.CSSProperties = {
     padding: '8px 12px',
-    borderBottom: '1px solid #f0f0f0',
+    borderBottom: `1px solid ${theme.borderMuted}`,
     fontSize: 14,
   }
 
@@ -499,9 +506,9 @@ export default function ItemList({ token }: Props) {
           }}
             style={{
               ...btnStyle,
-              background: showMyItemsOnly ? '#111' : '#fff',
-              color: showMyItemsOnly ? '#fff' : '#111',
-              border: showMyItemsOnly ? 'none' : '1px solid #e4e4e7',
+              background: showMyItemsOnly ? theme.ctaBg : theme.bg,
+              color: showMyItemsOnly ? theme.ctaText : theme.textPrimary,
+              border: showMyItemsOnly ? 'none' : `1px solid ${theme.border}`,
             }}
           >
             My Items
@@ -510,7 +517,7 @@ export default function ItemList({ token }: Props) {
 
         {/* Row 2: Tag filter */}
         <div style={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 8 }}>
-          <span style={{ fontSize: 13, color: '#555', whiteSpace: 'nowrap' }}>Filter by tag:</span>
+          <span style={{ fontSize: 13, color: theme.textSecondary, whiteSpace: 'nowrap' }}>Filter by tag:</span>
           {filterTags.map((tag) => (
             <span key={tag} style={chipStyle}>
               #{tag}
@@ -538,8 +545,8 @@ export default function ItemList({ token }: Props) {
                   <div
                     key={tag}
                     onMouseDown={() => addFilterTag(tag)}
-                    onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = '#f5f5f5' }}
-                    onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = '#fff' }}
+                    onMouseEnter={(e) => { (e.currentTarget as HTMLDivElement).style.background = theme.surfaceHover }}
+                    onMouseLeave={(e) => { (e.currentTarget as HTMLDivElement).style.background = theme.dropdownBg }}
                     style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 13 }}
                   >
                     #{tag}
@@ -571,8 +578,8 @@ export default function ItemList({ token }: Props) {
         <form
           onSubmit={handleSubmit}
           style={{
-            background: '#f9f9fb',
-            border: '1px solid #e4e4e7',
+            background: theme.surfaceAlt,
+            border: `1px solid ${theme.border}`,
             borderRadius: 8,
             padding: '20px 24px',
             marginBottom: 24,
@@ -619,7 +626,7 @@ export default function ItemList({ token }: Props) {
           </label>
 
           {formError && (
-            <p style={{ margin: 0, color: 'red', fontSize: 13 }}>{formError}</p>
+            <p style={{ margin: 0, color: theme.error, fontSize: 13 }}>{formError}</p>
           )}
 
           <div style={{ display: 'flex', gap: 8 }}>
@@ -633,8 +640,8 @@ export default function ItemList({ token }: Props) {
         </form>
       )}
 
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      {loading && <p style={{ color: '#888' }}>Loading…</p>}
+      {error && <p style={{ color: theme.error }}>{error}</p>}
+      {loading && <p style={{ color: theme.textMuted }}>Loading…</p>}
 
       {!loading && (
         <>
@@ -646,7 +653,7 @@ export default function ItemList({ token }: Props) {
                 gap: 8,
                 marginBottom: 12,
                 padding: '8px 12px',
-                background: '#e8f0fe',
+                background: theme.chipBg,
                 borderRadius: 6,
                 fontSize: 14,
               }}
@@ -666,7 +673,7 @@ export default function ItemList({ token }: Props) {
                   cursor: 'pointer',
                   fontSize: 18,
                   lineHeight: 1,
-                  color: '#1a56db',
+                  color: theme.link,
                 }}
                 aria-label="Clear filter"
               >
@@ -688,7 +695,7 @@ export default function ItemList({ token }: Props) {
             <tbody>
               {items.length === 0 && (
                 <tr>
-                  <td colSpan={6} style={{ ...tdStyle, color: '#888' }}>
+                  <td colSpan={6} style={{ ...tdStyle, color: theme.textMuted }}>
                     {toyIdParam ? 'No items for this toy.' : 'No items yet.'}
                   </td>
                 </tr>
@@ -704,7 +711,7 @@ export default function ItemList({ token }: Props) {
                       <td style={tdStyle}>
                         <Link
                           to={`/toys/${item.toy.id}`}
-                          style={{ color: '#1a56db', textDecoration: 'none', fontWeight: 500 }}
+                          style={{ color: theme.link, textDecoration: 'none', fontWeight: 500 }}
                         >
                           {item.toy.title}
                         </Link>
@@ -719,11 +726,11 @@ export default function ItemList({ token }: Props) {
                       <td style={tdStyle}>
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-start' }}>
                           {(interests.get(item.id) ?? []).length > 0 ? (
-                            <div style={{ fontSize: 12, color: '#555' }}>
+                            <div style={{ fontSize: 12, color: theme.textSecondary }}>
                               {(interests.get(item.id) ?? []).map((i) => i.user.username).join(', ')}
                             </div>
                           ) : (
-                            <span style={{ fontSize: 12, color: '#aaa' }}>None</span>
+                            <span style={{ fontSize: 12, color: theme.textDisabled }}>None</span>
                           )}
                           {!isOwned && (() => {
                             const isInterested = (interests.get(item.id) ?? []).some(
@@ -732,7 +739,7 @@ export default function ItemList({ token }: Props) {
                             const loading = interestLoadingIds.has(item.id)
                             return isInterested ? (
                               <button
-                                style={{ ...btnStyle, color: '#c00', fontSize: 12, padding: '4px 10px' }}
+                                style={{ ...btnStyle, color: theme.danger, fontSize: 12, padding: '4px 10px' }}
                                 disabled={loading}
                                 onClick={() => handleDeleteInterest(item.id)}
                               >
@@ -760,15 +767,15 @@ export default function ItemList({ token }: Props) {
                                   fontWeight: 600,
                                   padding: '3px 8px',
                                   borderRadius: 12,
-                                  background: '#fef3c7',
-                                  color: '#92400e',
-                                  border: '1px solid #fde68a',
+                                  background: theme.pendingBg,
+                                  color: theme.pendingText,
+                                  border: `1px solid ${theme.pendingBorder}`,
                                 }}
                               >
                                 Pending → {myUserItem!.pending_user.username}
                               </span>
                               <button
-                                style={{ ...btnStyle, color: '#c00' }}
+                                style={{ ...btnStyle, color: theme.danger }}
                                 disabled={cancelLoadingId === item.id}
                                 onClick={() => handleCancelTransfer(item.id)}
                               >
@@ -781,7 +788,7 @@ export default function ItemList({ token }: Props) {
                                 Edit
                               </button>
                               <button
-                                style={{ ...btnStyle, color: '#c00' }}
+                                style={{ ...btnStyle, color: theme.danger }}
                                 onClick={() => handleDelete(item)}
                               >
                                 Delete
@@ -804,7 +811,7 @@ export default function ItemList({ token }: Props) {
                               {acceptLoadingId === item.id ? 'Accepting…' : 'Accept'}
                             </button>
                             {acceptError[item.id] && (
-                              <span style={{ fontSize: 12, color: '#c00' }}>{acceptError[item.id]}</span>
+                              <span style={{ fontSize: 12, color: theme.danger }}>{acceptError[item.id]}</span>
                             )}
                           </div>
                         ) : null}
@@ -816,15 +823,15 @@ export default function ItemList({ token }: Props) {
                           colSpan={6}
                           style={{
                             ...tdStyle,
-                            background: '#f9f9fb',
-                            borderBottom: '2px solid #e4e4e7',
+                            background: theme.surfaceAlt,
+                            borderBottom: `2px solid ${theme.border}`,
                           }}
                         >
                           <form
                             onSubmit={(e) => handleInitiateTransfer(e, item.id)}
                             style={{ display: 'flex', alignItems: 'center', gap: 8, flexWrap: 'wrap', padding: '4px 0' }}
                           >
-                            <label style={{ fontSize: 13, color: '#555' }}>Transfer to username:</label>
+                            <label style={{ fontSize: 13, color: theme.textSecondary }}>Transfer to username:</label>
                             <input
                               type="text"
                               value={transferUsername}
@@ -833,9 +840,11 @@ export default function ItemList({ token }: Props) {
                               style={{
                                 padding: '6px 10px',
                                 borderRadius: 6,
-                                border: '1px solid #e4e4e7',
+                                border: `1px solid ${theme.border}`,
                                 fontSize: 14,
                                 minWidth: 180,
+                                background: theme.inputBg,
+                                color: theme.textPrimary,
                               }}
                             />
                             <button type="submit" disabled={transferLoading} style={primaryBtnStyle}>
@@ -845,7 +854,7 @@ export default function ItemList({ token }: Props) {
                               Cancel
                             </button>
                             {transferError && (
-                              <span style={{ fontSize: 12, color: '#c00', width: '100%' }}>{transferError}</span>
+                              <span style={{ fontSize: 12, color: theme.danger, width: '100%' }}>{transferError}</span>
                             )}
                           </form>
                         </td>
@@ -867,7 +876,7 @@ export default function ItemList({ token }: Props) {
               >
                 Previous
               </button>
-              <span style={{ fontSize: 14, color: '#555' }}>
+              <span style={{ fontSize: 14, color: theme.textSecondary }}>
                 Page {currentPage} of {totalPages}
               </span>
               <button

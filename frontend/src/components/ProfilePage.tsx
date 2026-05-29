@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import { TOKEN_KEY, getProfile, updateEmail, updateNeighborhood, updateUsername } from '../api/client'
+import { useTheme } from '../theme/ThemeContext'
 
 interface Props {
   token: string
@@ -20,6 +21,7 @@ function makeField(initial: string): FieldState {
 export default function ProfilePage({ token, onTokenUpdate }: Props) {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
+  const { theme, isDark, toggleTheme } = useTheme()
 
   const [isEmailVerified, setIsEmailVerified] = useState(false)
   const [username, setUsername] = useState<FieldState>(makeField(''))
@@ -94,17 +96,19 @@ export default function ProfilePage({ token, onTokenUpdate }: Props) {
 
   const inputStyle: React.CSSProperties = {
     padding: '8px 10px',
-    border: '1px solid #d1d5db',
+    border: `1px solid ${theme.inputBorder}`,
     borderRadius: 6,
     fontSize: 14,
     width: 280,
     boxSizing: 'border-box',
+    background: theme.inputBg,
+    color: theme.textPrimary,
   }
 
   const saveButtonStyle: React.CSSProperties = {
     padding: '8px 18px',
-    background: '#2563eb',
-    color: '#fff',
+    background: theme.primaryBtnBg,
+    color: theme.primaryBtnText,
     border: 'none',
     borderRadius: 6,
     cursor: 'pointer',
@@ -115,7 +119,7 @@ export default function ProfilePage({ token, onTokenUpdate }: Props) {
   const sectionStyle: React.CSSProperties = {
     marginBottom: 32,
     paddingBottom: 28,
-    borderBottom: '1px solid #e4e4e7',
+    borderBottom: `1px solid ${theme.border}`,
   }
 
   const labelStyle: React.CSSProperties = {
@@ -123,15 +127,15 @@ export default function ProfilePage({ token, onTokenUpdate }: Props) {
     fontWeight: 600,
     marginBottom: 6,
     fontSize: 14,
-    color: '#374151',
+    color: theme.textLabel,
   }
 
   if (loading) {
-    return <div style={{ padding: 40 }}>Loading profile…</div>
+    return <div style={{ padding: 40, color: theme.textPrimary }}>Loading profile…</div>
   }
 
   if (loadError) {
-    return <div style={{ padding: 40, color: '#dc2626' }}>{loadError}</div>
+    return <div style={{ padding: 40, color: theme.error }}>{loadError}</div>
   }
 
   return (
@@ -156,8 +160,8 @@ export default function ProfilePage({ token, onTokenUpdate }: Props) {
             {username.saving ? 'Saving…' : 'Save'}
           </button>
         </div>
-        {username.success && <p style={{ color: '#16a34a', fontSize: 13, marginTop: 6 }}>{username.success}</p>}
-        {username.error && <p style={{ color: '#dc2626', fontSize: 13, marginTop: 6 }}>{username.error}</p>}
+        {username.success && <p style={{ color: theme.success, fontSize: 13, marginTop: 6 }}>{username.success}</p>}
+        {username.error && <p style={{ color: theme.error, fontSize: 13, marginTop: 6 }}>{username.error}</p>}
       </div>
 
       {/* Email */}
@@ -165,9 +169,9 @@ export default function ProfilePage({ token, onTokenUpdate }: Props) {
         <label style={labelStyle}>
           Email address{' '}
           {isEmailVerified ? (
-            <span style={{ color: '#16a34a', fontWeight: 400, fontSize: 12 }}>✓ verified</span>
+            <span style={{ color: theme.success, fontWeight: 400, fontSize: 12 }}>✓ verified</span>
           ) : (
-            <span style={{ color: '#d97706', fontWeight: 400, fontSize: 12 }}>⚠ unverified — check your inbox</span>
+            <span style={{ color: theme.warning, fontWeight: 400, fontSize: 12 }}>⚠ unverified — check your inbox</span>
           )}
         </label>
         <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
@@ -187,9 +191,9 @@ export default function ProfilePage({ token, onTokenUpdate }: Props) {
           </button>
         </div>
         {email.success && (
-          <p style={{ color: '#2563eb', fontSize: 13, marginTop: 6 }}>{email.success}</p>
+          <p style={{ color: theme.info, fontSize: 13, marginTop: 6 }}>{email.success}</p>
         )}
-        {email.error && <p style={{ color: '#dc2626', fontSize: 13, marginTop: 6 }}>{email.error}</p>}
+        {email.error && <p style={{ color: theme.error, fontSize: 13, marginTop: 6 }}>{email.error}</p>}
       </div>
 
       {/* Neighborhood */}
@@ -199,7 +203,7 @@ export default function ProfilePage({ token, onTokenUpdate }: Props) {
           <input
             style={inputStyle}
             value={neighborhood.value}
-            placeholder="e.g. Capitol Hill"
+            placeholder="e.g. Linda Mar"
             onChange={(e) =>
               setNeighborhood((s) => ({ ...s, value: e.target.value, success: null, error: null }))
             }
@@ -214,11 +218,37 @@ export default function ProfilePage({ token, onTokenUpdate }: Props) {
           </button>
         </div>
         {neighborhood.success && (
-          <p style={{ color: '#16a34a', fontSize: 13, marginTop: 6 }}>{neighborhood.success}</p>
+          <p style={{ color: theme.success, fontSize: 13, marginTop: 6 }}>{neighborhood.success}</p>
         )}
         {neighborhood.error && (
-          <p style={{ color: '#dc2626', fontSize: 13, marginTop: 6 }}>{neighborhood.error}</p>
+          <p style={{ color: theme.error, fontSize: 13, marginTop: 6 }}>{neighborhood.error}</p>
         )}
+      </div>
+
+      {/* Appearance */}
+      <div style={{ marginTop: 32, paddingTop: 28, borderTop: `1px solid ${theme.border}` }}>
+        <label style={labelStyle}>Appearance</label>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <button
+            type="button"
+            onClick={toggleTheme}
+            style={{
+              padding: '8px 18px',
+              background: theme.surface,
+              color: theme.textPrimary,
+              border: `1px solid ${theme.border}`,
+              borderRadius: 6,
+              cursor: 'pointer',
+              fontWeight: 500,
+              fontSize: 14,
+            }}
+          >
+            {isDark ? '☀ Switch to Light mode' : '☾ Switch to Dark mode'}
+          </button>
+          <span style={{ fontSize: 13, color: theme.textMuted }}>
+            Currently: {isDark ? 'Dark' : 'Light'}
+          </span>
+        </div>
       </div>
     </div>
   )

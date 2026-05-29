@@ -10,6 +10,7 @@ import {
   type ToyCreate,
   type ToyUpdate,
 } from '../api/client'
+import { useTheme } from '../theme/ThemeContext'
 
 interface Props {
   token: string
@@ -44,6 +45,7 @@ export default function ToysPage({ token }: Props) {
   const [refreshKey, setRefreshKey] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const { theme } = useTheme()
 
   const [filterTags, setFilterTags] = useState<string[]>([])
   const [filterInput, setFilterInput] = useState('')
@@ -269,8 +271,10 @@ export default function ToysPage({ token }: Props) {
   const inputStyle: React.CSSProperties = {
     padding: '7px 10px',
     borderRadius: 6,
-    border: '1px solid #e4e4e7',
+    border: `1px solid ${theme.border}`,
     fontSize: 14,
+    background: theme.inputBg,
+    color: theme.textPrimary,
   }
 
   const labelStyle: React.CSSProperties = {
@@ -283,31 +287,32 @@ export default function ToysPage({ token }: Props) {
   const btnStyle: React.CSSProperties = {
     padding: '6px 14px',
     borderRadius: 6,
-    border: '1px solid #e4e4e7',
-    background: '#fff',
+    border: `1px solid ${theme.border}`,
+    background: theme.bg,
+    color: theme.textPrimary,
     cursor: 'pointer',
     fontSize: 14,
   }
 
   const primaryBtnStyle: React.CSSProperties = {
     ...btnStyle,
-    background: '#111',
-    color: '#fff',
+    background: theme.ctaBg,
+    color: theme.ctaText,
     border: 'none',
   }
 
   const thStyle: React.CSSProperties = {
     textAlign: 'left',
     padding: '8px 12px',
-    borderBottom: '2px solid #e4e4e7',
+    borderBottom: `2px solid ${theme.border}`,
     fontWeight: 600,
     fontSize: 13,
-    color: '#555',
+    color: theme.textSecondary,
   }
 
   const tdStyle: React.CSSProperties = {
     padding: '8px 12px',
-    borderBottom: '1px solid #f0f0f0',
+    borderBottom: `1px solid ${theme.borderMuted}`,
     fontSize: 14,
   }
 
@@ -317,8 +322,8 @@ export default function ToysPage({ token }: Props) {
     gap: 4,
     padding: '2px 8px',
     borderRadius: 12,
-    background: '#e8f0fe',
-    color: '#1a56db',
+    background: theme.chipBg,
+    color: theme.chipText,
     fontSize: 12,
     fontWeight: 500,
   }
@@ -329,7 +334,7 @@ export default function ToysPage({ token }: Props) {
     cursor: 'pointer',
     padding: 0,
     lineHeight: 1,
-    color: '#1a56db',
+    color: theme.chipText,
     fontSize: 14,
   }
 
@@ -339,8 +344,8 @@ export default function ToysPage({ token }: Props) {
     left: 0,
     right: 0,
     zIndex: 100,
-    background: '#fff',
-    border: '1px solid #e4e4e7',
+    background: theme.dropdownBg,
+    border: `1px solid ${theme.border}`,
     borderRadius: 6,
     boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
     marginTop: 2,
@@ -366,7 +371,7 @@ export default function ToysPage({ token }: Props) {
           gap: 8,
         }}
       >
-        <span style={{ fontSize: 13, color: '#555', whiteSpace: 'nowrap' }}>Filter by tag:</span>
+        <span style={{ fontSize: 13, color: theme.textSecondary, whiteSpace: 'nowrap' }}>Filter by tag:</span>
         {filterTags.map((tag) => (
           <span key={tag} style={chipStyle}>
             #{tag}
@@ -395,10 +400,10 @@ export default function ToysPage({ token }: Props) {
                   key={tag}
                   onMouseDown={() => addFilterTag(tag)}
                   onMouseEnter={(e) => {
-                    ;(e.currentTarget as HTMLDivElement).style.background = '#f5f5f5'
+                    ;(e.currentTarget as HTMLDivElement).style.background = theme.surfaceHover
                   }}
                   onMouseLeave={(e) => {
-                    ;(e.currentTarget as HTMLDivElement).style.background = '#fff'
+                    ;(e.currentTarget as HTMLDivElement).style.background = theme.dropdownBg
                   }}
                   style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 13 }}
                 >
@@ -414,8 +419,8 @@ export default function ToysPage({ token }: Props) {
         <form
           onSubmit={handleSubmit}
           style={{
-            background: '#f9f9fb',
-            border: '1px solid #e4e4e7',
+            background: theme.surfaceAlt,
+            border: `1px solid ${theme.border}`,
             borderRadius: 8,
             padding: '20px 24px',
             marginBottom: 24,
@@ -481,7 +486,7 @@ export default function ToysPage({ token }: Props) {
                   maxHeight: 120,
                   maxWidth: '100%',
                   borderRadius: 6,
-                  border: '1px solid #e4e4e7',
+                  border: `1px solid ${theme.border}`,
                   objectFit: 'contain',
                 }}
               />
@@ -499,8 +504,8 @@ export default function ToysPage({ token }: Props) {
                 gap: 6,
                 padding: '6px 8px',
                 borderRadius: 6,
-                border: '1px solid #e4e4e7',
-                background: '#fff',
+                border: `1px solid ${theme.border}`,
+                background: theme.inputBg,
                 minHeight: 38,
               }}
             >
@@ -542,10 +547,10 @@ export default function ToysPage({ token }: Props) {
                       key={tag}
                       onMouseDown={() => addFormTag(tag)}
                       onMouseEnter={(e) => {
-                        ;(e.currentTarget as HTMLDivElement).style.background = '#f5f5f5'
+                        ;(e.currentTarget as HTMLDivElement).style.background = theme.surfaceHover
                       }}
                       onMouseLeave={(e) => {
-                        ;(e.currentTarget as HTMLDivElement).style.background = '#fff'
+                        ;(e.currentTarget as HTMLDivElement).style.background = theme.dropdownBg
                       }}
                       style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 13 }}
                     >
@@ -558,7 +563,7 @@ export default function ToysPage({ token }: Props) {
           </div>
 
           {formError && (
-            <p style={{ margin: 0, color: 'red', fontSize: 13, gridColumn: '1 / -1' }}>
+            <p style={{ margin: 0, color: theme.error, fontSize: 13, gridColumn: '1 / -1' }}>
               {formError}
             </p>
           )}
@@ -574,8 +579,8 @@ export default function ToysPage({ token }: Props) {
         </form>
       )}
 
-      {error && <p style={{ color: 'red' }}>{error}</p>}
-      {loading && <p style={{ color: '#888' }}>Loading…</p>}
+      {error && <p style={{ color: theme.error }}>{error}</p>}
+      {loading && <p style={{ color: theme.textMuted }}>Loading…</p>}
 
       {!loading && (
         <>
@@ -593,7 +598,7 @@ export default function ToysPage({ token }: Props) {
           <tbody>
             {toys.length === 0 && (
               <tr>
-                <td colSpan={6} style={{ ...tdStyle, color: '#888' }}>
+                <td colSpan={6} style={{ ...tdStyle, color: theme.textMuted }}>
                   No toys yet.
                 </td>
               </tr>
@@ -616,7 +621,7 @@ export default function ToysPage({ token }: Props) {
                         height: 48,
                         objectFit: 'cover',
                         borderRadius: 6,
-                        border: '1px solid #e4e4e7',
+                        border: `1px solid ${theme.border}`,
                         display: 'block',
                       }}
                     />
@@ -627,16 +632,16 @@ export default function ToysPage({ token }: Props) {
                       width: 48,
                       height: 48,
                       borderRadius: 6,
-                      background: '#f0f0f0',
-                      border: '1px solid #e4e4e7',
+                      background: theme.imagePlaceholderBg,
+                      border: `1px solid ${theme.border}`,
                     }}
                   />
                 </td>
-                <td style={tdStyle}><Link to={`/toys/${toy.id}`} style={{ color: '#1a56db', textDecoration: 'none', fontWeight: 500 }}>{toy.title}</Link></td>
+                <td style={tdStyle}><Link to={`/toys/${toy.id}`} style={{ color: theme.link, textDecoration: 'none', fontWeight: 500 }}>{toy.title}</Link></td>
                 <td style={tdStyle}>
                   <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
                     {toy.tags.length === 0 ? (
-                      <span style={{ color: '#aaa' }}>—</span>
+                      <span style={{ color: theme.textDisabled }}>—</span>
                     ) : (
                       toy.tags.map((tag) => (
                         <span
@@ -665,7 +670,7 @@ export default function ToysPage({ token }: Props) {
                       Edit
                     </button>
                     <button
-                      style={{ ...btnStyle, color: '#c00' }}
+                      style={{ ...btnStyle, color: theme.danger }}
                       onClick={() => handleDelete(toy)}
                     >
                       Delete
@@ -687,7 +692,7 @@ export default function ToysPage({ token }: Props) {
             >
               Previous
             </button>
-            <span style={{ fontSize: 14, color: '#555' }}>
+            <span style={{ fontSize: 14, color: theme.textSecondary }}>
               Page {currentPage} of {totalPages}
             </span>
             <button
