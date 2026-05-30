@@ -5,6 +5,7 @@ from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from jose import jwt
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
+from sqlalchemy.orm import joinedload
 
 from app.lib.auth import (
     ALGORITHM,
@@ -149,3 +150,34 @@ async def update_neighborhood(
         address.neighborhood = body.neighborhood
     await db.commit()
     return {"neighborhood": address.neighborhood}
+
+
+@router.get("/{username}", response_model=ProfileOut)
+async def get_user_profile(
+    username: str,
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+) -> dict:
+    user = (
+        (
+            await db.execute(
+                select(User)
+                .options(joinedload(User.address))
+                .where(User.username == username)
+            )
+        )
+        .unique()
+        .scalar_one_or_none()
+    )
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+    return {
+        "id": user.id,
+        "username": user.username,
+        "email": user.email,
+        "is_email_verified": user.is_email_verified,
+        "neighborhood": user.address.neighborhood if user.address else None,
+    }

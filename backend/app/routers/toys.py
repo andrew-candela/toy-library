@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.lib.auth import get_current_user
 from app.lib.database import get_db
-from app.models.models import Toy, ToyTag, User
+from app.models.models import Item, Toy, ToyTag, User
 from app.schemas.schemas import PaginatedResponse, ToyCreate, ToyOut, ToyUpdate
 
 router = APIRouter()
@@ -136,5 +136,13 @@ async def delete_toy(
     toy = (await db.execute(select(Toy).where(Toy.id == toy_id))).scalar_one_or_none()
     if not toy:
         raise HTTPException(status_code=404, detail="Toy not found")
+    item_count = (
+        await db.execute(select(func.count()).select_from(Item).where(Item.toy_id == toy_id))
+    ).scalar_one()
+    if item_count > 0:
+        raise HTTPException(
+            status_code=409,
+            detail="This toy cannot be deleted while it still has Items. Please remove all Items first.",
+        )
     await db.delete(toy)
     await db.commit()

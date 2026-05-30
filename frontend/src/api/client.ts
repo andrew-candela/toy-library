@@ -2,6 +2,26 @@ const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
 
 export const TOKEN_KEY = 'auth_token'
 
+/**
+ * Wrapper around fetch that injects the Authorization header and handles 401
+ * responses by clearing the stored token and redirecting to /login.
+ */
+async function authedFetch(token: string, url: string, init: RequestInit = {}): Promise<Response> {
+  const response = await fetch(url, {
+    ...init,
+    headers: {
+      ...init.headers,
+      Authorization: `Bearer ${token}`,
+    },
+  })
+  if (response.status === 401) {
+    sessionStorage.removeItem(TOKEN_KEY)
+    window.location.replace('/login')
+    return new Promise<Response>(() => {})
+  }
+  return response
+}
+
 export type ItemCondition = 'new' | 'like_new' | 'good' | 'fair' | 'poor'
 
 export interface Toy {
@@ -168,9 +188,8 @@ export async function resetPassword(token: string, newPassword: string): Promise
 }
 
 export async function logout(token: string): Promise<void> {
-  await fetch(`${API_URL}/api/auth/logout`, {
+  await authedFetch(token, `${API_URL}/api/auth/logout`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${token}` },
   })
 }
 
@@ -182,6 +201,7 @@ export interface FetchItemsParams {
   tags?: string[]
   myItemsOnly?: boolean
   toyId?: number
+  ownerUsername?: string
 }
 
 export async function fetchItems(token: string, params?: FetchItemsParams): Promise<PaginatedResponse<Item>> {
@@ -193,10 +213,9 @@ export async function fetchItems(token: string, params?: FetchItemsParams): Prom
   if (params?.tags) for (const tag of params.tags) p.append('tags', tag)
   if (params?.myItemsOnly) p.set('my_items_only', 'true')
   if (params?.toyId != null) p.set('toy_id', String(params.toyId))
+  if (params?.ownerUsername) p.set('owner_username', params.ownerUsername)
   const qs = p.toString()
-  const response = await fetch(`${API_URL}/api/items/${qs ? `?${qs}` : ''}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  })
+  const response = await authedFetch(token, `${API_URL}/api/items/${qs ? `?${qs}` : ''}`)
   if (!response.ok) {
     throw new Error(`Failed to fetch items: ${response.statusText}`)
   }
@@ -207,9 +226,9 @@ export async function createItem(
   token: string,
   data: { toy_id: number; condition: ItemCondition },
 ): Promise<Item> {
-  const response = await fetch(`${API_URL}/api/items/`, {
+  const response = await authedFetch(token, `${API_URL}/api/items/`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   })
   if (!response.ok) {
@@ -224,9 +243,9 @@ export async function updateItem(
   id: number,
   data: { toy_id?: number; condition?: ItemCondition },
 ): Promise<Item> {
-  const response = await fetch(`${API_URL}/api/items/${id}`, {
+  const response = await authedFetch(token, `${API_URL}/api/items/${id}`, {
     method: 'PUT',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   })
   if (!response.ok) {
@@ -237,9 +256,8 @@ export async function updateItem(
 }
 
 export async function deleteItem(token: string, id: number): Promise<void> {
-  const response = await fetch(`${API_URL}/api/items/${id}`, {
+  const response = await authedFetch(token, `${API_URL}/api/items/${id}`, {
     method: 'DELETE',
-    headers: { Authorization: `Bearer ${token}` },
   })
   if (!response.ok) {
     const detail = await response.text()
@@ -248,9 +266,7 @@ export async function deleteItem(token: string, id: number): Promise<void> {
 }
 
 export async function getProfile(token: string): Promise<ProfileResponse> {
-  const response = await fetch(`${API_URL}/api/profile/me`, {
-    headers: { Authorization: `Bearer ${token}` },
-  })
+  const response = await authedFetch(token, `${API_URL}/api/profile/me`)
   if (!response.ok) {
     const detail = await response.text()
     throw new Error(detail || 'Failed to fetch profile')
@@ -258,10 +274,19 @@ export async function getProfile(token: string): Promise<ProfileResponse> {
   return response.json() as Promise<ProfileResponse>
 }
 
+export async function getUserProfile(token: string, username: string): Promise<ProfileResponse> {
+  const response = await authedFetch(token, `${API_URL}/api/profile/${encodeURIComponent(username)}`)
+  if (!response.ok) {
+    const detail = await response.text()
+    throw new Error(detail || 'User not found')
+  }
+  return response.json() as Promise<ProfileResponse>
+}
+
 export async function updateUsername(token: string, username: string): Promise<UpdateUsernameResponse> {
-  const response = await fetch(`${API_URL}/api/profile/username`, {
+  const response = await authedFetch(token, `${API_URL}/api/profile/username`, {
     method: 'PATCH',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username }),
   })
   if (!response.ok) {
@@ -272,9 +297,9 @@ export async function updateUsername(token: string, username: string): Promise<U
 }
 
 export async function updateEmail(token: string, email: string): Promise<{ message: string }> {
-  const response = await fetch(`${API_URL}/api/profile/email`, {
+  const response = await authedFetch(token, `${API_URL}/api/profile/email`, {
     method: 'PATCH',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email }),
   })
   if (!response.ok) {
@@ -285,9 +310,9 @@ export async function updateEmail(token: string, email: string): Promise<{ messa
 }
 
 export async function updateNeighborhood(token: string, neighborhood: string | null): Promise<{ neighborhood: string | null }> {
-  const response = await fetch(`${API_URL}/api/profile/neighborhood`, {
+  const response = await authedFetch(token, `${API_URL}/api/profile/neighborhood`, {
     method: 'PATCH',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ neighborhood }),
   })
   if (!response.ok) {
@@ -310,9 +335,7 @@ export async function fetchToys(
   params.set('page', String(page))
   params.set('page_size', String(pageSize))
   const qs = params.toString()
-  const response = await fetch(`${API_URL}/api/toys/?${qs}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  })
+  const response = await authedFetch(token, `${API_URL}/api/toys/?${qs}`)
   if (!response.ok) {
     throw new Error(`Failed to fetch toys: ${response.statusText}`)
   }
@@ -320,9 +343,7 @@ export async function fetchToys(
 }
 
 export async function fetchTagSuggestions(token: string, prefix: string): Promise<string[]> {
-  const response = await fetch(`${API_URL}/api/toys/tags?q=${encodeURIComponent(prefix)}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  })
+  const response = await authedFetch(token, `${API_URL}/api/toys/tags?q=${encodeURIComponent(prefix)}`)
   if (!response.ok) {
     throw new Error('Failed to fetch tag suggestions')
   }
@@ -330,9 +351,9 @@ export async function fetchTagSuggestions(token: string, prefix: string): Promis
 }
 
 export async function createToy(token: string, data: ToyCreate): Promise<Toy> {
-  const response = await fetch(`${API_URL}/api/toys`, {
+  const response = await authedFetch(token, `${API_URL}/api/toys`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   })
   if (!response.ok) {
@@ -343,9 +364,9 @@ export async function createToy(token: string, data: ToyCreate): Promise<Toy> {
 }
 
 export async function updateToy(token: string, id: number, data: ToyUpdate): Promise<Toy> {
-  const response = await fetch(`${API_URL}/api/toys/${id}`, {
+  const response = await authedFetch(token, `${API_URL}/api/toys/${id}`, {
     method: 'PUT',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
   })
   if (!response.ok) {
@@ -356,20 +377,24 @@ export async function updateToy(token: string, id: number, data: ToyUpdate): Pro
 }
 
 export async function deleteToy(token: string, id: number): Promise<void> {
-  const response = await fetch(`${API_URL}/api/toys/${id}`, {
+  const response = await authedFetch(token, `${API_URL}/api/toys/${id}`, {
     method: 'DELETE',
-    headers: { Authorization: `Bearer ${token}` },
   })
   if (!response.ok) {
-    const detail = await response.text()
+    const text = await response.text()
+    let detail = text
+    try {
+      const json = JSON.parse(text)
+      if (json.detail) detail = json.detail
+    } catch {
+      // not JSON — use raw text
+    }
     throw new Error(detail || 'Failed to delete toy')
   }
 }
 
 export async function fetchMyItems(token: string): Promise<UserItem[]> {
-  const response = await fetch(`${API_URL}/api/user-items/`, {
-    headers: { Authorization: `Bearer ${token}` },
-  })
+  const response = await authedFetch(token, `${API_URL}/api/user-items/`)
   if (!response.ok) {
     throw new Error(`Failed to fetch your items: ${response.statusText}`)
   }
@@ -377,9 +402,7 @@ export async function fetchMyItems(token: string): Promise<UserItem[]> {
 }
 
 export async function fetchToy(token: string, id: number): Promise<Toy> {
-  const response = await fetch(`${API_URL}/api/toys/${id}`, {
-    headers: { Authorization: `Bearer ${token}` },
-  })
+  const response = await authedFetch(token, `${API_URL}/api/toys/${id}`)
   if (!response.ok) {
     throw new Error(`Failed to fetch toy: ${response.statusText}`)
   }
@@ -387,9 +410,7 @@ export async function fetchToy(token: string, id: number): Promise<Toy> {
 }
 
 export async function fetchPendingIncoming(token: string): Promise<UserItem[]> {
-  const response = await fetch(`${API_URL}/api/user-items/pending-incoming`, {
-    headers: { Authorization: `Bearer ${token}` },
-  })
+  const response = await authedFetch(token, `${API_URL}/api/user-items/pending-incoming`)
   if (!response.ok) {
     throw new Error(`Failed to fetch pending transfers: ${response.statusText}`)
   }
@@ -401,9 +422,9 @@ export async function initiateTransfer(
   itemId: number,
   toUsername: string,
 ): Promise<UserItem> {
-  const response = await fetch(`${API_URL}/api/user-items/${itemId}/transfer`, {
+  const response = await authedFetch(token, `${API_URL}/api/user-items/${itemId}/transfer`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
+    headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ to_username: toUsername }),
   })
   if (!response.ok) {
@@ -414,9 +435,8 @@ export async function initiateTransfer(
 }
 
 export async function cancelTransfer(token: string, itemId: number): Promise<UserItem> {
-  const response = await fetch(`${API_URL}/api/user-items/${itemId}/transfer`, {
+  const response = await authedFetch(token, `${API_URL}/api/user-items/${itemId}/transfer`, {
     method: 'DELETE',
-    headers: { Authorization: `Bearer ${token}` },
   })
   if (!response.ok) {
     const detail = await response.text()
@@ -426,9 +446,8 @@ export async function cancelTransfer(token: string, itemId: number): Promise<Use
 }
 
 export async function acceptTransfer(token: string, itemId: number): Promise<UserItem> {
-  const response = await fetch(`${API_URL}/api/user-items/${itemId}/transfer/accept`, {
+  const response = await authedFetch(token, `${API_URL}/api/user-items/${itemId}/transfer/accept`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${token}` },
   })
   if (!response.ok) {
     const detail = await response.text()
@@ -445,9 +464,7 @@ export interface Interest {
 }
 
 export async function fetchAllInterests(token: string): Promise<Interest[]> {
-  const response = await fetch(`${API_URL}/api/items/interests`, {
-    headers: { Authorization: `Bearer ${token}` },
-  })
+  const response = await authedFetch(token, `${API_URL}/api/items/interests`)
   if (!response.ok) {
     throw new Error(`Failed to fetch interests: ${response.statusText}`)
   }
@@ -455,9 +472,7 @@ export async function fetchAllInterests(token: string): Promise<Interest[]> {
 }
 
 export async function fetchInterests(token: string, itemId: number): Promise<Interest[]> {
-  const response = await fetch(`${API_URL}/api/items/${itemId}/interests`, {
-    headers: { Authorization: `Bearer ${token}` },
-  })
+  const response = await authedFetch(token, `${API_URL}/api/items/${itemId}/interests`)
   if (!response.ok) {
     throw new Error(`Failed to fetch interests: ${response.statusText}`)
   }
@@ -465,9 +480,8 @@ export async function fetchInterests(token: string, itemId: number): Promise<Int
 }
 
 export async function expressInterest(token: string, itemId: number): Promise<Interest> {
-  const response = await fetch(`${API_URL}/api/items/${itemId}/interests`, {
+  const response = await authedFetch(token, `${API_URL}/api/items/${itemId}/interests`, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${token}` },
   })
   if (!response.ok) {
     const detail = await response.text()
@@ -477,9 +491,8 @@ export async function expressInterest(token: string, itemId: number): Promise<In
 }
 
 export async function deleteInterest(token: string, itemId: number): Promise<void> {
-  const response = await fetch(`${API_URL}/api/items/${itemId}/interests`, {
+  const response = await authedFetch(token, `${API_URL}/api/items/${itemId}/interests`, {
     method: 'DELETE',
-    headers: { Authorization: `Bearer ${token}` },
   })
   if (!response.ok) {
     const detail = await response.text()

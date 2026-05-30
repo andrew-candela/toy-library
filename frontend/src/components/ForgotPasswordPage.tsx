@@ -35,7 +35,7 @@ export default function ForgotPasswordPage() {
         </>
       ) : (
         <>
-          <p>Enter your email address and we'll send you a link to reset your password.</p>
+          <p>Enter your email address and we'll send you a link to reset your password. The email will also include your username.</p>
           <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
             <label>
               Email

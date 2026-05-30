@@ -32,13 +32,9 @@ Users supply an image when creating a Toy.
 
 ## ToDo
 
-
 - metrics. Can probably use prometheus fastAPI instrumenter
-- username recovery. If someone forgets their username, they can't get it back.
 I should put it in the password recovery email.
 - more info in emails. Add a link to sign in on transfer requests
-- handle deletes better. Users just get an error message 
-if they attempt to delete a toy that has Items
 - users can supply image
 - save images?
 - Create `ToyBox`s. Users can add toys they have into a ToyBox. Other users can request the box.

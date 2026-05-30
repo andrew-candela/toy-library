@@ -57,6 +57,7 @@ export default function ItemList({ token }: Props) {
   const [showFilterDropdown, setShowFilterDropdown] = useState(false)
   const [neighborhoodSearch, setNeighborhoodSearch] = useState('')
   const [toySearch, setToySearch] = useState('')
+  const [ownerSearch, setOwnerSearch] = useState('')
 
   // --- pagination state ---
   const [currentPage, setCurrentPage] = useState(1)
@@ -66,9 +67,11 @@ export default function ItemList({ token }: Props) {
   // --- debounced text search ---
   const [debouncedNeighborhood, setDebouncedNeighborhood] = useState('')
   const [debouncedToySearch, setDebouncedToySearch] = useState('')
+  const [debouncedOwnerSearch, setDebouncedOwnerSearch] = useState('')
 
   const [searchParams, setSearchParams] = useSearchParams()
   const toyIdParam = searchParams.get('toyId')
+  const ownerParam = searchParams.get('owner')
 
   const myItemsMap = new Map(myItems.map((ui) => [ui.item_id, ui]))
   const pendingIncomingMap = new Map(pendingIncoming.map((ui) => [ui.item_id, ui]))
@@ -96,6 +99,7 @@ export default function ItemList({ token }: Props) {
       tags: filterTags,
       myItemsOnly: showMyItemsOnly,
       toyId: toyIdParam ? Number(toyIdParam) : undefined,
+      ownerUsername: debouncedOwnerSearch || undefined,
     }
     const [itemsData, refreshedMyItems, refreshedPendingIncoming] = await Promise.all([
       fetchItems(token, itemParams),
@@ -182,6 +186,19 @@ export default function ItemList({ token }: Props) {
     return () => clearTimeout(timer)
   }, [toySearch])
 
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedOwnerSearch(ownerSearch)
+      setCurrentPage(1)
+    }, 400)
+    return () => clearTimeout(timer)
+  }, [ownerSearch])
+
+  // Sync owner text input when URL param changes (e.g. navigating from UserProfilePage)
+  useEffect(() => {
+    setOwnerSearch(ownerParam ?? '')
+  }, [ownerParam])
+
   // One-time setup: load toys (for create-item dropdown), profile, and all interests
   useEffect(() => {
     Promise.all([fetchToys(token, [], 1, 100), getProfile(token), fetchAllInterests(token)])
@@ -213,6 +230,7 @@ export default function ItemList({ token }: Props) {
         tags: filterTags,
         myItemsOnly: showMyItemsOnly,
         toyId: toyIdParam ? Number(toyIdParam) : undefined,
+        ownerUsername: debouncedOwnerSearch || undefined,
       }),
       fetchMyItems(token),
       fetchPendingIncoming(token),
@@ -227,7 +245,7 @@ export default function ItemList({ token }: Props) {
         setError(err instanceof Error ? err.message : 'Failed to load'),
       )
       .finally(() => setLoading(false))
-  }, [token, currentPage, debouncedNeighborhood, debouncedToySearch, filterTags, showMyItemsOnly, toyIdParam, refreshKey])
+  }, [token, currentPage, debouncedNeighborhood, debouncedToySearch, filterTags, showMyItemsOnly, toyIdParam, debouncedOwnerSearch, refreshKey])
 
   function openCreate() {
     setEditItem(null)
@@ -557,7 +575,7 @@ export default function ItemList({ token }: Props) {
           </div>
         </div>
 
-        {/* Row 3: Neighborhood + Toy text search */}
+        {/* Row 3: Neighborhood + Toy + Owner text search */}
         <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
           <input
             value={neighborhoodSearch}
@@ -569,6 +587,12 @@ export default function ItemList({ token }: Props) {
             value={toySearch}
             onChange={(e) => setToySearch(e.target.value)}
             placeholder="Search by toy…"
+            style={{ ...inputStyle, minWidth: 200, flex: 1 }}
+          />
+          <input
+            value={ownerSearch}
+            onChange={(e) => setOwnerSearch(e.target.value)}
+            placeholder="Search by owner…"
             style={{ ...inputStyle, minWidth: 200, flex: 1 }}
           />
         </div>
@@ -716,7 +740,11 @@ export default function ItemList({ token }: Props) {
                           {item.toy.title}
                         </Link>
                       </td>
-                      <td style={tdStyle}>{item.owner?.username ?? '—'}</td>
+                      <td style={tdStyle}>
+                        {item.owner
+                          ? <Link to={`/users/${item.owner.username}`} style={{ color: theme.link, textDecoration: 'none' }}>{item.owner.username}</Link>
+                          : '—'}
+                      </td>
                       <td style={tdStyle}>{item.owner?.neighborhood ?? '—'}</td>
                       <td style={tdStyle}>
                         {myUserItem
@@ -727,7 +755,17 @@ export default function ItemList({ token }: Props) {
                         <div style={{ display: 'flex', flexDirection: 'column', gap: 6, alignItems: 'flex-start' }}>
                           {(interests.get(item.id) ?? []).length > 0 ? (
                             <div style={{ fontSize: 12, color: theme.textSecondary }}>
-                              {(interests.get(item.id) ?? []).map((i) => i.user.username).join(', ')}
+                              {(interests.get(item.id) ?? []).map((i, idx, arr) => (
+                                <React.Fragment key={i.user.id}>
+                                  <Link
+                                    to={`/users/${i.user.username}`}
+                                    style={{ color: theme.link, textDecoration: 'none' }}
+                                  >
+                                    {i.user.username}
+                                  </Link>
+                                  {idx < arr.length - 1 && ', '}
+                                </React.Fragment>
+                              ))}
                             </div>
                           ) : (
                             <span style={{ fontSize: 12, color: theme.textDisabled }}>None</span>

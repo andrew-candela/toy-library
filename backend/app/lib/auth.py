@@ -18,7 +18,7 @@ from app.models.models import User
 # Example: openssl rand -hex 32
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev-secret-change-me")
 ALGORITHM = "HS256"
-ACCESS_TOKEN_EXPIRE_MINUTES = 30
+ACCESS_TOKEN_EXPIRE_MINUTES = 300
 ADMIN_USER_EMAILS = ("andrewpcandela@gmail.com", "gnassilem@gmail.com")
 
 

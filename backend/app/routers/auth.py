@@ -21,6 +21,7 @@ from app.lib.auth import (
 from app.lib.database import get_db
 from app.lib.email import send_password_reset_email, send_verification_email
 from app.lib.redis import get_redis_client
+from app.lib.dependencies import rate_limit_request
 from app.models.models import Address, User, AllowList
 from app.schemas.schemas import (
     ForgotPasswordRequest,
@@ -34,7 +35,7 @@ from app.schemas.schemas import (
     ResendVerificationRequest,
 )
 
-router = APIRouter()
+router = APIRouter(dependencies=[Depends(rate_limit_request)])
 
 
 _VERIFY_EMAIL_TTL = 24 * 60 * 60  # 24 hours in seconds
@@ -183,7 +184,9 @@ async def forgot_password(
     token = secrets.token_urlsafe(32)
     await redis.setex(f"reset_password:{token}", _RESET_PASSWORD_TTL, str(user.id))
     await redis.setex(f"reset_password_user:{user.id}", _RESET_PASSWORD_TTL, token)
-    background_tasks.add_task(send_password_reset_email, user.email, token)
+    background_tasks.add_task(
+        send_password_reset_email, user.email, token, user.username
+    )
     return generic
 
 

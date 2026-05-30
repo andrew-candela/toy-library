@@ -27,12 +27,14 @@ async def _send_email(to_email: str, subject: str, html: str) -> None:
         logger.info("---------------------------------------------------------")
         return
 
-    result = await resend.Emails.send_async({
-        "from": _EMAIL_FROM,
-        "to": [to_email],
-        "subject": subject,
-        "html": html,
-    })
+    result = await resend.Emails.send_async(
+        {
+            "from": _EMAIL_FROM,
+            "to": [to_email],
+            "subject": subject,
+            "html": html,
+        }
+    )
     logger.info(f"email sent successfully: {result}")
 
 
@@ -58,17 +60,19 @@ async def send_verification_email(to_email: str, token: str) -> None:
     await _send_email(to_email, "Verify your Toy Library email", html)
 
 
-async def send_password_reset_email(to_email: str, token: str) -> None:
+async def send_password_reset_email(to_email: str, token: str, username: str) -> None:
     """Send a password reset link to a user who requested one.
 
     Args:
         to_email: The recipient's email address.
         token: The password reset token to include in the link.
+        username: The user's username, included in the email body for recovery.
     """
     reset_url = f"{_FRONTEND_URL}/reset-password?token={token}"
 
     html = f"""
     <p>You requested a password reset for your Toy Library account.</p>
+    <p>Your username is: <strong>{username}</strong></p>
     <p>Click the link below to set a new password:</p>
     <p><a href="{reset_url}">Reset my password</a></p>
     <p>This link expires in 1 hour.</p>

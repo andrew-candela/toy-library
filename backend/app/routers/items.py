@@ -33,23 +33,27 @@ async def list_items(
     tags: list[str] = Query(default=[]),
     my_items_only: bool = Query(False),
     toy_id: int | None = Query(None),
+    owner_username: str | None = Query(None),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     # Build a filter query that selects only Item.id to avoid cartesian products
     filter_query = select(Item.id)
 
-    if my_items_only or neighborhood:
+    if my_items_only or neighborhood or owner_username:
         filter_query = filter_query.join(UserItem, Item.id == UserItem.item_id)
         if my_items_only:
             filter_query = filter_query.where(UserItem.user_id == current_user.id)
-        if neighborhood:
-            filter_query = (
-                filter_query
-                .join(User, UserItem.user_id == User.id)
-                .outerjoin(Address, User.id == Address.user_id)
-                .where(Address.neighborhood.ilike(f"%{neighborhood}%"))
-            )
+        if neighborhood or owner_username:
+            filter_query = filter_query.join(User, UserItem.user_id == User.id)
+            if neighborhood:
+                filter_query = filter_query.outerjoin(
+                    Address, User.id == Address.user_id
+                ).where(Address.neighborhood.ilike(f"%{neighborhood}%"))
+            if owner_username:
+                filter_query = filter_query.where(
+                    User.username.ilike(f"%{owner_username}%")
+                )
 
     if toy_title or toy_id is not None:
         filter_query = filter_query.join(Toy, Item.toy_id == Toy.id)
@@ -72,8 +76,7 @@ async def list_items(
     item_ids = (
         (
             await db.execute(
-                filter_query
-                .order_by(Item.id)
+                filter_query.order_by(Item.id)
                 .offset((page - 1) * page_size)
                 .limit(page_size)
             )

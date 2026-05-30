@@ -11,6 +11,7 @@ import ResetPasswordPage from './components/ResetPasswordPage'
 import Sidebar from './components/Sidebar'
 import ToysPage from './components/ToysPage'
 import ToyDetailPage from './components/ToyDetailPage'
+import UserProfilePage from './components/UserProfilePage'
 import VerifyEmailPage from './components/VerifyEmailPage'
 import { useTheme } from './theme/ThemeContext'
 
@@ -88,6 +89,14 @@ function App() {
         element={
           <ProtectedLayout onLogout={handleLogout}>
             <ProfilePage token={token!} onTokenUpdate={handleTokenUpdate} />
+          </ProtectedLayout>
+        }
+      />
+      <Route
+        path="/users/:username"
+        element={
+          <ProtectedLayout onLogout={handleLogout}>
+            <UserProfilePage token={token!} />
           </ProtectedLayout>
         }
       />
