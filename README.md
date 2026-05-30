@@ -4,31 +4,6 @@
 A way for folks to advertise toys they'd like to give away,
 and to express interest in toys the'd like to borrow.
 
-## Data Model
-
-### Tags (try semantic search first)
-
-Toys will have tags associated with them.
-When creating a toy, you can assign existing tags or create new ones
-
-
-### Toys
-
-Toys have tags.
-
-### Items
-
-An item is an instance of a Toy.
-For example you can have two of the same toy.
-
-
-## Semantic search (later)
-
-Users supply an image when creating a Toy.
-
-- save the image
-- vectorize the image
-- search results
 
 ## ToDo
 
