@@ -215,7 +215,7 @@ export async function fetchItems(token: string, params?: FetchItemsParams): Prom
   if (params?.toyId != null) p.set('toy_id', String(params.toyId))
   if (params?.ownerUsername) p.set('owner_username', params.ownerUsername)
   const qs = p.toString()
-  const response = await authedFetch(token, `${API_URL}/api/items/${qs ? `?${qs}` : ''}`)
+  const response = await authedFetch(token, `${API_URL}/api/items${qs ? `?${qs}` : ''}`)
   if (!response.ok) {
     throw new Error(`Failed to fetch items: ${response.statusText}`)
   }
@@ -226,7 +226,7 @@ export async function createItem(
   token: string,
   data: { toy_id: number; condition: ItemCondition },
 ): Promise<Item> {
-  const response = await authedFetch(token, `${API_URL}/api/items/`, {
+  const response = await authedFetch(token, `${API_URL}/api/items`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(data),
@@ -394,7 +394,7 @@ export async function deleteToy(token: string, id: number): Promise<void> {
 }
 
 export async function fetchMyItems(token: string): Promise<UserItem[]> {
-  const response = await authedFetch(token, `${API_URL}/api/user-items/`)
+  const response = await authedFetch(token, `${API_URL}/api/user-items`)
   if (!response.ok) {
     throw new Error(`Failed to fetch your items: ${response.statusText}`)
   }
