@@ -6,6 +6,7 @@ __pycache__
 backend/.env
 **/*.egg-info
 
+*.db
 
 
 
