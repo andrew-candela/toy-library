@@ -538,6 +538,7 @@ export default function ToysPage({ token }: Props) {
                   flexGrow: 1,
                   minWidth: 120,
                   background: 'transparent',
+                  color: theme.textPrimary,
                 }}
               />
               {showFormDropdown && (

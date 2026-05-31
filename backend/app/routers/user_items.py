@@ -24,7 +24,7 @@ def _user_item_options():
     ]
 
 
-@router.get("/", response_model=list[UserItemOut])
+@router.get("", response_model=list[UserItemOut])
 async def list_my_items(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),

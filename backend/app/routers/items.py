@@ -24,7 +24,7 @@ def _normalize_tag(raw: str) -> str:
     return raw.lstrip("#").strip().lower()
 
 
-@router.get("/", response_model=PaginatedResponse[ItemWithOwnerOut])
+@router.get("", response_model=PaginatedResponse[ItemWithOwnerOut])
 async def list_items(
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
@@ -147,7 +147,7 @@ async def get_item(
     return item
 
 
-@router.post("/", response_model=ItemOut, status_code=201)
+@router.post("", response_model=ItemOut, status_code=201)
 async def create_item(
     item_in: ItemCreate,
     db: AsyncSession = Depends(get_db),

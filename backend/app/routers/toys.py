@@ -81,7 +81,7 @@ async def get_toy(
     return toy
 
 
-@router.post("/", response_model=ToyOut, status_code=201)
+@router.post("", response_model=ToyOut, status_code=201)
 async def create_toy(
     toy_in: ToyCreate,
     db: AsyncSession = Depends(get_db),
@@ -137,7 +137,9 @@ async def delete_toy(
     if not toy:
         raise HTTPException(status_code=404, detail="Toy not found")
     item_count = (
-        await db.execute(select(func.count()).select_from(Item).where(Item.toy_id == toy_id))
+        await db.execute(
+            select(func.count()).select_from(Item).where(Item.toy_id == toy_id)
+        )
     ).scalar_one()
     if item_count > 0:
         raise HTTPException(
