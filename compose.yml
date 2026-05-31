@@ -14,20 +14,31 @@ services:
       - "5432:5432"
 
   backend:
-    build: ./backend
+    build: 
+      context: ./backend
     ports:
       - "8000:8000"
     volumes:
       - ./backend/app:/app/app
     env_file:
       - ./backend/.env
-    environment:
-      - REDIS_URL=redis://redis:6379/0
     depends_on:
       postgres:
         condition: service_healthy
       redis:
         condition: service_started
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 10s
+    deploy:
+      update_config:
+        order: start-first    # <--- CRUCIAL: Start the new container BEFORE stopping the old one
+        failure_action: rollback
+        delay: 5s
+    stop_grace_period: 30s
 
   redis:
     image: redis:8
@@ -37,11 +48,10 @@ services:
       - redis-data:/data
 
   frontend:
-    build: ./frontend
-    ports:
-      - "5173:5173"
-    environment:
-      - VITE_API_URL=http://localhost:8000
+    build:
+      context: ./frontend
+    env_file:
+      - ./frontend/.env
     depends_on:
       - backend
 

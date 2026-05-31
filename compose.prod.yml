@@ -1,0 +1,7 @@
+services:
+
+  frontend:
+    build: 
+      target: prod
+    ports: 
+      - "81:80"

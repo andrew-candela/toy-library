@@ -46,3 +46,8 @@ app.include_router(user_items.router, prefix="/api/user-items", tags=["user-item
 
 graphql_app = GraphQLRouter(schema, context_getter=get_graphql_context)
 app.include_router(graphql_app, prefix="/graphql")
+
+
+@app.get("/health")
+async def health():
+    return "Hello World!"

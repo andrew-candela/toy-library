@@ -1,0 +1,8 @@
+services:
+
+  frontend:
+    build: 
+      target: dev
+    ports:
+      - "5173:5173"
+

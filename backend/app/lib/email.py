@@ -6,7 +6,6 @@ import structlog
 logger = structlog.get_logger(__name__)
 
 _SEND_EMAIL = os.getenv("LIVE_EMAIL", "false").lower() == "true"
-_AWS_REGION = os.getenv("AWS_REGION")
 _EMAIL_FROM = os.getenv("EMAIL_FROM", "")
 _FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
 
