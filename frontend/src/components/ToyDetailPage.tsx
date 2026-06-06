@@ -93,22 +93,6 @@ export default function ToyDetailPage({ token }: Props) {
                 </div>
               )}
 
-              <Link
-                to={`/items?toyId=${toy.id}`}
-                style={{
-                  display: 'inline-block',
-                  padding: '8px 16px',
-                  borderRadius: 6,
-                  background: theme.ctaBg,
-                  color: theme.ctaText,
-                  fontSize: 14,
-                  fontWeight: 500,
-                  textDecoration: 'none',
-                  marginTop: 4,
-                }}
-              >
-                View Items for this Toy
-              </Link>
             </div>
           </div>
         </>

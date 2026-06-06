@@ -57,9 +57,6 @@ export default function Sidebar({ onLogout }: Props) {
       <Link to="/toys" style={navLinkStyle}>
         Toys
       </Link>
-      <Link to="/items" style={navLinkStyle}>
-        Items
-      </Link>
       <Link to="/profile" style={navLinkStyle}>
         Profile
       </Link>

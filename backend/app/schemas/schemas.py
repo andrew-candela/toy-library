@@ -3,7 +3,7 @@ from typing import Any, Generic, TypeVar
 
 from pydantic import BaseModel, EmailStr, field_validator
 
-from app.models.models import ItemCondition
+from app.models.models import ToyCondition
 
 T = TypeVar("T")
 
@@ -72,6 +72,8 @@ class ToyCreate(BaseModel):
     age_range: str | None = None
     image_url: str | None = None
     tags: list[str] = []
+    condition: ToyCondition | None = None
+    date_added: datetime | None = None
 
 
 class ToyOut(BaseModel):
@@ -81,6 +83,8 @@ class ToyOut(BaseModel):
     age_range: str | None = None
     image_url: str | None = None
     tags: list[str] = []
+    condition: ToyCondition | None = None
+    date_added: datetime | None = None
 
     model_config = {"from_attributes": True}
 
@@ -104,47 +108,20 @@ class ToyUpdate(BaseModel):
     age_range: str | None = None
     image_url: str | None = None
     tags: list[str] | None = None
+    condition: ToyCondition | None = None
+    date_added: datetime | None = None
 
 
-class ItemCreate(BaseModel):
-    toy_id: int
-    condition: ItemCondition
-
-
-class ItemUpdate(BaseModel):
-    toy_id: int | None = None
-    condition: ItemCondition | None = None
-
-
-class ItemOut(ItemCreate):
-    id: int
-    date_added: datetime
-    toy: ToyOut
-
-    model_config = {"from_attributes": True}
-
-
-class OwnerInfo(BaseModel):
-    username: str
-    neighborhood: str | None = None
-
-    model_config = {"from_attributes": True}
-
-
-class ItemWithOwnerOut(ItemOut):
-    owner: OwnerInfo | None = None
-
-
-class UserItemCreate(BaseModel):
+class UserToyCreate(BaseModel):
     user_id: int
-    item_id: int
+    toy_id: int
     checked_out_at: datetime
 
 
-class UserItemOut(UserItemCreate):
+class UserToyOut(UserToyCreate):
     id: int
     user: UserOut
-    item: ItemOut
+    toy: ToyOut
     pending_user: UserOut | None = None
 
     model_config = {"from_attributes": True}
@@ -157,7 +134,7 @@ class TransferInitiateRequest(BaseModel):
 class InterestOut(BaseModel):
     id: int
     user: UserOut
-    item_id: int
+    toy_id: int
     created_at: datetime
 
     model_config = {"from_attributes": True}

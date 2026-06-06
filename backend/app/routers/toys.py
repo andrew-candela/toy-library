@@ -1,10 +1,11 @@
+from datetime import datetime, timezone
 from fastapi import APIRouter, Depends, HTTPException, Query
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.lib.auth import get_current_user
 from app.lib.database import get_db
-from app.models.models import Item, Toy, ToyTag, User
+from app.models.models import Toy, ToyInterest, ToyTag, User, UserToy
 from app.schemas.schemas import PaginatedResponse, ToyCreate, ToyOut, ToyUpdate
 
 router = APIRouter()
@@ -92,9 +93,17 @@ async def create_toy(
         description=toy_in.description,
         age_range=toy_in.age_range,
         image_url=toy_in.image_url,
+        condition=toy_in.condition,
+        date_added=toy_in.date_added,
     )
     db.add(toy)
     await db.flush()
+    user_toy = UserToy(
+        user_id=current_user.id,
+        toy_id=toy.id,
+        checked_out_at=datetime.now(tz=timezone.utc),
+    )
+    db.add(user_toy)
     for raw_tag in toy_in.tags:
         normalized = _normalize_tag(raw_tag)
         if normalized:
@@ -136,15 +145,22 @@ async def delete_toy(
     toy = (await db.execute(select(Toy).where(Toy.id == toy_id))).scalar_one_or_none()
     if not toy:
         raise HTTPException(status_code=404, detail="Toy not found")
-    item_count = (
+    user_toy_count = (
         await db.execute(
-            select(func.count()).select_from(Item).where(Item.toy_id == toy_id)
+            select(func.count()).select_from(UserToy).where(UserToy.toy_id == toy_id)
         )
     ).scalar_one()
-    if item_count > 0:
+    toy_interest_count = (
+        await db.execute(
+            select(func.count())
+            .select_from(ToyInterest)
+            .where(ToyInterest.toy_id == toy_id)
+        )
+    ).scalar_one()
+    if user_toy_count > 0 or toy_interest_count > 0:
         raise HTTPException(
             status_code=409,
-            detail="This toy cannot be deleted while it still has Items. Please remove all Items first.",
+            detail="This toy cannot be deleted while it is checked out or has pending interests.",
         )
     await db.delete(toy)
     await db.commit()

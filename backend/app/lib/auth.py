@@ -19,7 +19,9 @@ from app.models.models import User
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev-secret-change-me")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 300
-ADMIN_USER_EMAILS = ("andrewpcandela@gmail.com", "gnassilem@gmail.com")
+ADMIN_USER_EMAILS = (
+    email.lower().strip() for email in os.getenv("ADMIN_USER_EMAILS", "").split(",")
+)
 
 
 pwd_context = CryptContext(schemes=["argon2"], deprecated="auto")

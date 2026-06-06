@@ -22,7 +22,7 @@ async function authedFetch(token: string, url: string, init: RequestInit = {}): 
   return response
 }
 
-export type ItemCondition = 'new' | 'like_new' | 'good' | 'fair' | 'poor'
+export type ToyCondition = 'new' | 'like_new' | 'good' | 'fair' | 'poor'
 
 export interface Toy {
   id: number
@@ -31,6 +31,8 @@ export interface Toy {
   age_range?: string
   image_url?: string
   tags: string[]
+  condition?: ToyCondition
+  date_added?: string
 }
 
 export interface ToyCreate {
@@ -39,6 +41,8 @@ export interface ToyCreate {
   age_range?: string
   image_url?: string
   tags: string[]
+  condition?: ToyCondition
+  date_added?: string
 }
 
 export interface ToyUpdate {
@@ -47,6 +51,8 @@ export interface ToyUpdate {
   age_range?: string
   image_url?: string
   tags?: string[]
+  condition?: ToyCondition
+  date_added?: string
 }
 
 export interface OwnerInfo {
@@ -62,22 +68,13 @@ export interface PaginatedResponse<T> {
   total_pages: number
 }
 
-export interface Item {
-  id: number
-  toy_id: number
-  condition: ItemCondition
-  date_added: string
-  toy: Toy
-  owner?: OwnerInfo | null
-}
-
-export interface UserItem {
+export interface UserToy {
   id: number
   user_id: number
-  item_id: number
+  toy_id: number
   checked_out_at: string
   user: UserResponse
-  item: Item
+  toy: Toy
   pending_user: UserResponse | null
 }
 
@@ -193,77 +190,7 @@ export async function logout(token: string): Promise<void> {
   })
 }
 
-export interface FetchItemsParams {
-  page?: number
-  pageSize?: number
-  neighborhood?: string
-  toyTitle?: string
-  tags?: string[]
-  myItemsOnly?: boolean
-  toyId?: number
-  ownerUsername?: string
-}
 
-export async function fetchItems(token: string, params?: FetchItemsParams): Promise<PaginatedResponse<Item>> {
-  const p = new URLSearchParams()
-  if (params?.page) p.set('page', String(params.page))
-  if (params?.pageSize) p.set('page_size', String(params.pageSize))
-  if (params?.neighborhood) p.set('neighborhood', params.neighborhood)
-  if (params?.toyTitle) p.set('toy_title', params.toyTitle)
-  if (params?.tags) for (const tag of params.tags) p.append('tags', tag)
-  if (params?.myItemsOnly) p.set('my_items_only', 'true')
-  if (params?.toyId != null) p.set('toy_id', String(params.toyId))
-  if (params?.ownerUsername) p.set('owner_username', params.ownerUsername)
-  const qs = p.toString()
-  const response = await authedFetch(token, `${API_URL}/api/items${qs ? `?${qs}` : ''}`)
-  if (!response.ok) {
-    throw new Error(`Failed to fetch items: ${response.statusText}`)
-  }
-  return response.json() as Promise<PaginatedResponse<Item>>
-}
-
-export async function createItem(
-  token: string,
-  data: { toy_id: number; condition: ItemCondition },
-): Promise<Item> {
-  const response = await authedFetch(token, `${API_URL}/api/items`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  })
-  if (!response.ok) {
-    const detail = await response.text()
-    throw new Error(detail || 'Failed to create item')
-  }
-  return response.json() as Promise<Item>
-}
-
-export async function updateItem(
-  token: string,
-  id: number,
-  data: { toy_id?: number; condition?: ItemCondition },
-): Promise<Item> {
-  const response = await authedFetch(token, `${API_URL}/api/items/${id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
-  })
-  if (!response.ok) {
-    const detail = await response.text()
-    throw new Error(detail || 'Failed to update item')
-  }
-  return response.json() as Promise<Item>
-}
-
-export async function deleteItem(token: string, id: number): Promise<void> {
-  const response = await authedFetch(token, `${API_URL}/api/items/${id}`, {
-    method: 'DELETE',
-  })
-  if (!response.ok) {
-    const detail = await response.text()
-    throw new Error(detail || 'Failed to delete item')
-  }
-}
 
 export async function getProfile(token: string): Promise<ProfileResponse> {
   const response = await authedFetch(token, `${API_URL}/api/profile/me`)
@@ -393,12 +320,12 @@ export async function deleteToy(token: string, id: number): Promise<void> {
   }
 }
 
-export async function fetchMyItems(token: string): Promise<UserItem[]> {
-  const response = await authedFetch(token, `${API_URL}/api/user-items`)
+export async function fetchMyToys(token: string): Promise<UserToy[]> {
+  const response = await authedFetch(token, `${API_URL}/api/user-toys`)
   if (!response.ok) {
-    throw new Error(`Failed to fetch your items: ${response.statusText}`)
+    throw new Error(`Failed to fetch your toys: ${response.statusText}`)
   }
-  return response.json() as Promise<UserItem[]>
+  return response.json() as Promise<UserToy[]>
 }
 
 export async function fetchToy(token: string, id: number): Promise<Toy> {
@@ -409,20 +336,20 @@ export async function fetchToy(token: string, id: number): Promise<Toy> {
   return response.json() as Promise<Toy>
 }
 
-export async function fetchPendingIncoming(token: string): Promise<UserItem[]> {
-  const response = await authedFetch(token, `${API_URL}/api/user-items/pending-incoming`)
+export async function fetchPendingIncoming(token: string): Promise<UserToy[]> {
+  const response = await authedFetch(token, `${API_URL}/api/user-toys/pending-incoming`)
   if (!response.ok) {
     throw new Error(`Failed to fetch pending transfers: ${response.statusText}`)
   }
-  return response.json() as Promise<UserItem[]>
+  return response.json() as Promise<UserToy[]>
 }
 
 export async function initiateTransfer(
   token: string,
-  itemId: number,
+  toyId: number,
   toUsername: string,
-): Promise<UserItem> {
-  const response = await authedFetch(token, `${API_URL}/api/user-items/${itemId}/transfer`, {
+): Promise<UserToy> {
+  const response = await authedFetch(token, `${API_URL}/api/user-toys/${toyId}/transfer`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ to_username: toUsername }),
@@ -431,56 +358,56 @@ export async function initiateTransfer(
     const detail = await response.text()
     throw new Error(detail || 'Failed to initiate transfer')
   }
-  return response.json() as Promise<UserItem>
+  return response.json() as Promise<UserToy>
 }
 
-export async function cancelTransfer(token: string, itemId: number): Promise<UserItem> {
-  const response = await authedFetch(token, `${API_URL}/api/user-items/${itemId}/transfer`, {
+export async function cancelTransfer(token: string, toyId: number): Promise<UserToy> {
+  const response = await authedFetch(token, `${API_URL}/api/user-toys/${toyId}/transfer`, {
     method: 'DELETE',
   })
   if (!response.ok) {
     const detail = await response.text()
     throw new Error(detail || 'Failed to cancel transfer')
   }
-  return response.json() as Promise<UserItem>
+  return response.json() as Promise<UserToy>
 }
 
-export async function acceptTransfer(token: string, itemId: number): Promise<UserItem> {
-  const response = await authedFetch(token, `${API_URL}/api/user-items/${itemId}/transfer/accept`, {
+export async function acceptTransfer(token: string, toyId: number): Promise<UserToy> {
+  const response = await authedFetch(token, `${API_URL}/api/user-toys/${toyId}/transfer/accept`, {
     method: 'POST',
   })
   if (!response.ok) {
     const detail = await response.text()
     throw new Error(detail || 'Failed to accept transfer')
   }
-  return response.json() as Promise<UserItem>
+  return response.json() as Promise<UserToy>
 }
 
 export interface Interest {
   id: number
   user: UserResponse
-  item_id: number
+  toy_id: number
   created_at: string
 }
 
 export async function fetchAllInterests(token: string): Promise<Interest[]> {
-  const response = await authedFetch(token, `${API_URL}/api/items/interests`)
+  const response = await authedFetch(token, `${API_URL}/api/interests`)
   if (!response.ok) {
     throw new Error(`Failed to fetch interests: ${response.statusText}`)
   }
   return response.json() as Promise<Interest[]>
 }
 
-export async function fetchInterests(token: string, itemId: number): Promise<Interest[]> {
-  const response = await authedFetch(token, `${API_URL}/api/items/${itemId}/interests`)
+export async function fetchInterests(token: string, toyId: number): Promise<Interest[]> {
+  const response = await authedFetch(token, `${API_URL}/api/interests/${toyId}`)
   if (!response.ok) {
     throw new Error(`Failed to fetch interests: ${response.statusText}`)
   }
   return response.json() as Promise<Interest[]>
 }
 
-export async function expressInterest(token: string, itemId: number): Promise<Interest> {
-  const response = await authedFetch(token, `${API_URL}/api/items/${itemId}/interests`, {
+export async function expressInterest(token: string, toyId: number): Promise<Interest> {
+  const response = await authedFetch(token, `${API_URL}/api/interests/${toyId}`, {
     method: 'POST',
   })
   if (!response.ok) {
@@ -490,8 +417,8 @@ export async function expressInterest(token: string, itemId: number): Promise<In
   return response.json() as Promise<Interest>
 }
 
-export async function deleteInterest(token: string, itemId: number): Promise<void> {
-  const response = await authedFetch(token, `${API_URL}/api/items/${itemId}/interests`, {
+export async function deleteInterest(token: string, toyId: number): Promise<void> {
+  const response = await authedFetch(token, `${API_URL}/api/interests/${toyId}`, {
     method: 'DELETE',
   })
   if (!response.ok) {

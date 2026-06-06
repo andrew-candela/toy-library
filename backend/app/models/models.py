@@ -41,6 +41,14 @@ class AllowList(Base):
     email: Mapped[str] = mapped_column(String, unique=True, index=True, nullable=False)
 
 
+class ToyCondition(str, enum.Enum):
+    new = "new"
+    like_new = "like_new"
+    good = "good"
+    fair = "fair"
+    poor = "poor"
+
+
 class Toy(Base):
     __tablename__ = "toys"
 
@@ -49,12 +57,21 @@ class Toy(Base):
     description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     age_range: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     image_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    condition: Mapped[Optional[ToyCondition]] = mapped_column(
+        Enum(ToyCondition), nullable=True
+    )
+    date_added: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     tags: Mapped[list["ToyTag"]] = relationship(
         "ToyTag",
         back_populates="toy",
         cascade="all, delete-orphan",
         lazy="selectin",
+    )
+    user_toy: Mapped[Optional["UserToy"]] = relationship(
+        "UserToy", back_populates="toy", uselist=False
     )
 
 
@@ -70,43 +87,15 @@ class ToyTag(Base):
     toy: Mapped["Toy"] = relationship("Toy", back_populates="tags")
 
 
-class ItemCondition(str, enum.Enum):
-    new = "new"
-    like_new = "like_new"
-    good = "good"
-    fair = "fair"
-    poor = "poor"
-
-
-class Item(Base):
-    __tablename__ = "items"
-
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    toy_id: Mapped[int] = mapped_column(Integer, ForeignKey("toys.id"), nullable=False)
-    condition: Mapped[ItemCondition] = mapped_column(
-        Enum(ItemCondition), nullable=False
-    )
-    date_added: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True), nullable=False
-    )
-
-    toy: Mapped["Toy"] = relationship("Toy")
-    user_item: Mapped[Optional["UserItem"]] = relationship(
-        "UserItem", back_populates="item", uselist=False
-    )
-
-
-class UserItem(Base):
-    __tablename__ = "user_items"
-    __table_args__ = (UniqueConstraint("item_id", name="uq_user_items_item_id"),)
+class UserToy(Base):
+    __tablename__ = "user_toys"
+    __table_args__ = (UniqueConstraint("toy_id", name="uq_user_toys_toy_id"),)
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     user_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("users.id"), nullable=False
     )
-    item_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("items.id"), nullable=False
-    )
+    toy_id: Mapped[int] = mapped_column(Integer, ForeignKey("toys.id"), nullable=False)
     checked_out_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
     )
@@ -114,10 +103,10 @@ class UserItem(Base):
         Integer, ForeignKey("users.id"), nullable=True
     )
 
-    user: Mapped["User"] = relationship("User", foreign_keys="[UserItem.user_id]")
-    item: Mapped["Item"] = relationship("Item", back_populates="user_item")
+    user: Mapped["User"] = relationship("User", foreign_keys="[UserToy.user_id]")
+    toy: Mapped["Toy"] = relationship("Toy", back_populates="user_toy")
     pending_user: Mapped[Optional["User"]] = relationship(
-        "User", foreign_keys="[UserItem.pending_user_id]"
+        "User", foreign_keys="[UserToy.pending_user_id]"
     )
 
 
@@ -133,22 +122,22 @@ class Address(Base):
     user: Mapped["User"] = relationship("User", back_populates="address")
 
 
-class ItemInterest(Base):
-    __tablename__ = "item_interests"
+class ToyInterest(Base):
+    __tablename__ = "toy_interests"
     __table_args__ = (
-        UniqueConstraint("user_id", "item_id", name="uq_item_interests_user_item"),
+        UniqueConstraint("user_id", "toy_id", name="uq_toy_interests_user_toy"),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     user_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("users.id"), nullable=False, index=True
     )
-    item_id: Mapped[int] = mapped_column(
-        Integer, ForeignKey("items.id", ondelete="CASCADE"), nullable=False, index=True
+    toy_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("toys.id", ondelete="CASCADE"), nullable=False, index=True
     )
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
     )
 
     user: Mapped["User"] = relationship("User")
-    item: Mapped["Item"] = relationship("Item")
+    toy: Mapped["Toy"] = relationship("Toy")
