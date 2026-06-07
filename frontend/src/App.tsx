@@ -4,12 +4,11 @@ import { TOKEN_KEY } from './api/client'
 import ForgotPasswordPage from './components/ForgotPasswordPage'
 import HomePage from './components/HomePage'
 import ResendVerificationPage from './components/ResendVerificationPage'
-import ItemList from './components/ItemList'
 import LoginPage from './components/LoginPage'
 import ProfilePage from './components/ProfilePage'
 import ResetPasswordPage from './components/ResetPasswordPage'
 import Sidebar from './components/Sidebar'
-import ToysPage from './components/ToysPage'
+import ToysPage from './components/toy_page/ToysPage'
 import ToyDetailPage from './components/ToyDetailPage'
 import UserProfilePage from './components/UserProfilePage'
 import VerifyEmailPage from './components/VerifyEmailPage'
@@ -57,14 +56,6 @@ function App() {
         element={
           <ProtectedLayout onLogout={handleLogout}>
             <HomePage />
-          </ProtectedLayout>
-        }
-      />
-      <Route
-        path="/items"
-        element={
-          <ProtectedLayout onLogout={handleLogout}>
-            <ItemList token={token!} />
           </ProtectedLayout>
         }
       />

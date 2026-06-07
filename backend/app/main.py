@@ -8,7 +8,7 @@ from app.graphql.context import get_graphql_context
 from app.graphql.schema import schema
 from app.lib.logging import configure_structlog
 from app.lib.redis import connect_redis, disconnect_redis
-from app.routers import auth, interests, items, profile, toys, user_items, admin
+from app.routers import admin, auth, interests, profile, toys, user_toys
 from app.middleware.access_log_middleware import AccessLogMiddleware
 
 configure_structlog()
@@ -40,9 +40,8 @@ app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(profile.router, prefix="/api/profile", tags=["profile"])
 app.include_router(toys.router, prefix="/api/toys", tags=["toys"])
-app.include_router(interests.router, prefix="/api/items", tags=["interests"])
-app.include_router(items.router, prefix="/api/items", tags=["items"])
-app.include_router(user_items.router, prefix="/api/user-items", tags=["user-items"])
+app.include_router(interests.router, prefix="/api/interests", tags=["interests"])
+app.include_router(user_toys.router, prefix="/api/user-toys", tags=["user-toys"])
 
 graphql_app = GraphQLRouter(schema, context_getter=get_graphql_context)
 app.include_router(graphql_app, prefix="/graphql")

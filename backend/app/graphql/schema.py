@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from datetime import datetime
 from typing import Optional
 
 import strawberry
@@ -10,10 +9,9 @@ from strawberry.permission import BasePermission
 from strawberry.types import Info
 
 from app.graphql.context import GraphQLContext
-from app.models.models import Item as ItemModel
 from app.models.models import Toy as ToyModel
 from app.models.models import ToyTag as ToyTagModel
-from app.models.models import UserItem as UserItemModel
+from app.models.models import UserToy as UserToyModel
 
 
 class IsAuthenticated(BasePermission):
@@ -57,42 +55,21 @@ class ToyType:
 
 
 @strawberry.type
-class ItemType:
-    id: int
-    condition: str
-    date_added: datetime
-    toy: ToyType
-
-    @classmethod
-    def from_model(cls, model: ItemModel) -> ItemType:
-        return cls(
-            id=model.id,
-            condition=model.condition.value,
-            date_added=model.date_added,
-            toy=ToyType.from_model(model.toy),
-        )
-
-
-@strawberry.type
 class Query:
     @strawberry.field(permission_classes=[IsAuthenticated])
-    async def my_items(self, info: Info[GraphQLContext, None]) -> list[ItemType]:
+    async def my_toys(self, info: Info[GraphQLContext, None]) -> list[ToyType]:
         db = info.context.db
         current_user = info.context.current_user
         if current_user is None:
             return []
 
         result = await db.execute(
-            select(UserItemModel)
-            .where(UserItemModel.user_id == current_user.id)
-            .options(
-                selectinload(UserItemModel.item)
-                .selectinload(ItemModel.toy)
-                .selectinload(ToyModel.tags)
-            )
+            select(UserToyModel)
+            .where(UserToyModel.user_id == current_user.id)
+            .options(selectinload(UserToyModel.toy).selectinload(ToyModel.tags))
         )
-        user_items = result.scalars().all()
-        return [ItemType.from_model(ui.item) for ui in user_items]
+        user_toys = result.scalars().all()
+        return [ToyType.from_model(ut.toy) for ut in user_toys]
 
 
 schema = strawberry.Schema(query=Query)
