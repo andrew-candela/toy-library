@@ -216,20 +216,6 @@ export function ToyTable({
                     {interestCount} interested
                   </span>
 
-                  {isOwner && (
-                    <span
-                      style={{
-                        ...chipStyle,
-                        background: theme.surfaceAlt,
-                        border: `1px solid ${theme.border}`,
-                        color: theme.textMuted,
-                      }}
-                      title="You own this toy"
-                    >
-                      Owner
-                    </span>
-                  )}
-
                   {isPendingRecipient && (
                     <button
                       style={primaryBtnStyle}

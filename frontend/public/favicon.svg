@@ -1,12 +1,49 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64">
-  <!-- Toy building block -->
-  <rect x="8" y="24" width="48" height="32" rx="4" fill="#E53935"/>
-  <!-- Top face (parallelogram) -->
-  <polygon points="8,24 24,8 56,8 40,24" fill="#EF9A9A"/>
-  <!-- Right face -->
-  <polygon points="56,8 56,40 40,56 40,24" fill="#B71C1C"/>
-  <!-- Stud on top -->
-  <ellipse cx="32" cy="16" rx="8" ry="4" fill="#EF9A9A"/>
-  <rect x="24" y="12" width="16" height="6" fill="#EF9A9A"/>
-  <ellipse cx="32" cy="12" rx="8" ry="4" fill="#FFCDD2"/>
+  <!-- Antenna -->
+  <line x1="32" y1="4" x2="32" y2="12" stroke="#555" stroke-width="2.5" stroke-linecap="round"/>
+  <circle cx="32" cy="3" r="3" fill="#FF4444"/>
+
+  <!-- Head -->
+  <rect x="16" y="12" width="32" height="22" rx="4" ry="4" fill="#5B9BD5"/>
+  <!-- Eyes -->
+  <rect x="21" y="18" width="8" height="7" rx="2" fill="#fff"/>
+  <rect x="35" y="18" width="8" height="7" rx="2" fill="#fff"/>
+  <circle cx="25" cy="21.5" r="2.5" fill="#1a1a2e"/>
+  <circle cx="39" cy="21.5" r="2.5" fill="#1a1a2e"/>
+  <!-- Eye shine -->
+  <circle cx="26" cy="20.5" r="0.8" fill="#fff"/>
+  <circle cx="40" cy="20.5" r="0.8" fill="#fff"/>
+  <!-- Mouth -->
+  <rect x="22" y="28" width="20" height="3" rx="1.5" fill="#fff" opacity="0.8"/>
+  <rect x="25" y="28" width="3" height="3" fill="#5B9BD5"/>
+  <rect x="31" y="28" width="3" height="3" fill="#5B9BD5"/>
+  <rect x="37" y="28" width="3" height="3" fill="#5B9BD5"/>
+
+  <!-- Neck -->
+  <rect x="28" y="34" width="8" height="4" fill="#4A80B5"/>
+
+  <!-- Body -->
+  <rect x="14" y="38" width="36" height="20" rx="4" ry="4" fill="#5B9BD5"/>
+  <!-- Chest panel -->
+  <rect x="22" y="42" width="20" height="12" rx="2" fill="#4A80B5"/>
+  <!-- Chest buttons -->
+  <circle cx="27" cy="46" r="2.5" fill="#FF4444"/>
+  <circle cx="32" cy="46" r="2.5" fill="#FFD700"/>
+  <circle cx="37" cy="46" r="2.5" fill="#44CC44"/>
+  <!-- Chest light bar -->
+  <rect x="24" y="51" width="16" height="2" rx="1" fill="#7FE0FF" opacity="0.9"/>
+
+  <!-- Left Arm -->
+  <rect x="4" y="38" width="10" height="16" rx="4" fill="#5B9BD5"/>
+  <rect x="5" y="52" width="8" height="5" rx="3" fill="#4A80B5"/>
+
+  <!-- Right Arm -->
+  <rect x="50" y="38" width="10" height="16" rx="4" fill="#5B9BD5"/>
+  <rect x="51" y="52" width="8" height="5" rx="3" fill="#4A80B5"/>
+
+  <!-- Left Leg -->
+  <rect x="18" y="58" width="11" height="6" rx="3" fill="#4A80B5"/>
+
+  <!-- Right Leg -->
+  <rect x="35" y="58" width="11" height="6" rx="3" fill="#4A80B5"/>
 </svg>

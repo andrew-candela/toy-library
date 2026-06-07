@@ -51,7 +51,7 @@ export default function ToysPage({ token }: Props) {
 
   return (
     <main style={{ padding: '40px 32px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', marginBottom: 24 }}>
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <h1 style={{ margin: 0 }}>Toys</h1>
         <button style={primaryBtnStyle} onClick={hook.openCreate}>
           + Add Toy

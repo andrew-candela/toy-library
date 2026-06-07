@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
 import { logout, TOKEN_KEY } from '../api/client'
 import { useTheme } from '../theme/ThemeContext'
 
@@ -10,6 +10,7 @@ interface Props {
 export default function Sidebar({ onLogout }: Props) {
   const [loggingOut, setLoggingOut] = useState(false)
   const navigate = useNavigate()
+  const location = useLocation()
   const { theme } = useTheme()
 
   async function handleLogout() {
@@ -33,6 +34,16 @@ export default function Sidebar({ onLogout }: Props) {
     fontWeight: 500,
   }
 
+  const activeNavLinkStyle: React.CSSProperties = {
+    ...navLinkStyle,
+    background: theme.chipBg,
+    color: theme.chipText,
+  }
+
+  function linkStyle(path: string): React.CSSProperties {
+    return location.pathname.startsWith(path) ? activeNavLinkStyle : navLinkStyle
+  }
+
   return (
     <nav
       style={{
@@ -54,12 +65,8 @@ export default function Sidebar({ onLogout }: Props) {
       >
         Toy Library
       </Link>
-      <Link to="/toys" style={navLinkStyle}>
-        Toys
-      </Link>
-      <Link to="/profile" style={navLinkStyle}>
-        Profile
-      </Link>
+      <Link to="/toys" style={linkStyle('/toys')}>Toys</Link>
+      <Link to="/profile" style={linkStyle('/profile')}>Profile</Link>
       <div style={{ flex: 1 }} />
       <button
         type="button"

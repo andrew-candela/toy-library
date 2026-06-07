@@ -145,22 +145,25 @@ async def delete_toy(
     toy = (await db.execute(select(Toy).where(Toy.id == toy_id))).scalar_one_or_none()
     if not toy:
         raise HTTPException(status_code=404, detail="Toy not found")
-    user_toy_count = (
-        await db.execute(
-            select(func.count()).select_from(UserToy).where(UserToy.toy_id == toy_id)
-        )
-    ).scalar_one()
-    toy_interest_count = (
-        await db.execute(
-            select(func.count())
-            .select_from(ToyInterest)
-            .where(ToyInterest.toy_id == toy_id)
-        )
-    ).scalar_one()
-    if user_toy_count > 0 or toy_interest_count > 0:
+    user_toy = (
+        await db.execute(select(UserToy).where(UserToy.toy_id == toy_id))
+    ).scalar_one_or_none()
+    if not user_toy:
         raise HTTPException(
             status_code=409,
-            detail="This toy cannot be deleted while it is checked out or has pending interests.",
+            detail="This toy cannot be deleted because its ownership record is missing.",
         )
+
+    if user_toy.user_id != current_user.id:
+        raise HTTPException(status_code=403, detail="You do not own this toy")
+
+    if user_toy.pending_user_id is not None:
+        raise HTTPException(
+            status_code=409,
+            detail="Cancel the pending transfer before deleting this toy.",
+        )
+
+    await db.execute(delete(ToyInterest).where(ToyInterest.toy_id == toy_id))
+    await db.delete(user_toy)
     await db.delete(toy)
     await db.commit()
