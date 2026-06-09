@@ -3,6 +3,7 @@ import { useToysPage } from './useToysPage'
 import { TagFilterBar } from './TagFilterBar'
 import { ToyFormModal } from './ToyFormModal'
 import { ToyTable } from './ToyTable'
+import { TransferModal } from './TransferModal'
 import { useTheme } from '../../theme/ThemeContext'
 
 interface Props {
@@ -33,30 +34,23 @@ export default function ToysPage({ token }: Props) {
     border: 'none',
   }
 
-  const inputStyle: React.CSSProperties = {
-    padding: '7px 10px',
-    borderRadius: 6,
-    border: `1px solid ${theme.border}`,
-    fontSize: 14,
-    background: theme.inputBg,
-    color: theme.textPrimary,
-  }
-
-  const labelStyle: React.CSSProperties = {
-    display: 'flex',
-    flexDirection: 'column',
-    gap: 4,
-    fontSize: 14,
-  }
-
   return (
     <main style={{ padding: '40px 32px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <h1 style={{ margin: 0 }}>Toys</h1>
-        <button style={primaryBtnStyle} onClick={hook.openCreate}>
-          + Add Toy
-        </button>
+        {!hook.ownerUsername && (
+          <button style={primaryBtnStyle} onClick={hook.openCreate}>
+            + Add Toy
+          </button>
+        )}
       </div>
+      
+      {hook.ownerUsername && (
+        <div style={{ marginBottom: 16, padding: '12px 14px', borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.surfaceAlt, fontSize: 14, color: theme.textSecondary, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+          <span>Showing toys owned by <strong>{hook.ownerUsername}</strong></span>
+          <button onClick={() => hook.setOwnerUsername('')} style={{ background: 'none', border: 'none', color: theme.link, textDecoration: 'none', fontWeight: 500, fontSize: 13, cursor: 'pointer' }}>Clear filter →</button>
+        </div>
+      )}
 
       {/* 1. Filtering Module */}
       <TagFilterBar
@@ -82,61 +76,16 @@ export default function ToysPage({ token }: Props) {
       )}
 
       {/* 3. Transfer Action Modal Overlay */}
-      {hook.transferToy && (
-        <div
-          style={{
-            position: 'fixed',
-            inset: 0,
-            background: 'rgba(0,0,0,0.32)',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
-            padding: 16,
-            zIndex: 300,
-          }}
-        >
-          <form
-            onSubmit={(e) => {
-              e.preventDefault()
-              hook.handleTransferSubmit(hook.transferUsername.trim())
-            }}
-            style={{
-              width: '100%',
-              maxWidth: 420,
-              background: theme.surfaceAlt,
-              border: `1px solid ${theme.border}`,
-              borderRadius: 10,
-              padding: '18px 20px',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: 10,
-            }}
-          >
-            <h3 style={{ margin: 0 }}>Transfer {hook.transferToy.title}</h3>
-            <label style={labelStyle}>
-              Recipient Username
-              <input
-                value={hook.transferUsername}
-                onChange={(e) => hook.setTransferUsername(e.target.value)}
-                style={inputStyle}
-                placeholder="Enter username"
-                autoFocus
-              />
-            </label>
-            {hook.transferError && (
-              <p style={{ margin: 0, color: theme.error, fontSize: 13 }}>{hook.transferError}</p>
-            )}
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button type="submit" disabled={hook.transferLoading} style={primaryBtnStyle}>
-                {hook.transferLoading ? 'Starting…' : 'Start Transfer'}
-              </button>
-              <button type="button" onClick={hook.closeTransferModal} style={btnStyle}>
-                Close
-              </button>
-            </div>
-          </form>
-        </div>
-      )}
+      <TransferModal
+        open={Boolean(hook.transferToy)}
+        toyTitle={hook.transferToy?.title ?? ''}
+        recipientUsername={hook.transferUsername}
+        setRecipientUsername={hook.setTransferUsername}
+        loading={hook.transferLoading}
+        error={hook.transferError}
+        onClose={hook.closeTransferModal}
+        onSubmit={hook.handleTransferSubmit}
+      />
 
       {hook.error && <p style={{ color: theme.error }}>{hook.error}</p>}
       {hook.loading && <p style={{ color: theme.textMuted }}>Loading…</p>}
@@ -144,6 +93,29 @@ export default function ToysPage({ token }: Props) {
       {/* 4. Core Grid Data Layout */}
       {!hook.loading && (
         <>
+          <div style={{ display: 'flex', justifyContent: 'flex-end', marginBottom: 10 }}>
+            <label
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: 8,
+                fontSize: 14,
+                color: theme.textSecondary,
+              }}
+            >
+              <input
+                type="checkbox"
+                checked={hook.showOnlyMyToys}
+                onChange={(e) => {
+                  hook.setShowOnlyMyToys(e.target.checked)
+                  if (e.target.checked) hook.setOwnerUsername('')
+                  hook.setCurrentPage(1)
+                }}
+              />
+              My toys only
+            </label>
+          </div>
+
           <ToyTable
             toys={hook.toys}
             ownedToyIds={hook.ownedToyIds}

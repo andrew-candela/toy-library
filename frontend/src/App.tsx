@@ -12,6 +12,8 @@ import ToysPage from './components/toy_page/ToysPage'
 import ToyDetailPage from './components/ToyDetailPage'
 import UserProfilePage from './components/UserProfilePage'
 import VerifyEmailPage from './components/VerifyEmailPage'
+import { UsersPage } from './components/UsersPage'
+import { UserDetailPage } from './components/UserDetailPage'
 import { useTheme } from './theme/ThemeContext'
 
 function ProtectedLayout({ children, onLogout }: { children: React.ReactNode; onLogout: () => void }) {
@@ -84,10 +86,18 @@ function App() {
         }
       />
       <Route
+        path="/users"
+        element={
+          <ProtectedLayout onLogout={handleLogout}>
+            <UsersPage token={token!} />
+          </ProtectedLayout>
+        }
+      />
+      <Route
         path="/users/:username"
         element={
           <ProtectedLayout onLogout={handleLogout}>
-            <UserProfilePage token={token!} />
+            <UserDetailPage token={token!} />
           </ProtectedLayout>
         }
       />

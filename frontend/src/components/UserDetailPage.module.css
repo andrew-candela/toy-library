@@ -1,0 +1,125 @@
+.page {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 2rem 1rem;
+}
+
+.backLink {
+  display: inline-block;
+  margin-bottom: 2rem;
+  text-decoration: none;
+  font-weight: 500;
+  transition: color 0.2s ease;
+}
+
+.backLink:hover {
+  text-decoration: underline;
+}
+
+.header {
+  margin-bottom: 2rem;
+  padding-bottom: 1.5rem;
+}
+
+.nameSection {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.nameSection h1 {
+  margin: 0;
+  font-size: 2rem;
+}
+
+.verifiedBadge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  background-color: #d4edda;
+  color: #155724;
+  border: 1px solid #c3e6cb;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.card {
+  border-radius: 8px;
+  padding: 2rem;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.detailItem {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 0;
+}
+
+.detailItem:last-child {
+  border-bottom: none;
+}
+
+.label {
+  font-weight: 600;
+  font-size: 0.875rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.value {
+  font-size: 1rem;
+}
+
+.link {
+  text-decoration: none;
+  font-weight: 500;
+  cursor: pointer;
+  transition: color 0.2s ease;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+.loading {
+  padding: 2rem;
+  text-align: center;
+  font-size: 0.875rem;
+}
+
+.error {
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+  border: 1px solid;
+  border-radius: 8px;
+  font-size: 0.875rem;
+}
+
+@media (max-width: 600px) {
+  .page {
+    padding: 1rem;
+  }
+
+  .card {
+    padding: 1.5rem;
+  }
+
+  .nameSection {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+
+  .nameSection h1 {
+    font-size: 1.5rem;
+  }
+
+  .detailItem {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 0.5rem;
+  }
+}

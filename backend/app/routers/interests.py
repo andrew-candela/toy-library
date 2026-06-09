@@ -1,30 +1,45 @@
 from datetime import datetime, timezone
 
 from fastapi import APIRouter, Depends, HTTPException, status
-from sqlalchemy import select
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.lib.auth import get_current_user
 from app.lib.database import get_db
-from app.models.models import Toy, ToyInterest, User
-from app.schemas.schemas import InterestOut
+from app.models.models import Toy, ToyInterest, User, UserToy
+from app.schemas.schemas import InterestDetailOut, InterestOut, InterestSummaryOut
 
 router = APIRouter()
 
 
-@router.get("", response_model=list[InterestOut])
+@router.get("", response_model=list[InterestSummaryOut])
 async def list_all_interests(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    result = await db.execute(
-        select(ToyInterest).options(selectinload(ToyInterest.user))
+    counts_result = await db.execute(
+        select(ToyInterest.toy_id, func.count(ToyInterest.id))
+        .group_by(ToyInterest.toy_id)
+        .order_by(ToyInterest.toy_id)
     )
-    return result.scalars().all()
+    interested_result = await db.execute(
+        select(ToyInterest.toy_id).where(ToyInterest.user_id == current_user.id)
+    )
+
+    viewer_interested_toy_ids = set(interested_result.scalars().all())
+
+    return [
+        InterestSummaryOut(
+            toy_id=toy_id,
+            interested_count=count,
+            viewer_interested=toy_id in viewer_interested_toy_ids,
+        )
+        for toy_id, count in counts_result.all()
+    ]
 
 
-@router.get("/{toy_id}", response_model=list[InterestOut])
+@router.get("/{toy_id}", response_model=InterestDetailOut)
 async def list_interests(
     toy_id: int,
     db: AsyncSession = Depends(get_db),
@@ -35,12 +50,36 @@ async def list_interests(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Toy not found"
         )
-    result = await db.execute(
-        select(ToyInterest)
-        .options(selectinload(ToyInterest.user))
-        .where(ToyInterest.toy_id == toy_id)
+
+    count_result = await db.execute(
+        select(func.count(ToyInterest.id)).where(ToyInterest.toy_id == toy_id)
     )
-    return result.scalars().all()
+    interested_count = count_result.scalar_one()
+
+    owner_result = await db.execute(
+        select(UserToy.id).where(
+            UserToy.toy_id == toy_id,
+            UserToy.user_id == current_user.id,
+        )
+    )
+    can_view_usernames = owner_result.scalar_one_or_none() is not None
+
+    interested_usernames: list[str] = []
+    if can_view_usernames:
+        usernames_result = await db.execute(
+            select(User.username)
+            .join(ToyInterest, ToyInterest.user_id == User.id)
+            .where(ToyInterest.toy_id == toy_id)
+            .order_by(User.username)
+        )
+        interested_usernames = list(usernames_result.scalars().all())
+
+    return InterestDetailOut(
+        toy_id=toy_id,
+        interested_count=interested_count,
+        can_view_usernames=can_view_usernames,
+        interested_usernames=interested_usernames,
+    )
 
 
 @router.post(

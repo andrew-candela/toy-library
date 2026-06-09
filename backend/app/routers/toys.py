@@ -18,12 +18,26 @@ def _normalize_tag(raw: str) -> str:
 @router.get("/", response_model=PaginatedResponse[ToyOut])
 async def list_toys(
     tags: list[str] = Query(default=[]),
+    owned_by_current_user: bool = Query(False),
+    owner_username: str | None = Query(None),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     query = select(Toy)
+    if owned_by_current_user:
+        query = query.where(
+            Toy.id.in_(select(UserToy.toy_id).where(UserToy.user_id == current_user.id))
+        )
+    if owner_username:
+        query = query.where(
+            Toy.id.in_(
+                select(UserToy.toy_id)
+                .join(User, UserToy.user_id == User.id)
+                .where(User.username == owner_username)
+            )
+        )
     for tag in tags:
         normalized = _normalize_tag(tag)
         query = query.where(

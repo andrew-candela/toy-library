@@ -254,10 +254,18 @@ export async function fetchToys(
   tags: string[] = [],
   page: number = 1,
   pageSize: number = 20,
+  ownedByCurrentUser: boolean = false,
+  ownerUsername?: string,
 ): Promise<PaginatedResponse<Toy>> {
   const params = new URLSearchParams()
   for (const tag of tags) {
     params.append('tags', tag)
+  }
+  if (ownedByCurrentUser) {
+    params.set('owned_by_current_user', 'true')
+  }
+  if (ownerUsername) {
+    params.set('owner_username', ownerUsername)
   }
   params.set('page', String(page))
   params.set('page_size', String(pageSize))
@@ -390,20 +398,33 @@ export interface Interest {
   created_at: string
 }
 
-export async function fetchAllInterests(token: string): Promise<Interest[]> {
+export interface InterestSummary {
+  toy_id: number
+  interested_count: number
+  viewer_interested: boolean
+}
+
+export interface InterestDetail {
+  toy_id: number
+  interested_count: number
+  can_view_usernames: boolean
+  interested_usernames: string[]
+}
+
+export async function fetchAllInterests(token: string): Promise<InterestSummary[]> {
   const response = await authedFetch(token, `${API_URL}/api/interests`)
   if (!response.ok) {
     throw new Error(`Failed to fetch interests: ${response.statusText}`)
   }
-  return response.json() as Promise<Interest[]>
+  return response.json() as Promise<InterestSummary[]>
 }
 
-export async function fetchInterests(token: string, toyId: number): Promise<Interest[]> {
+export async function fetchInterests(token: string, toyId: number): Promise<InterestDetail> {
   const response = await authedFetch(token, `${API_URL}/api/interests/${toyId}`)
   if (!response.ok) {
     throw new Error(`Failed to fetch interests: ${response.statusText}`)
   }
-  return response.json() as Promise<Interest[]>
+  return response.json() as Promise<InterestDetail>
 }
 
 export async function expressInterest(token: string, toyId: number): Promise<Interest> {
@@ -425,4 +446,54 @@ export async function deleteInterest(token: string, toyId: number): Promise<void
     const detail = await response.text()
     throw new Error(detail || 'Failed to remove interest')
   }
+}
+
+export interface UserListItem {
+  id: number
+  username: string
+  email: string
+  neighborhood: string | null
+  toy_count: number
+}
+
+export interface UserDetail {
+  id: number
+  username: string
+  email: string
+  is_email_verified: boolean
+  neighborhood: string | null
+  toy_count: number
+}
+
+export async function fetchUsers(
+  token: string,
+  neighborhood?: string,
+  search?: string,
+  page: number = 1,
+  pageSize: number = 20,
+): Promise<PaginatedResponse<UserListItem>> {
+  const params = new URLSearchParams()
+  if (neighborhood) {
+    params.set('neighborhood', neighborhood)
+  }
+  if (search) {
+    params.set('search', search)
+  }
+  params.set('page', String(page))
+  params.set('page_size', String(pageSize))
+  const qs = params.toString()
+  const response = await authedFetch(token, `${API_URL}/api/users/?${qs}`)
+  if (!response.ok) {
+    throw new Error(`Failed to fetch users: ${response.statusText}`)
+  }
+  return response.json() as Promise<PaginatedResponse<UserListItem>>
+}
+
+export async function fetchUserDetail(token: string, username: string): Promise<UserDetail> {
+  const response = await authedFetch(token, `${API_URL}/api/users/${encodeURIComponent(username)}`)
+  if (!response.ok) {
+    const detail = await response.text()
+    throw new Error(detail || 'User not found')
+  }
+  return response.json() as Promise<UserDetail>
 }

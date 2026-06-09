@@ -7,9 +7,12 @@ and to express interest in toys the'd like to borrow.
 
 ## ToDo
 
+
+
+- age range removal from UI
 - metrics. Can probably use prometheus fastAPI instrumenter
-I should put it in the password recovery email.
 - more info in emails. Add a link to sign in on transfer requests
+I should put it in the password recovery email.
 - users can supply image
 - save images?
 - Create `ToyBox`s. Users can add toys they have into a ToyBox. Other users can request the box.

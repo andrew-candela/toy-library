@@ -1,5 +1,6 @@
 // useToysPage.ts
 import { useState, useEffect, useCallback } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   acceptTransfer,
   cancelTransfer,
@@ -11,7 +12,6 @@ import {
   fetchMyToys,
   fetchPendingIncoming,
   fetchToys,
-  getProfile,
   initiateTransfer,
   updateToy,
   type Toy,
@@ -20,6 +20,16 @@ import {
 } from '../../api/client'
 
 const PAGE_SIZE = 20
+
+function normalizeTag(raw: string): string {
+  return raw.replace(/^#+/, '').trim().toLowerCase()
+}
+
+function parsePage(raw: string | null): number {
+  if (!raw) return 1
+  const parsed = Number(raw)
+  return Number.isInteger(parsed) && parsed > 0 ? parsed : 1
+}
 
 interface FormData {
   title: string
@@ -38,17 +48,36 @@ const emptyForm: FormData = {
 }
 
 export function useToysPage(token: string) {
+  const [searchParams, setSearchParams] = useSearchParams()
+
   // --- 1. Core Core Toy Listing State ---
   const [toys, setToys] = useState<Toy[]>([])
-  const [currentPage, setCurrentPage] = useState(1)
+  const [currentPage, setCurrentPage] = useState<number>(() => parsePage(searchParams.get('page')))
   const [totalPages, setTotalPages] = useState(1)
   const [refreshKey, setRefreshKey] = useState(0)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
   // --- 2. Filter Bar State ---
-  const [filterTags, setFilterTags] = useState<string[]>([])
+  const [filterTags, setFilterTags] = useState<string[]>(() => {
+    const seen = new Set<string>()
+    const initialTags: string[] = []
+    for (const rawTag of searchParams.getAll('tags')) {
+      const normalized = normalizeTag(rawTag)
+      if (normalized && !seen.has(normalized)) {
+        seen.add(normalized)
+        initialTags.push(normalized)
+      }
+    }
+    return initialTags
+  })
   const [filterInput, setFilterInput] = useState('')
+  const [showOnlyMyToys, setShowOnlyMyToys] = useState<boolean>(
+    () => searchParams.get('my') === '1'
+  )
+  const [ownerUsername, setOwnerUsername] = useState<string>(
+    () => searchParams.get('owner') ?? ''
+  )
 
   // --- 3. Toy Form Modal State ---
   const [formOpen, setFormOpen] = useState(false)
@@ -82,7 +111,6 @@ export function useToysPage(token: string) {
 
   // --- 7. Data Sync Effects ---
   const refreshMetadata = useCallback(async () => {
-    const profile = await getProfile(token)
     const [allInterests, myToys, pendingIncoming] = await Promise.all([
       fetchAllInterests(token),
       fetchMyToys(token),
@@ -103,8 +131,8 @@ export function useToysPage(token: string) {
     const myInterestSet = new Set<number>()
     const countMap: Record<number, number> = {}
     for (const interest of allInterests) {
-      countMap[interest.toy_id] = (countMap[interest.toy_id] ?? 0) + 1
-      if (interest.user.id === profile.id && !ownedSet.has(interest.toy_id)) {
+      countMap[interest.toy_id] = interest.interested_count
+      if (interest.viewer_interested && !ownedSet.has(interest.toy_id)) {
         myInterestSet.add(interest.toy_id)
       }
     }
@@ -119,9 +147,26 @@ export function useToysPage(token: string) {
   }, [token])
 
   useEffect(() => {
+    const next = new URLSearchParams()
+    for (const tag of filterTags) {
+      next.append('tags', tag)
+    }
+    if (showOnlyMyToys) {
+      next.set('my', '1')
+    }
+    if (ownerUsername) {
+      next.set('owner', ownerUsername)
+    }
+    if (currentPage > 1) {
+      next.set('page', String(currentPage))
+    }
+    setSearchParams(next, { replace: true })
+  }, [filterTags, showOnlyMyToys, ownerUsername, currentPage, setSearchParams])
+
+  useEffect(() => {
     setLoading(true)
     setError(null)
-    fetchToys(token, filterTags, currentPage, PAGE_SIZE)
+    fetchToys(token, filterTags, currentPage, PAGE_SIZE, showOnlyMyToys, ownerUsername || undefined)
       .then((data) => {
         setToys(data.items)
         setTotalPages(data.total_pages)
@@ -130,7 +175,7 @@ export function useToysPage(token: string) {
         setError(err instanceof Error ? err.message : 'Failed to load toys'),
       )
       .finally(() => setLoading(false))
-  }, [token, filterTags, currentPage, refreshKey])
+  }, [token, filterTags, currentPage, refreshKey, showOnlyMyToys, ownerUsername])
 
   useEffect(() => {
     refreshMetadata().catch((err: unknown) => {
@@ -339,6 +384,10 @@ export function useToysPage(token: string) {
     setFilterTags,
     filterInput,
     setFilterInput,
+    showOnlyMyToys,
+    setShowOnlyMyToys,
+    ownerUsername,
+    setOwnerUsername,
     
     // Ownership metadata context
     ownedToyIds,

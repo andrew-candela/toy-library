@@ -140,6 +140,19 @@ class InterestOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class InterestSummaryOut(BaseModel):
+    toy_id: int
+    interested_count: int
+    viewer_interested: bool
+
+
+class InterestDetailOut(BaseModel):
+    toy_id: int
+    interested_count: int
+    can_view_usernames: bool
+    interested_usernames: list[str] = []
+
+
 class ProfileOut(BaseModel):
     id: int
     username: str
@@ -182,3 +195,24 @@ class AllowListResponse(BaseModel):
 
 class AllowListDeleteResponse(BaseModel):
     email: str
+
+
+class UserListOut(BaseModel):
+    id: int
+    username: str
+    email: str
+    neighborhood: str | None = None
+    toy_count: int
+
+    model_config = {"from_attributes": True}
+
+
+class UserDetailOut(BaseModel):
+    id: int
+    username: str
+    email: str
+    is_email_verified: bool
+    neighborhood: str | None = None
+    toy_count: int
+
+    model_config = {"from_attributes": True}
