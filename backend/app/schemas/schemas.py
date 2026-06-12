@@ -200,7 +200,6 @@ class AllowListDeleteResponse(BaseModel):
 class UserListOut(BaseModel):
     id: int
     username: str
-    email: str
     neighborhood: str | None = None
     toy_count: int
 

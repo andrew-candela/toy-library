@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useParams, Link } from 'react-router-dom'
-import { fetchUserDetail, UserDetail } from '../api/client'
-import { useTheme } from '../theme/ThemeContext'
+import { fetchUserDetail, UserDetail } from '../../api/client'
+import { useTheme } from '../../theme/ThemeContext'
 import styles from './UserDetailPage.module.css'
 
 interface Props {

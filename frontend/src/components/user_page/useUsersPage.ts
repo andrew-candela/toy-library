@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { fetchUsers, UserListItem } from '../api/client'
+import { fetchUsers, UserListItem } from '../../api/client'
 
 interface UseUsersPageReturn {
   users: UserListItem[]

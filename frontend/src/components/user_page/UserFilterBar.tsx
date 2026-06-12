@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { useTheme } from '../theme/ThemeContext'
+import { useTheme } from '../../theme/ThemeContext'
 
 interface UserFilterBarProps {
   neighborhoods: string[]

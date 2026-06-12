@@ -8,7 +8,9 @@ and to express interest in toys the'd like to borrow.
 ## ToDo
 
 
-
+- remove email from the user list page
+- change style of toys link on user list page
+- put email of partner in transfer email
 - age range removal from UI
 - metrics. Can probably use prometheus fastAPI instrumenter
 - more info in emails. Add a link to sign in on transfer requests

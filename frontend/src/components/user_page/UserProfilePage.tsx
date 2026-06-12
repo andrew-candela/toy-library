@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Link, useParams } from 'react-router-dom'
-import { getUserProfile, type ProfileResponse } from '../api/client'
-import { useTheme } from '../theme/ThemeContext'
+import { getUserProfile, type ProfileResponse } from '../../api/client'
+import { useTheme } from '../../theme/ThemeContext'
 
 interface Props {
   token: string

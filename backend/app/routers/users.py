@@ -29,7 +29,6 @@ async def list_users(
     query = select(
         User.id,
         User.username,
-        User.email,
         Address.neighborhood,
         toy_count_subquery.label("toy_count"),
     ).outerjoin(Address, User.id == Address.user_id)
@@ -66,7 +65,6 @@ async def list_users(
             UserListOut(
                 id=row.id,
                 username=row.username,
-                email=row.email,
                 neighborhood=row.neighborhood,
                 toy_count=row.toy_count or 0,
             )

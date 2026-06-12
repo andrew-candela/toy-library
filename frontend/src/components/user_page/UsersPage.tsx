@@ -1,7 +1,7 @@
 import { useUsersPage } from './useUsersPage'
 import { UserFilterBar } from './UserFilterBar'
 import { UserTable } from './UserTable'
-import { useTheme } from '../theme/ThemeContext'
+import { useTheme } from '../../theme/ThemeContext'
 
 interface Props {
   token: string

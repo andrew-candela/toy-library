@@ -81,7 +81,7 @@ async def send_password_reset_email(to_email: str, token: str, username: str) ->
 
 
 async def send_transfer_initiated_email(
-    to_email: str, item_title: str, from_username: str
+    to_email: str, item_title: str, from_username: str, from_email: str
 ) -> None:
     """Notify a user that another user wants to transfer an item to them.
 
@@ -89,11 +89,14 @@ async def send_transfer_initiated_email(
         to_email: The recipient's email address.
         item_title: The title of the item being transferred.
         from_username: The username of the user initiating the transfer.
+        from_email: The email of the user initiating the transfer
     """
 
     html = f"""
     <p><strong>{from_username}</strong> would like to transfer <strong>{item_title}</strong> to you on Toy Library.</p>
-    <p>Log in to your account to accept or ignore this transfer.</p>
+    <p>Reach out to {from_email} to coordinate the toy pickup</p>
+    <p>Once you actually have the toy, don't forget to log in to 
+    <a href="{_FRONTEND_URL}">your account</a> to accept or ignore this transfer.</p>
     """
     await _send_email(to_email, f"You've been offered: {item_title}", html)
 

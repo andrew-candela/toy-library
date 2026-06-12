@@ -104,7 +104,10 @@ async def initiate_transfer(
     user_toy = result.scalar_one()
 
     await send_transfer_initiated_email(
-        target_user.email, toy_title, current_user.username
+        target_user.email,
+        toy_title,
+        current_user.username,
+        current_user.email,
     )
     return user_toy
 

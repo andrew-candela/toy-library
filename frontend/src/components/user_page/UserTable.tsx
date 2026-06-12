@@ -1,6 +1,6 @@
 import { Link } from 'react-router-dom'
-import { UserListItem } from '../api/client'
-import { useTheme } from '../theme/ThemeContext'
+import { UserListItem } from '../../api/client'
+import { useTheme } from '../../theme/ThemeContext'
 
 interface UserTableProps {
   users: UserListItem[]
@@ -109,7 +109,6 @@ export function UserTable({
         <thead>
           <tr>
             <th style={thStyle}>Username</th>
-            <th style={thStyle}>Email</th>
             <th style={thStyle}>Neighborhood</th>
             <th style={{ ...thStyle, textAlign: 'center' }}>Toys</th>
           </tr>
@@ -122,7 +121,6 @@ export function UserTable({
                   {user.username}
                 </Link>
               </td>
-              <td style={tdStyle}>{user.email}</td>
               <td style={tdStyle}>{user.neighborhood || '—'}</td>
               <td style={{ ...tdStyle, textAlign: 'center' }}>
                 <Link to={`/toys?owner=${encodeURIComponent(user.username)}`} style={linkStyle}>

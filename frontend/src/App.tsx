@@ -10,10 +10,9 @@ import ResetPasswordPage from './components/ResetPasswordPage'
 import Sidebar from './components/Sidebar'
 import ToysPage from './components/toy_page/ToysPage'
 import ToyDetailPage from './components/ToyDetailPage'
-import UserProfilePage from './components/UserProfilePage'
 import VerifyEmailPage from './components/VerifyEmailPage'
-import { UsersPage } from './components/UsersPage'
-import { UserDetailPage } from './components/UserDetailPage'
+import { UsersPage } from './components/user_page/UsersPage'
+import { UserDetailPage } from './components/user_page/UserDetailPage'
 import { useTheme } from './theme/ThemeContext'
 
 function ProtectedLayout({ children, onLogout }: { children: React.ReactNode; onLogout: () => void }) {

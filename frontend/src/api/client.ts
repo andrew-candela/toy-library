@@ -451,7 +451,6 @@ export async function deleteInterest(token: string, toyId: number): Promise<void
 export interface UserListItem {
   id: number
   username: string
-  email: string
   neighborhood: string | null
   toy_count: number
 }
