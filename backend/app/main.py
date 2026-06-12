@@ -1,7 +1,17 @@
+import os
 from contextlib import asynccontextmanager
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
+from prometheus_client import (
+    CONTENT_TYPE_LATEST,
+    REGISTRY,
+    CollectorRegistry,
+    generate_latest,
+    multiprocess,
+)
+
+from prometheus_fastapi_instrumentator import Instrumentator
 from strawberry.fastapi import GraphQLRouter
 
 from app.graphql.context import get_graphql_context
@@ -14,6 +24,16 @@ from app.middleware.access_log_middleware import AccessLogMiddleware
 configure_structlog()
 
 
+def _make_metrics_registry() -> CollectorRegistry:
+    """Return an aggregating registry in multi-process mode, or the default
+    registry when running as a single process (e.g. local dev)."""
+    if "PROMETHEUS_MULTIPROC_DIR" in os.environ:
+        registry = CollectorRegistry()
+        multiprocess.MultiProcessCollector(registry)
+        return registry
+    return REGISTRY
+
+
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     await connect_redis()
@@ -22,6 +42,8 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Toy Library API", lifespan=lifespan)
+
+Instrumentator().instrument(app)
 
 app.add_middleware(
     CORSMiddleware,
@@ -46,6 +68,14 @@ app.include_router(user_toys.router, prefix="/api/user-toys", tags=["user-toys"]
 app.include_router(users.router, prefix="/api/users", tags=["users"])
 graphql_app = GraphQLRouter(schema, context_getter=get_graphql_context)
 app.include_router(graphql_app, prefix="/graphql")
+
+
+@app.get("/metrics", include_in_schema=True)
+def metrics() -> Response:
+    return Response(
+        content=generate_latest(_make_metrics_registry()),
+        media_type=CONTENT_TYPE_LATEST,
+    )
 
 
 @app.get("/health")

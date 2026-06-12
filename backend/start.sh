@@ -1,6 +1,12 @@
 #!/bin/sh
 set -e
 
+# Prometheus multiprocess mode: one shared dir for all worker .db files.
+# The dir is created fresh on each boot to flush stale files from dead workers.
+export PROMETHEUS_MULTIPROC_DIR="${PROMETHEUS_MULTIPROC_DIR:-/tmp/prometheus_multiproc}"
+mkdir -p "$PROMETHEUS_MULTIPROC_DIR"
+find "$PROMETHEUS_MULTIPROC_DIR" -name "*.db" -delete
+
 alembic upgrade head
 exec \
     uvicorn \

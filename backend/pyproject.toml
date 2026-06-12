@@ -19,6 +19,7 @@ dependencies = [
     "psycopg2-binary>=2.9.12",
     "strawberry-graphql[fastapi]>=0.315.4",
     "resend[async]>=2.30.1",
+    "prometheus-fastapi-instrumentator>=8.0.0",
 ]
 
 [build-system]
