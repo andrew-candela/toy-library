@@ -213,3 +213,32 @@ class UserDetailOut(BaseModel):
     toy_count: int
 
     model_config = {"from_attributes": True}
+
+
+class UserContactEmailRequest(BaseModel):
+    to_username: str
+    message: str
+
+    @field_validator("to_username")
+    @classmethod
+    def validate_to_username(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("Recipient username is required")
+        return stripped
+
+    @field_validator("message")
+    @classmethod
+    def validate_message(cls, value: str) -> str:
+        stripped = value.strip()
+        if not stripped:
+            raise ValueError("Message is required")
+        if len(stripped) < 5:
+            raise ValueError("Message must be at least 5 characters")
+        if len(stripped) > 2000:
+            raise ValueError("Message must be 2000 characters or fewer")
+        return stripped
+
+
+class UserContactEmailResponse(BaseModel):
+    message: str

@@ -21,6 +21,11 @@
   padding-bottom: 1.5rem;
 }
 
+.successMessage {
+  margin: 0.75rem 0 0;
+  font-size: 0.9rem;
+}
+
 .nameSection {
   display: flex;
   align-items: center;
@@ -98,6 +103,61 @@
   font-size: 0.875rem;
 }
 
+.modalOverlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.36);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  z-index: 400;
+}
+
+.modalCard {
+  width: 100%;
+  max-width: 520px;
+  border-radius: 10px;
+  padding: 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.helperText {
+  margin: 0;
+  font-size: 0.9rem;
+  line-height: 1.5;
+}
+
+.messageLabel {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  font-size: 0.9rem;
+}
+
+.messageInput {
+  width: 100%;
+  box-sizing: border-box;
+  min-height: 140px;
+  resize: vertical;
+  border: 1px solid;
+  border-radius: 8px;
+  padding: 0.65rem;
+  font: inherit;
+}
+
+.modalError {
+  margin: 0;
+  font-size: 0.85rem;
+}
+
+.modalActions {
+  display: flex;
+  gap: 0.5rem;
+}
+
 @media (max-width: 600px) {
   .page {
     padding: 1rem;
@@ -121,5 +181,13 @@
     flex-direction: column;
     align-items: flex-start;
     gap: 0.5rem;
+  }
+
+  .modalCard {
+    max-width: none;
+  }
+
+  .modalActions {
+    flex-direction: column;
   }
 }

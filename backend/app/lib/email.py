@@ -1,4 +1,5 @@
 import os
+from html import escape
 
 import resend
 import structlog
@@ -134,3 +135,35 @@ async def send_transfer_accepted_email(
     <p>The item now belongs to them.</p>
     """
     await _send_email(to_email, f"Transfer accepted: {item_title}", html)
+
+
+async def send_user_contact_email(
+    to_email: str,
+    to_username: str,
+    from_username: str,
+    message: str,
+) -> None:
+    """Send a user-authored contact email to another user.
+
+    The sender username is included for context, but contact info is only
+    shared if the sender explicitly writes it in the message.
+    """
+
+    safe_to_username = escape(to_username)
+    safe_from_username = escape(from_username)
+    safe_message = escape(message).replace("\n", "<br />")
+
+    html = f"""
+    <p>Hello {safe_to_username},</p>
+    <p><strong>{safe_from_username}</strong> sent you a message through Toy Library:</p>
+    <blockquote style=\"margin: 12px 0; padding: 10px 14px; border-left: 3px solid #ccc;\">{safe_message}</blockquote>
+    <p>Want to continue the conversation? Feel free to connect outside Toy Library.</p>
+    <p>For privacy, Toy Library does not explicitly share either person's contact information unless it is included directly in the message.</p>
+    <p><a href=\"{_FRONTEND_URL}\">Open Toy Library</a></p>
+    """
+
+    await _send_email(
+        to_email,
+        f"New Toy Library message from {safe_from_username}",
+        html,
+    )

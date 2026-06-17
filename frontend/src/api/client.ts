@@ -458,10 +458,12 @@ export interface UserListItem {
 export interface UserDetail {
   id: number
   username: string
-  email: string
-  is_email_verified: boolean
   neighborhood: string | null
   toy_count: number
+}
+
+export interface UserContactEmailResponse {
+  message: string
 }
 
 export async function fetchUsers(
@@ -495,4 +497,23 @@ export async function fetchUserDetail(token: string, username: string): Promise<
     throw new Error(detail || 'User not found')
   }
   return response.json() as Promise<UserDetail>
+}
+
+export async function sendUserContactEmail(
+  token: string,
+  toUsername: string,
+  message: string,
+): Promise<UserContactEmailResponse> {
+  const response = await authedFetch(token, `${API_URL}/api/user-messages/send`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ to_username: toUsername, message }),
+  })
+
+  if (!response.ok) {
+    const detail = await response.text()
+    throw new Error(detail || 'Failed to send email')
+  }
+
+  return response.json() as Promise<UserContactEmailResponse>
 }

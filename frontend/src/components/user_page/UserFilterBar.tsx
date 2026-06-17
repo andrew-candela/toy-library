@@ -85,12 +85,12 @@ export function UserFilterBar({
     <div style={filterBarStyle}>
       <div style={filterSectionStyle}>
         <label htmlFor="search" style={labelStyle}>
-          Search by username or email
+          Search by username
         </label>
         <input
           id="search"
           type="text"
-          placeholder="Username or email..."
+          placeholder="Username..."
           value={localSearch}
           onChange={handleSearchInputChange}
           style={controlStyle}
