@@ -209,8 +209,6 @@ class UserListOut(BaseModel):
 class UserDetailOut(BaseModel):
     id: int
     username: str
-    email: str
-    is_email_verified: bool
     neighborhood: str | None = None
     toy_count: int
 

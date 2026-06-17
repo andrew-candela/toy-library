@@ -33,15 +33,16 @@ async def list_users(
         toy_count_subquery.label("toy_count"),
     ).outerjoin(Address, User.id == Address.user_id)
 
+    # Filter: only show verified users, except the current user
+    query = query.where((User.is_email_verified) | (User.id == current_user.id))
+
     # Apply filters
     if neighborhood:
         query = query.where(Address.neighborhood == neighborhood)
 
     if search:
         search_pattern = f"%{search}%"
-        query = query.where(
-            (User.username.ilike(search_pattern)) | (User.email.ilike(search_pattern))
-        )
+        query = query.where(User.username.ilike(search_pattern))
 
     # Count total results
     total = (
@@ -110,8 +111,6 @@ async def get_user_detail(
     return UserDetailOut(
         id=user.id,
         username=user.username,
-        email=user.email,
-        is_email_verified=user.is_email_verified,
         neighborhood=address.neighborhood if address else None,
         toy_count=toy_count or 0,
     )
