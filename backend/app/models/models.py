@@ -56,7 +56,7 @@ class Toy(Base):
     title: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     age_range: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    image_url: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    image_path: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     condition: Mapped[Optional[ToyCondition]] = mapped_column(
         Enum(ToyCondition), nullable=True
     )

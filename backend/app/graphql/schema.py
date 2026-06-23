@@ -39,7 +39,7 @@ class ToyType:
     title: str
     description: Optional[str]
     age_range: Optional[str]
-    image_url: Optional[str]
+    image_path: Optional[str]
     tags: list[ToyTagType]
 
     @classmethod
@@ -49,7 +49,7 @@ class ToyType:
             title=model.title,
             description=model.description,
             age_range=model.age_range,
-            image_url=model.image_url,
+            image_path=model.image_path,
             tags=[ToyTagType.from_model(t) for t in model.tags],
         )
 

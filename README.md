@@ -4,11 +4,19 @@
 A way for folks to advertise toys they'd like to give away,
 and to express interest in toys the'd like to borrow.
 
+## Image Loading In Dev
+
+Toy images are stored and served by the backend at `/images/<filename>`.
+
+- Docker dev: frontend sets `VITE_IMAGE_PROXY_TARGET=http://backend:8000` (via `compose.yml`) so Vite can proxy `/images/*` to the backend container.
+- Local non-Docker frontend dev: proxy defaults to `http://localhost:8000`.
+
+If you see `ECONNREFUSED` for `/images/...` in Vite logs, verify the backend is running and that `VITE_IMAGE_PROXY_TARGET` points at the reachable backend host.
+
 
 ## ToDo
 
 - username filter doesn't clear
-- allow image uploads. Store images on local disk and serve with nginx
 - implement semantic search.
     - index images when they are added
 - change style of toys link on user list page

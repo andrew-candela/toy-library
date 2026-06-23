@@ -1,4 +1,5 @@
 import { useTheme } from '../theme/ThemeContext'
+import { useIsCompactLayout } from '../theme/useIsCompactLayout'
 
 const quotes = [
   {
@@ -17,8 +18,9 @@ const quotes = [
 
 export default function HomePage() {
   const { theme } = useTheme()
+  const isCompactLayout = useIsCompactLayout()
   return (
-    <main style={{ padding: '40px 32px' }}>
+    <main style={{ padding: isCompactLayout ? '24px 16px' : '40px 32px' }}>
       <h1>Toy Library Home</h1>
       <section style={{ marginTop: '32px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
         {quotes.map((q, i) => (

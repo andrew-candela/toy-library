@@ -29,7 +29,7 @@ export interface Toy {
   title: string
   description?: string
   age_range?: string
-  image_url?: string
+  image_path?: string
   tags: string[]
   condition?: ToyCondition
   date_added?: string
@@ -39,7 +39,7 @@ export interface ToyCreate {
   title: string
   description?: string
   age_range?: string
-  image_url?: string
+  image_path?: string
   tags: string[]
   condition?: ToyCondition
   date_added?: string
@@ -49,7 +49,7 @@ export interface ToyUpdate {
   title?: string
   description?: string
   age_range?: string
-  image_url?: string
+  image_path?: string
   tags?: string[]
   condition?: ToyCondition
   date_added?: string
@@ -285,11 +285,31 @@ export async function fetchTagSuggestions(token: string, prefix: string): Promis
   return response.json() as Promise<string[]>
 }
 
-export async function createToy(token: string, data: ToyCreate): Promise<Toy> {
+export function appendToyFormFields(formData: FormData, data: ToyCreate | ToyUpdate): void {
+  formData.append('title', data.title ?? '')
+  if (data.description !== undefined) {
+    formData.append('description', data.description)
+  }
+  if (data.age_range !== undefined) {
+    formData.append('age_range', data.age_range)
+  }
+  if (data.condition !== undefined) {
+    formData.append('condition', data.condition)
+  }
+  if (data.date_added !== undefined) {
+    formData.append('date_added', data.date_added)
+  }
+  if (data.tags) {
+    for (const tag of data.tags) {
+      formData.append('tags', tag)
+    }
+  }
+}
+
+export async function createToy(token: string, data: FormData): Promise<Toy> {
   const response = await authedFetch(token, `${API_URL}/api/toys`, {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
+    body: data,
   })
   if (!response.ok) {
     const detail = await response.text()
@@ -298,11 +318,10 @@ export async function createToy(token: string, data: ToyCreate): Promise<Toy> {
   return response.json() as Promise<Toy>
 }
 
-export async function updateToy(token: string, id: number, data: ToyUpdate): Promise<Toy> {
+export async function updateToy(token: string, id: number, data: FormData): Promise<Toy> {
   const response = await authedFetch(token, `${API_URL}/api/toys/${id}`, {
     method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(data),
+    body: data,
   })
   if (!response.ok) {
     const detail = await response.text()

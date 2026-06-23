@@ -1,5 +1,6 @@
 import React, { useState } from 'react'
 import { useTheme } from '../../theme/ThemeContext'
+import { useIsCompactLayout } from '../../theme/useIsCompactLayout'
 
 interface UserFilterBarProps {
   neighborhoods: string[]
@@ -18,6 +19,7 @@ export function UserFilterBar({
 }: UserFilterBarProps) {
   const { theme } = useTheme()
   const [localSearch, setLocalSearch] = useState(searchInput)
+  const isCompactLayout = useIsCompactLayout()
 
   const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
@@ -50,7 +52,7 @@ export function UserFilterBar({
     flexDirection: 'column',
     gap: 8,
     flex: 1,
-    minWidth: 220,
+    minWidth: isCompactLayout ? 0 : 220,
   }
 
   const labelStyle: React.CSSProperties = {
@@ -117,7 +119,7 @@ export function UserFilterBar({
       </div>
 
       {hasActiveFilters && (
-        <button onClick={handleClearFilters} style={clearButtonStyle}>
+        <button onClick={handleClearFilters} style={{ ...clearButtonStyle, width: isCompactLayout ? '100%' : undefined }}>
           Clear filters
         </button>
       )}

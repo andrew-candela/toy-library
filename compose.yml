@@ -20,8 +20,12 @@ services:
       - "8000:8000"
     volumes:
       - ./backend/app:/app/app
+      - toy-images-data:/data/images
     env_file:
       - ./backend/.env
+    environment:
+      TOY_IMAGE_STORAGE_DIR: /data/images
+      TOY_IMAGE_PUBLIC_PATH: /images
     depends_on:
       postgres:
         condition: service_healthy
@@ -52,9 +56,12 @@ services:
       context: ./frontend
     env_file:
       - ./frontend/.env
+    environment:
+      VITE_IMAGE_PROXY_TARGET: http://backend:8000
     depends_on:
       - backend
 
 volumes:
   postgres-data:
   redis-data:
+  toy-images-data:

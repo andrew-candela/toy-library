@@ -10,6 +10,7 @@ import {
   type Toy,
 } from '../api/client'
 import { useTheme } from '../theme/ThemeContext'
+import { useIsCompactLayout } from '../theme/useIsCompactLayout'
 import { TransferModal } from './toy_page/TransferModal'
 
 interface Props {
@@ -30,6 +31,7 @@ export default function ToyDetailPage({ token }: Props) {
   const [pendingTransferError, setPendingTransferError] = useState<string | null>(null)
   const [cancelTransferLoading, setCancelTransferLoading] = useState(false)
   const { theme } = useTheme()
+  const isCompactLayout = useIsCompactLayout()
 
   useEffect(() => {
     if (!id) return
@@ -123,7 +125,7 @@ export default function ToyDetailPage({ token }: Props) {
   }
 
   return (
-    <main style={{ padding: '40px 32px', maxWidth: 720 }}>
+    <main style={{ padding: isCompactLayout ? '24px 16px' : '40px 32px', maxWidth: 720 }}>
       <Link
         to="/toys"
         style={{ fontSize: 14, color: theme.link, textDecoration: 'none', display: 'inline-block', marginBottom: 24 }}
@@ -136,12 +138,12 @@ export default function ToyDetailPage({ token }: Props) {
 
       {toy && (
         <>
-          <div style={{ display: 'flex', gap: 32, alignItems: 'flex-start', marginBottom: 32 }}>
-            {toy.image_url && (
+          <div style={{ display: 'flex', flexDirection: isCompactLayout ? 'column' : 'row', gap: isCompactLayout ? 20 : 32, alignItems: 'flex-start', marginBottom: 32 }}>
+            {toy.image_path && (
               <img
-                src={toy.image_url}
+                src={toy.image_path}
                 alt={toy.title}
-                style={{ width: 180, height: 180, objectFit: 'cover', borderRadius: 10, border: `1px solid ${theme.border}`, flexShrink: 0 }}
+                style={{ width: isCompactLayout ? '100%' : 180, maxWidth: isCompactLayout ? 320 : undefined, height: isCompactLayout ? 'auto' : 180, aspectRatio: isCompactLayout ? '1 / 1' : undefined, objectFit: 'cover', borderRadius: 10, border: `1px solid ${theme.border}`, flexShrink: 0 }}
               />
             )}
             <div style={{ flex: 1 }}>
@@ -184,8 +186,9 @@ export default function ToyDetailPage({ token }: Props) {
                         border: `1px solid ${theme.border}`,
                         background: theme.surfaceAlt,
                         display: 'flex',
+                        flexDirection: isCompactLayout ? 'column' : 'row',
                         flexWrap: 'wrap',
-                        alignItems: 'center',
+                        alignItems: isCompactLayout ? 'flex-start' : 'center',
                         gap: 8,
                       }}
                     >
@@ -204,6 +207,7 @@ export default function ToyDetailPage({ token }: Props) {
                           color: theme.textPrimary,
                           cursor: 'pointer',
                           fontSize: 13,
+                          width: isCompactLayout ? '100%' : undefined,
                         }}
                       >
                         {cancelTransferLoading ? 'Canceling…' : 'Cancel Transfer'}
@@ -246,6 +250,8 @@ export default function ToyDetailPage({ token }: Props) {
                                 border: 'none',
                                 cursor: pendingTransferTo ? 'not-allowed' : 'pointer',
                                 opacity: pendingTransferTo ? 0.7 : 1,
+                                width: isCompactLayout ? '100%' : undefined,
+                                textAlign: isCompactLayout ? 'left' : 'center',
                               }}
                               title={`Start a transfer to ${username}`}
                               disabled={Boolean(pendingTransferTo)}

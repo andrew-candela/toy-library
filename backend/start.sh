@@ -7,6 +7,9 @@ export PROMETHEUS_MULTIPROC_DIR="${PROMETHEUS_MULTIPROC_DIR:-/tmp/prometheus_mul
 mkdir -p "$PROMETHEUS_MULTIPROC_DIR"
 find "$PROMETHEUS_MULTIPROC_DIR" -name "*.db" -delete
 
+export TOY_IMAGE_STORAGE_DIR="${TOY_IMAGE_STORAGE_DIR:-/data/images}"
+mkdir -p "$TOY_IMAGE_STORAGE_DIR"
+
 alembic upgrade head
 exec \
     uvicorn \

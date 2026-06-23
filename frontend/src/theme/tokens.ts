@@ -34,6 +34,12 @@ export type Tokens = {
   imagePlaceholderBg: string;
 }
 
+export const MOBILE_LAYOUT_BREAKPOINT = 768
+
+export const MOBILE_RAIL_WIDTH = 72
+
+export const DESKTOP_SIDEBAR_WIDTH = 200
+
 export const lightTokens: Tokens = {
   bg: '#ffffff',
   surface: '#f4f4f5',

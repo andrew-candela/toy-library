@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { fetchTagSuggestions } from '../../api/client'
 import { useTheme } from '../../theme/ThemeContext'
+import { useIsCompactLayout } from '../../theme/useIsCompactLayout'
 
 interface TagFilterBarProps {
   token: string
@@ -21,6 +22,7 @@ export function TagFilterBar({
   setCurrentPage,
 }: TagFilterBarProps) {
   const { theme } = useTheme()
+  const isCompactLayout = useIsCompactLayout()
 
   // 1. Local, isolated state for filter bar autocomplete
   const [filterInput, setFilterInput] = useState('')
@@ -134,8 +136,9 @@ export function TagFilterBar({
       style={{
         marginBottom: 16,
         display: 'flex',
+        flexDirection: isCompactLayout ? 'column' : 'row',
         flexWrap: 'wrap',
-        alignItems: 'center',
+        alignItems: isCompactLayout ? 'stretch' : 'center',
         gap: 8,
       }}
     >
@@ -156,7 +159,7 @@ export function TagFilterBar({
         </span>
       ))}
 
-      <div style={{ position: 'relative', flex: 1, minWidth: 200 }}>
+      <div style={{ position: 'relative', flex: 1, minWidth: isCompactLayout ? 0 : 200, width: isCompactLayout ? '100%' : undefined }}>
         <input
           value={filterInput}
           onChange={(e) => handleFilterInputChange(e.target.value)}

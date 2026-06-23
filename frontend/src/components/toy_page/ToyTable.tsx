@@ -2,6 +2,7 @@
 import { Link } from 'react-router-dom'
 import { type Toy } from '../../api/client'
 import { useTheme } from '../../theme/ThemeContext'
+import { useIsCompactLayout } from '../../theme/useIsCompactLayout'
 
 interface ToyTableProps {
   toys: Toy[]
@@ -39,6 +40,7 @@ export function ToyTable({
   onTagClick,
 }: ToyTableProps) {
   const { theme } = useTheme()
+  const isCompactLayout = useIsCompactLayout()
 
   // --- Scoped CSS Styles ---
   const btnStyle: React.CSSProperties = {
@@ -85,6 +87,189 @@ export function ToyTable({
     fontWeight: 500,
   }
 
+  const cardStyle: React.CSSProperties = {
+    border: `1px solid ${theme.border}`,
+    borderRadius: 10,
+    background: theme.surface,
+    padding: 14,
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 12,
+  }
+
+  const labelStyle: React.CSSProperties = {
+    fontSize: 12,
+    fontWeight: 600,
+    color: theme.textMuted,
+    textTransform: 'uppercase',
+    letterSpacing: '0.05em',
+  }
+
+  if (isCompactLayout) {
+    return (
+      <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+        {toys.length === 0 && (
+          <div style={{ ...cardStyle, color: theme.textMuted }}>No toys yet.</div>
+        )}
+
+        {toys.map((toy) => {
+          const isOwner = ownedToyIds.has(toy.id)
+          const isPendingRecipient = pendingIncomingToyIds.has(toy.id)
+          const hasExpressedInterest = myInterestedToyIds.has(toy.id)
+          const interestCount = interestCountsByToy[toy.id] ?? 0
+          const pendingTransferTo = pendingTransferToByToy[toy.id]
+          const interestKey = `interest-${toy.id}`
+          const transferKey = `transfer-${toy.id}`
+
+          return (
+            <article key={toy.id} style={cardStyle}>
+              <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
+                {toy.image_path ? (
+                  <img
+                    src={toy.image_path}
+                    alt={toy.title}
+                    onError={(e) => {
+                      const img = e.currentTarget as HTMLImageElement
+                      img.style.display = 'none'
+                      const placeholder = img.nextElementSibling as HTMLElement | null
+                      if (placeholder) placeholder.style.display = 'block'
+                    }}
+                    style={{
+                      width: 72,
+                      height: 72,
+                      objectFit: 'cover',
+                      borderRadius: 8,
+                      border: `1px solid ${theme.border}`,
+                      display: 'block',
+                      flexShrink: 0,
+                    }}
+                  />
+                ) : null}
+                <div
+                  style={{
+                    display: toy.image_path ? 'none' : 'block',
+                    width: 72,
+                    height: 72,
+                    borderRadius: 8,
+                    background: theme.imagePlaceholderBg,
+                    border: `1px solid ${theme.border}`,
+                    flexShrink: 0,
+                  }}
+                />
+                <div style={{ minWidth: 0, flex: 1 }}>
+                  <Link
+                    to={`/toys/${toy.id}`}
+                    style={{ color: theme.link, textDecoration: 'none', fontWeight: 600, fontSize: 16 }}
+                  >
+                    {toy.title}
+                  </Link>
+                  <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
+                    <div>
+                      <div style={labelStyle}>Age Range</div>
+                      <div style={{ color: theme.textPrimary, fontSize: 14 }}>{toy.age_range ?? '—'}</div>
+                    </div>
+                    <div>
+                      <div style={labelStyle}>Tags</div>
+                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
+                        {toy.tags.length === 0 ? (
+                          <span style={{ color: theme.textDisabled }}>—</span>
+                        ) : (
+                          toy.tags.map((tag) => (
+                            <span
+                              key={tag}
+                              style={{ ...chipStyle, cursor: 'pointer' }}
+                              title={`Filter by #${tag}`}
+                              onClick={() => onTagClick(tag)}
+                            >
+                              #{tag}
+                            </span>
+                          ))
+                        )}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {!isOwner &&
+                  (hasExpressedInterest ? (
+                    <button
+                      style={btnStyle}
+                      onClick={() => onCancelInterest(toy.id)}
+                      disabled={isActionLoading(interestKey)}
+                    >
+                      {isActionLoading(interestKey) ? 'Saving…' : 'Cancel Interest'}
+                    </button>
+                  ) : (
+                    <button
+                      style={btnStyle}
+                      onClick={() => onExpressInterest(toy.id)}
+                      disabled={isActionLoading(interestKey)}
+                    >
+                      {isActionLoading(interestKey) ? 'Saving…' : 'Interested'}
+                    </button>
+                  ))}
+
+                <span
+                  style={{
+                    ...chipStyle,
+                    background: theme.surface,
+                    border: `1px solid ${theme.border}`,
+                    color: theme.textSecondary,
+                  }}
+                >
+                  {interestCount} interested
+                </span>
+
+                {isPendingRecipient && (
+                  <button
+                    style={primaryBtnStyle}
+                    onClick={() => onAcceptTransfer(toy.id)}
+                    disabled={isActionLoading(transferKey)}
+                  >
+                    {isActionLoading(transferKey) ? 'Saving…' : 'Accept Transfer'}
+                  </button>
+                )}
+
+                {isOwner && (
+                  <>
+                    <button style={btnStyle} onClick={() => onOpenEdit(toy)}>
+                      Edit
+                    </button>
+                    <button
+                      style={{ ...btnStyle, color: theme.danger }}
+                      onClick={() => onDelete(toy)}
+                    >
+                      Delete
+                    </button>
+
+                    {pendingTransferTo ? (
+                      <button
+                        style={btnStyle}
+                        onClick={() => onCancelTransfer(toy.id)}
+                        disabled={isActionLoading(transferKey)}
+                        title={`Pending transfer to ${pendingTransferTo}`}
+                      >
+                        {isActionLoading(transferKey)
+                          ? 'Saving…'
+                          : `Cancel Transfer to ${pendingTransferTo}`}
+                      </button>
+                    ) : (
+                      <button style={btnStyle} onClick={() => onOpenTransferModal(toy)}>
+                        Transfer
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
+            </article>
+          )
+        })}
+      </div>
+    )
+  }
+
   return (
     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
       <thead>
@@ -118,9 +303,9 @@ export function ToyTable({
             <tr key={toy.id}>
               {/* Image Column */}
               <td style={tdStyle}>
-                {toy.image_url ? (
+                {toy.image_path ? (
                   <img
-                    src={toy.image_url}
+                    src={toy.image_path}
                     alt={toy.title}
                     onError={(e) => {
                       const img = e.currentTarget as HTMLImageElement
@@ -140,7 +325,7 @@ export function ToyTable({
                 ) : null}
                 <div
                   style={{
-                    display: toy.image_url ? 'none' : 'block',
+                    display: toy.image_path ? 'none' : 'block',
                     width: 48,
                     height: 48,
                     borderRadius: 6,

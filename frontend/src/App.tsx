@@ -13,17 +13,33 @@ import ToyDetailPage from './components/ToyDetailPage'
 import VerifyEmailPage from './components/VerifyEmailPage'
 import { UsersPage } from './components/user_page/UsersPage'
 import { UserDetailPage } from './components/user_page/UserDetailPage'
+import { DESKTOP_SIDEBAR_WIDTH, MOBILE_RAIL_WIDTH } from './theme/tokens'
+import { useIsCompactLayout } from './theme/useIsCompactLayout'
 import { useTheme } from './theme/ThemeContext'
 
 function ProtectedLayout({ children, onLogout }: { children: React.ReactNode; onLogout: () => void }) {
   const token = sessionStorage.getItem(TOKEN_KEY)
+  const isCompactSidebar = useIsCompactLayout()
   if (!token) {
     return <Navigate to="/login" replace />
   }
+
+  const sidebarWidth = isCompactSidebar ? MOBILE_RAIL_WIDTH : DESKTOP_SIDEBAR_WIDTH
+
   return (
-    <div style={{ display: 'flex', minHeight: '100vh' }}>
-      <Sidebar onLogout={onLogout} />
-      <div style={{ flex: 1, overflow: 'auto' }}>{children}</div>
+    <div style={{ display: 'flex', minHeight: '100vh', overflowX: 'clip' }}>
+      <Sidebar onLogout={onLogout} isCompact={isCompactSidebar} />
+      <div
+        style={{
+          flex: 1,
+          minWidth: 0,
+          width: `calc(100vw - ${sidebarWidth}px)`,
+          overflowX: 'hidden',
+          overflowY: 'auto',
+        }}
+      >
+        {children}
+      </div>
     </div>
   )
 }

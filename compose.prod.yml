@@ -5,3 +5,5 @@ services:
       target: prod
     ports: 
       - "81:80"
+    volumes:
+      - toy-images-data:/data/images:ro

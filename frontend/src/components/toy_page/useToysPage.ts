@@ -3,6 +3,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import {
   acceptTransfer,
+  appendToyFormFields,
   cancelTransfer,
   createToy,
   deleteToy,
@@ -15,8 +16,6 @@ import {
   initiateTransfer,
   updateToy,
   type Toy,
-  type ToyCreate,
-  type ToyUpdate,
 } from '../../api/client'
 
 const PAGE_SIZE = 20
@@ -31,19 +30,23 @@ function parsePage(raw: string | null): number {
   return Number.isInteger(parsed) && parsed > 0 ? parsed : 1
 }
 
-interface FormData {
+export interface ToyFormData {
   title: string
   description: string
   age_range: string
-  image_url: string
+  image_path: string
+  image_file: File | null
+  image_preview_url: string | null
   tags: string[]
 }
 
-const emptyForm: FormData = {
+const emptyForm: ToyFormData = {
   title: '',
   description: '',
   age_range: '',
-  image_url: '',
+  image_path: '',
+  image_file: null,
+  image_preview_url: null,
   tags: [],
 }
 
@@ -82,7 +85,7 @@ export function useToysPage(token: string) {
   // --- 3. Toy Form Modal State ---
   const [formOpen, setFormOpen] = useState(false)
   const [editToy, setEditToy] = useState<Toy | null>(null)
-  const [formData, setFormData] = useState<FormData>(emptyForm)
+  const [formData, setFormData] = useState<ToyFormData>(emptyForm)
   const [tagInput, setTagInput] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
   const [formLoading, setFormLoading] = useState(false)
@@ -107,6 +110,35 @@ export function useToysPage(token: string) {
   }
   function isActionLoading(key: string) {
     return Boolean(actionLoadingByKey[key])
+  }
+
+  function setFormDataWithPreview(nextFormData: ToyFormData) {
+    setFormData((prev) => {
+      if (prev.image_preview_url?.startsWith('blob:')) {
+        URL.revokeObjectURL(prev.image_preview_url)
+      }
+      return nextFormData
+    })
+  }
+
+  function handleImageFileChange(file: File | null) {
+    setFormData((prev) => {
+      if (prev.image_preview_url?.startsWith('blob:')) {
+        URL.revokeObjectURL(prev.image_preview_url)
+      }
+      if (!file) {
+        return {
+          ...prev,
+          image_file: null,
+          image_preview_url: null,
+        }
+      }
+      return {
+        ...prev,
+        image_file: file,
+        image_preview_url: URL.createObjectURL(file),
+      }
+    })
   }
 
   // --- 7. Data Sync Effects ---
@@ -186,7 +218,7 @@ export function useToysPage(token: string) {
   // --- 8. Form Management Actions ---
   function openCreate() {
     setEditToy(null)
-    setFormData(emptyForm)
+    setFormDataWithPreview(emptyForm)
     setTagInput('')
     setFormError(null)
     setFormOpen(true)
@@ -194,11 +226,13 @@ export function useToysPage(token: string) {
 
   function openEdit(toy: Toy) {
     setEditToy(toy)
-    setFormData({
+    setFormDataWithPreview({
       title: toy.title,
       description: toy.description ?? '',
       age_range: toy.age_range ?? '',
-      image_url: toy.image_url ?? '',
+      image_path: toy.image_path ?? '',
+      image_file: null,
+      image_preview_url: null,
       tags: [...toy.tags],
     })
     setTagInput('')
@@ -211,9 +245,13 @@ export function useToysPage(token: string) {
     setEditToy(null)
     setTagInput('')
     setFormError(null)
+    setFormDataWithPreview(emptyForm)
   }
 
-  function handleFormChange(field: keyof Omit<FormData, 'tags'>, value: string) {
+  function handleFormChange(
+    field: keyof Omit<ToyFormData, 'tags' | 'image_file' | 'image_preview_url'>,
+    value: string,
+  ) {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
@@ -221,24 +259,21 @@ export function useToysPage(token: string) {
     setFormLoading(true)
     setFormError(null)
     try {
+      const payload = new FormData()
+      appendToyFormFields(payload, {
+        title: formData.title,
+        description: formData.description || undefined,
+        age_range: formData.age_range || undefined,
+        tags: finalTags,
+      })
+      if (formData.image_file) {
+        payload.append('image_file', formData.image_file)
+      }
+
       if (editToy) {
-        const payload: ToyUpdate = {
-          title: formData.title,
-          description: formData.description || undefined,
-          age_range: formData.age_range || undefined,
-          image_url: formData.image_url || undefined,
-          tags: finalTags,
-        }
         const updated = await updateToy(token, editToy.id, payload)
         setToys((prev) => prev.map((t) => (t.id === updated.id ? updated : t)))
       } else {
-        const payload: ToyCreate = {
-          title: formData.title,
-          description: formData.description || undefined,
-          age_range: formData.age_range || undefined,
-          image_url: formData.image_url || undefined,
-          tags: finalTags,
-        }
         const created = await createToy(token, payload)
         setToys((prev) => [...prev, created])
         setRefreshKey((k) => k + 1)
@@ -406,6 +441,7 @@ export function useToysPage(token: string) {
     setTagInput,
     formError,
     formLoading,
+    handleImageFileChange,
     openCreate,
     openEdit,
     closeForm,

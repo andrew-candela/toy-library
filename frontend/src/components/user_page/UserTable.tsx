@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom'
 import { UserListItem } from '../../api/client'
 import { useTheme } from '../../theme/ThemeContext'
+import { useIsCompactLayout } from '../../theme/useIsCompactLayout'
 
 interface UserTableProps {
   users: UserListItem[]
@@ -18,6 +19,7 @@ export function UserTable({
   loading = false,
 }: UserTableProps) {
   const { theme } = useTheme()
+  const isCompactLayout = useIsCompactLayout()
 
   const containerStyle: React.CSSProperties = {
     display: 'flex',
@@ -101,6 +103,64 @@ export function UserTable({
 
   if (users.length === 0) {
     return <div style={stateStyle}>No users found</div>
+  }
+
+  if (isCompactLayout) {
+    return (
+      <div style={containerStyle}>
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          {users.map((user) => (
+            <article
+              key={user.id}
+              style={{
+                background: theme.surface,
+                border: `1px solid ${theme.border}`,
+                borderRadius: 10,
+                padding: 14,
+                display: 'flex',
+                flexDirection: 'column',
+                gap: 8,
+              }}
+            >
+              <Link to={`/users/${encodeURIComponent(user.username)}`} style={linkStyle}>
+                {user.username}
+              </Link>
+              <div style={{ fontSize: 14, color: theme.textSecondary }}>
+                Neighborhood: {user.neighborhood || '—'}
+              </div>
+              <div style={{ fontSize: 14, color: theme.textSecondary }}>
+                Toys:{' '}
+                <Link to={`/toys?owner=${encodeURIComponent(user.username)}`} style={linkStyle}>
+                  {user.toy_count}
+                </Link>
+              </div>
+            </article>
+          ))}
+        </div>
+
+        {totalPages > 1 && (
+          <div style={{ ...paginationStyle, alignItems: 'stretch', flexDirection: 'column' }}>
+            <button
+              onClick={() => onPageChange(currentPage - 1)}
+              disabled={currentPage === 1}
+              style={{ ...paginationButtonStyle, opacity: currentPage === 1 ? 0.5 : 1, width: '100%' }}
+            >
+              Previous
+            </button>
+            <span style={pageInfoStyle}>
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              onClick={() => onPageChange(currentPage + 1)}
+              disabled={currentPage === totalPages}
+              style={{ ...paginationButtonStyle, opacity: currentPage === totalPages ? 0.5 : 1, width: '100%' }}
+            >
+              Next
+            </button>
+          </div>
+        )}
+      </div>
+    )
   }
 
   return (

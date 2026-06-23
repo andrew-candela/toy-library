@@ -2,6 +2,7 @@ import { useUsersPage } from './useUsersPage'
 import { UserFilterBar } from './UserFilterBar'
 import { UserTable } from './UserTable'
 import { useTheme } from '../../theme/ThemeContext'
+import { useIsCompactLayout } from '../../theme/useIsCompactLayout'
 
 interface Props {
   token: string
@@ -9,6 +10,7 @@ interface Props {
 
 export function UsersPage({ token }: Props) {
   const { theme } = useTheme()
+  const isCompactLayout = useIsCompactLayout()
 
   const {
     users,
@@ -25,7 +27,7 @@ export function UsersPage({ token }: Props) {
   } = useUsersPage(token)
 
   return (
-    <main style={{ padding: '40px 32px' }}>
+    <main style={{ padding: isCompactLayout ? '24px 16px' : '40px 32px' }}>
       <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
         <h1 style={{ margin: 0, color: theme.textPrimary }}>Users</h1>
       </div>

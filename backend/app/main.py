@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 from prometheus_client import (
     CONTENT_TYPE_LATEST,
     REGISTRY,
@@ -17,6 +18,7 @@ from strawberry.fastapi import GraphQLRouter
 from app.graphql.context import get_graphql_context
 from app.graphql.schema import schema
 from app.lib.logging import configure_structlog
+from app.lib.toy_images import get_toy_image_public_path, get_toy_image_storage_dir
 from app.lib.redis import connect_redis, disconnect_redis
 from app.routers import (
     admin,
@@ -51,6 +53,14 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Toy Library API", lifespan=lifespan)
+
+toy_image_storage_dir = get_toy_image_storage_dir()
+toy_image_storage_dir.mkdir(parents=True, exist_ok=True)
+app.mount(
+    get_toy_image_public_path(),
+    StaticFiles(directory=str(toy_image_storage_dir)),
+    name="toy-images",
+)
 
 Instrumentator().instrument(app)
 

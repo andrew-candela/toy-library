@@ -1,4 +1,5 @@
 import { useTheme } from '../../theme/ThemeContext'
+import { useIsCompactLayout } from '../../theme/useIsCompactLayout'
 
 interface Props {
   open: boolean
@@ -22,6 +23,7 @@ export function TransferModal({
   onSubmit,
 }: Props) {
   const { theme } = useTheme()
+  const isCompactLayout = useIsCompactLayout()
 
   if (!open) {
     return null
@@ -84,7 +86,7 @@ export function TransferModal({
           background: theme.surfaceAlt,
           border: `1px solid ${theme.border}`,
           borderRadius: 10,
-          padding: '18px 20px',
+          padding: isCompactLayout ? '18px 16px' : '18px 20px',
           display: 'flex',
           flexDirection: 'column',
           gap: 10,
@@ -102,7 +104,7 @@ export function TransferModal({
           />
         </label>
         {error && <p style={{ margin: 0, color: theme.error, fontSize: 13 }}>{error}</p>}
-        <div style={{ display: 'flex', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8, flexDirection: isCompactLayout ? 'column' : 'row' }}>
           <button type="submit" disabled={loading} style={primaryBtnStyle}>
             {loading ? 'Starting…' : 'Start Transfer'}
           </button>

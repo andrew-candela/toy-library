@@ -70,7 +70,7 @@ class ToyCreate(BaseModel):
     title: str
     description: str | None = None
     age_range: str | None = None
-    image_url: str | None = None
+    image_path: str | None = None
     tags: list[str] = []
     condition: ToyCondition | None = None
     date_added: datetime | None = None
@@ -81,7 +81,7 @@ class ToyOut(BaseModel):
     title: str
     description: str | None = None
     age_range: str | None = None
-    image_url: str | None = None
+    image_path: str | None = None
     tags: list[str] = []
     condition: ToyCondition | None = None
     date_added: datetime | None = None
@@ -106,7 +106,7 @@ class ToyUpdate(BaseModel):
     title: str | None = None
     description: str | None = None
     age_range: str | None = None
-    image_url: str | None = None
+    image_path: str | None = None
     tags: list[str] | None = None
     condition: ToyCondition | None = None
     date_added: datetime | None = None

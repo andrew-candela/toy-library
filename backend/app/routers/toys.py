@@ -1,12 +1,13 @@
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, HTTPException, Query
+from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.lib.auth import get_current_user
 from app.lib.database import get_db
-from app.models.models import Toy, ToyInterest, ToyTag, User, UserToy
-from app.schemas.schemas import PaginatedResponse, ToyCreate, ToyOut, ToyUpdate
+from app.lib.toy_images import delete_toy_image, save_toy_image
+from app.models.models import Toy, ToyCondition, ToyInterest, ToyTag, User, UserToy
+from app.schemas.schemas import PaginatedResponse, ToyOut
 
 router = APIRouter()
 
@@ -98,17 +99,24 @@ async def get_toy(
 
 @router.post("", response_model=ToyOut, status_code=201)
 async def create_toy(
-    toy_in: ToyCreate,
+    title: str = Form(...),
+    description: str | None = Form(None),
+    age_range: str | None = Form(None),
+    condition: ToyCondition | None = Form(None),
+    date_added: datetime | None = Form(None),
+    tags: list[str] = Form(default=[]),
+    image_file: UploadFile | None = File(None),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    image_path = await save_toy_image(image_file) if image_file is not None else None
     toy = Toy(
-        title=toy_in.title,
-        description=toy_in.description,
-        age_range=toy_in.age_range,
-        image_url=toy_in.image_url,
-        condition=toy_in.condition,
-        date_added=toy_in.date_added,
+        title=title,
+        description=description,
+        age_range=age_range,
+        image_path=image_path,
+        condition=condition,
+        date_added=date_added,
     )
     db.add(toy)
     await db.flush()
@@ -118,7 +126,7 @@ async def create_toy(
         checked_out_at=datetime.now(tz=timezone.utc),
     )
     db.add(user_toy)
-    for raw_tag in toy_in.tags:
+    for raw_tag in tags:
         normalized = _normalize_tag(raw_tag)
         if normalized:
             db.add(ToyTag(toy_id=toy.id, tag=normalized))
@@ -129,24 +137,56 @@ async def create_toy(
 @router.put("/{toy_id}", response_model=ToyOut)
 async def update_toy(
     toy_id: int,
-    toy_in: ToyUpdate,
+    title: str | None = Form(None),
+    description: str | None = Form(None),
+    age_range: str | None = Form(None),
+    condition: ToyCondition | None = Form(None),
+    date_added: datetime | None = Form(None),
+    tags: list[str] = Form(default=[]),
+    remove_image: bool = Form(False),
+    image_file: UploadFile | None = File(None),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     toy = (await db.execute(select(Toy).where(Toy.id == toy_id))).scalar_one_or_none()
     if not toy:
         raise HTTPException(status_code=404, detail="Toy not found")
-    update_data = toy_in.model_dump(exclude_unset=True)
-    tags = update_data.pop("tags", None)
-    for key, value in update_data.items():
-        setattr(toy, key, value)
-    if tags is not None:
+    old_image_path = toy.image_path
+    new_image_path: str | None = None
+
+    try:
+        if title is not None:
+            toy.title = title
+        if description is not None:
+            toy.description = description
+        if age_range is not None:
+            toy.age_range = age_range
+        if condition is not None:
+            toy.condition = condition
+        if date_added is not None:
+            toy.date_added = date_added
+
+        if image_file is not None:
+            new_image_path = await save_toy_image(image_file)
+            toy.image_path = new_image_path
+        elif remove_image:
+            toy.image_path = None
+
         await db.execute(delete(ToyTag).where(ToyTag.toy_id == toy.id))
         for raw_tag in tags:
             normalized = _normalize_tag(raw_tag)
             if normalized:
                 db.add(ToyTag(toy_id=toy.id, tag=normalized))
-    await db.commit()
+
+        await db.commit()
+    except Exception:
+        if new_image_path is not None:
+            delete_toy_image(new_image_path)
+        raise
+
+    if old_image_path and old_image_path != toy.image_path:
+        delete_toy_image(old_image_path)
+
     return (await db.execute(select(Toy).where(Toy.id == toy_id))).scalar_one()
 
 
@@ -177,6 +217,7 @@ async def delete_toy(
             detail="Cancel the pending transfer before deleting this toy.",
         )
 
+    delete_toy_image(toy.image_path)
     await db.execute(delete(ToyInterest).where(ToyInterest.toy_id == toy_id))
     await db.delete(user_toy)
     await db.delete(toy)

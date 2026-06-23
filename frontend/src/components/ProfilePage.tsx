@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { TOKEN_KEY, getProfile, updateEmail, updateNeighborhood, updateUsername } from '../api/client'
 import { useTheme } from '../theme/ThemeContext'
+import { useIsCompactLayout } from '../theme/useIsCompactLayout'
 
 interface Props {
   token: string
@@ -22,6 +23,7 @@ export default function ProfilePage({ token, onTokenUpdate }: Props) {
   const [loading, setLoading] = useState(true)
   const [loadError, setLoadError] = useState<string | null>(null)
   const { theme, isDark, toggleTheme } = useTheme()
+  const isCompactLayout = useIsCompactLayout()
 
   const [isEmailVerified, setIsEmailVerified] = useState(false)
   const [username, setUsername] = useState<FieldState>(makeField(''))
@@ -99,7 +101,7 @@ export default function ProfilePage({ token, onTokenUpdate }: Props) {
     border: `1px solid ${theme.inputBorder}`,
     borderRadius: 6,
     fontSize: 14,
-    width: 280,
+    width: isCompactLayout ? '100%' : 280,
     boxSizing: 'border-box',
     background: theme.inputBg,
     color: theme.textPrimary,
@@ -131,21 +133,21 @@ export default function ProfilePage({ token, onTokenUpdate }: Props) {
   }
 
   if (loading) {
-    return <div style={{ padding: 40, color: theme.textPrimary }}>Loading profile…</div>
+    return <div style={{ padding: isCompactLayout ? 16 : 40, color: theme.textPrimary }}>Loading profile…</div>
   }
 
   if (loadError) {
-    return <div style={{ padding: 40, color: theme.error }}>{loadError}</div>
+    return <div style={{ padding: isCompactLayout ? 16 : 40, color: theme.error }}>{loadError}</div>
   }
 
   return (
-    <div style={{ padding: 40, maxWidth: 520 }}>
+    <div style={{ padding: isCompactLayout ? 16 : 40, maxWidth: 520 }}>
       <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 32 }}>Profile</h1>
 
       {/* Username */}
       <div style={sectionStyle}>
         <label style={labelStyle}>Username</label>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 10, alignItems: isCompactLayout ? 'stretch' : 'center', flexDirection: isCompactLayout ? 'column' : 'row' }}>
           <input
             style={inputStyle}
             value={username.value}
@@ -174,7 +176,7 @@ export default function ProfilePage({ token, onTokenUpdate }: Props) {
             <span style={{ color: theme.warning, fontWeight: 400, fontSize: 12 }}>⚠ unverified — check your inbox</span>
           )}
         </label>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 10, alignItems: isCompactLayout ? 'stretch' : 'center', flexDirection: isCompactLayout ? 'column' : 'row' }}>
           <input
             style={inputStyle}
             type="email"
@@ -199,7 +201,7 @@ export default function ProfilePage({ token, onTokenUpdate }: Props) {
       {/* Neighborhood */}
       <div style={{ ...sectionStyle, borderBottom: 'none', marginBottom: 0, paddingBottom: 0 }}>
         <label style={labelStyle}>Neighborhood</label>
-        <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+        <div style={{ display: 'flex', gap: 10, alignItems: isCompactLayout ? 'stretch' : 'center', flexDirection: isCompactLayout ? 'column' : 'row' }}>
           <input
             style={inputStyle}
             value={neighborhood.value}
@@ -228,7 +230,7 @@ export default function ProfilePage({ token, onTokenUpdate }: Props) {
       {/* Appearance */}
       <div style={{ marginTop: 32, paddingTop: 28, borderTop: `1px solid ${theme.border}` }}>
         <label style={labelStyle}>Appearance</label>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+        <div style={{ display: 'flex', alignItems: isCompactLayout ? 'flex-start' : 'center', gap: 12, flexDirection: isCompactLayout ? 'column' : 'row' }}>
           <button
             type="button"
             onClick={toggleTheme}
@@ -241,6 +243,7 @@ export default function ProfilePage({ token, onTokenUpdate }: Props) {
               cursor: 'pointer',
               fontWeight: 500,
               fontSize: 14,
+              width: isCompactLayout ? '100%' : undefined,
             }}
           >
             {isDark ? '☀ Switch to Light mode' : '☾ Switch to Dark mode'}

@@ -2,25 +2,20 @@
 import { useEffect, useState } from 'react'
 import { fetchTagSuggestions, type Toy } from '../../api/client'
 import { useTheme } from '../../theme/ThemeContext'
+import { useIsCompactLayout } from '../../theme/useIsCompactLayout'
+import type { ToyFormData } from './useToysPage'
 
 // 1. Define what data this modal needs from our custom hook
-interface FormData {
-  title: string
-  description: string
-  age_range: string
-  image_url: string
-  tags: string[]
-}
-
 interface ToyFormModalProps {
   token: string
   editToy: Toy | null
-  formData: FormData
-  setFormData: React.Dispatch<React.SetStateAction<FormData>>
+  formData: ToyFormData
+  setFormData: React.Dispatch<React.SetStateAction<ToyFormData>>
   formError: string | null
   formLoading: boolean
   onClose: () => void
-  handleFormChange: (field: keyof Omit<FormData, 'tags'>, value: string) => void
+  handleFormChange: (field: keyof Omit<ToyFormData, 'tags' | 'image_file' | 'image_preview_url'>, value: string) => void
+  handleImageFileChange: (file: File | null) => void
   handleFormSubmit: (finalTags: string[]) => Promise<void>
 }
 
@@ -37,9 +32,11 @@ export function ToyFormModal({
   formLoading,
   onClose,
   handleFormChange,
+  handleImageFileChange,
   handleFormSubmit,
 }: ToyFormModalProps) {
   const { theme } = useTheme()
+  const isCompactLayout = useIsCompactLayout()
 
   // 2. Local, self-contained UI state for tag autocomplete
   const [tagInput, setTagInput] = useState('')
@@ -99,6 +96,8 @@ export function ToyFormModal({
       setTagInput(value)
     }
   }
+
+  const previewSrc = formData.image_preview_url ?? formData.image_path
 
   // Intercepting actual HTML submit to flush the tag input cleanly
   function onSubmitWrapper(e: React.FormEvent) {
@@ -188,10 +187,10 @@ export function ToyFormModal({
         background: theme.surfaceAlt,
         border: `1px solid ${theme.border}`,
         borderRadius: 8,
-        padding: '20px 24px',
+        padding: isCompactLayout ? '18px 16px' : '20px 24px',
         marginBottom: 24,
         display: 'grid',
-        gridTemplateColumns: '1fr 1fr',
+        gridTemplateColumns: isCompactLayout ? '1fr' : '1fr 1fr',
         gap: 12,
         maxWidth: 640,
       }}
@@ -227,19 +226,19 @@ export function ToyFormModal({
       </label>
 
       <label style={{ ...labelStyle, gridColumn: '1 / -1' }}>
-        Image URL
+        Image
         <input
-          value={formData.image_url}
-          onChange={(e) => handleFormChange('image_url', e.target.value)}
+          type="file"
+          accept="image/*"
+          onChange={(e) => handleImageFileChange(e.target.files?.[0] ?? null)}
           style={inputStyle}
-          placeholder="https://example.com/image.jpg"
         />
       </label>
 
-      {formData.image_url && (
+      {previewSrc && (
         <div style={{ gridColumn: '1 / -1' }}>
           <img
-            src={formData.image_url}
+            src={previewSrc}
             alt="Preview"
             onError={(e) => {
               ;(e.currentTarget as HTMLImageElement).style.display = 'none'
@@ -333,7 +332,7 @@ export function ToyFormModal({
         </p>
       )}
 
-      <div style={{ display: 'flex', gap: 8, gridColumn: '1 / -1' }}>
+      <div style={{ display: 'flex', gap: 8, gridColumn: '1 / -1', flexDirection: isCompactLayout ? 'column' : 'row' }}>
         <button type="submit" disabled={formLoading} style={primaryBtnStyle}>
           {formLoading ? 'Saving…' : 'Save'}
         </button>
