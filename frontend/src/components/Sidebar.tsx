@@ -120,18 +120,20 @@ export default function Sidebar({ onLogout, isCompact = false }: Props) {
     <nav
       style={{
         width: navWidth,
+        height: '100dvh',
         minHeight: '100vh',
         background: theme.surface,
         borderRight: `1px solid ${theme.border}`,
         display: 'flex',
         flexDirection: 'column',
         alignItems: isCompact ? 'center' : 'stretch',
-        padding: isCompact ? '18px 10px' : '24px 12px',
+        paddingTop: isCompact ? 18 : 24,
+        paddingInline: isCompact ? 10 : 12,
+        paddingBottom: `calc(${isCompact ? 18 : 24}px + env(safe-area-inset-bottom, 0px))`,
         gap: 4,
         boxSizing: 'border-box',
         flexShrink: 0,
-        position: 'sticky',
-        top: 0,
+        overflowY: 'auto',
       }}
     >
       <Link

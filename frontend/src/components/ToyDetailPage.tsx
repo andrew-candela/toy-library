@@ -12,6 +12,7 @@ import {
 import { useTheme } from '../theme/ThemeContext'
 import { useIsCompactLayout } from '../theme/useIsCompactLayout'
 import { TransferModal } from './toy_page/TransferModal'
+import { useToyImage } from './useToyImage'
 
 interface Props {
   token: string
@@ -32,6 +33,7 @@ export default function ToyDetailPage({ token }: Props) {
   const [cancelTransferLoading, setCancelTransferLoading] = useState(false)
   const { theme } = useTheme()
   const isCompactLayout = useIsCompactLayout()
+  const { imageSrc } = useToyImage(token, toy?.image_path ?? null)
 
   useEffect(() => {
     if (!id) return
@@ -39,22 +41,30 @@ export default function ToyDetailPage({ token }: Props) {
     setLoading(true)
     setError(null)
 
-    Promise.all([
-      fetchToy(token, Number(id)),
-      fetchInterests(token, Number(id)),
-      fetchMyToys(token),
-    ])
-      .then(([toyData, interestData, myToys]) => {
+    async function loadToyPageData() {
+      try {
+        const [toyData, interestData, myToys] = await Promise.all([
+          fetchToy(token, Number(id)),
+          fetchInterests(token, Number(id)),
+          fetchMyToys(token),
+        ])
+        
         const myToyRecord = myToys.find((userToy) => userToy.toy_id === Number(id))
+        
         setToy(toyData)
         setInterestDetail(interestData)
         setPendingTransferTo(myToyRecord?.pending_user?.username ?? null)
         setPendingTransferError(null)
-      })
-      .catch((err: unknown) =>
-        setError(err instanceof Error ? err.message : 'Failed to load toy'),
-      )
-      .finally(() => setLoading(false))
+
+      } catch (err: unknown) {
+        setError(err instanceof Error ? err.message : 'Failed to load toy')
+      } finally {
+        setLoading(false)
+      }
+    }
+
+    loadToyPageData()
+
   }, [token, id])
 
   function openTransferModal(username: string) {
@@ -139,9 +149,9 @@ export default function ToyDetailPage({ token }: Props) {
       {toy && (
         <>
           <div style={{ display: 'flex', flexDirection: isCompactLayout ? 'column' : 'row', gap: isCompactLayout ? 20 : 32, alignItems: 'flex-start', marginBottom: 32 }}>
-            {toy.image_path && (
+            {imageSrc && (
               <img
-                src={toy.image_path}
+                src={imageSrc}
                 alt={toy.title}
                 style={{ width: isCompactLayout ? '100%' : 180, maxWidth: isCompactLayout ? 320 : undefined, height: isCompactLayout ? 'auto' : 180, aspectRatio: isCompactLayout ? '1 / 1' : undefined, objectFit: 'cover', borderRadius: 10, border: `1px solid ${theme.border}`, flexShrink: 0 }}
               />

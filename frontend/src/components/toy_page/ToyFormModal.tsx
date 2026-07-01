@@ -1,6 +1,7 @@
 // ToyFormModal.tsx
 import { useEffect, useState } from 'react'
 import { fetchTagSuggestions, type Toy } from '../../api/client'
+import { useToyImage } from '../useToyImage'
 import { useTheme } from '../../theme/ThemeContext'
 import { useIsCompactLayout } from '../../theme/useIsCompactLayout'
 import type { ToyFormData } from './useToysPage'
@@ -97,7 +98,10 @@ export function ToyFormModal({
     }
   }
 
-  const previewSrc = formData.image_preview_url ?? formData.image_path
+  const { imageSrc: existingImageSrc } = useToyImage(token, formData.image_path || null, {
+    enabled: !formData.image_preview_url,
+  })
+  const previewSrc = formData.image_preview_url ?? existingImageSrc
 
   // Intercepting actual HTML submit to flush the tag input cleanly
   function onSubmitWrapper(e: React.FormEvent) {

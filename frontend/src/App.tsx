@@ -27,12 +27,13 @@ function ProtectedLayout({ children, onLogout }: { children: React.ReactNode; on
   const sidebarWidth = isCompactSidebar ? MOBILE_RAIL_WIDTH : DESKTOP_SIDEBAR_WIDTH
 
   return (
-    <div style={{ display: 'flex', minHeight: '100vh', overflowX: 'clip' }}>
+    <div style={{ display: 'flex', height: '100dvh', minHeight: '100vh', overflow: 'hidden' }}>
       <Sidebar onLogout={onLogout} isCompact={isCompactSidebar} />
       <div
         style={{
           flex: 1,
           minWidth: 0,
+          height: '100%',
           width: `calc(100vw - ${sidebarWidth}px)`,
           overflowX: 'hidden',
           overflowY: 'auto',

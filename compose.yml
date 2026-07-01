@@ -1,6 +1,7 @@
 services:
   postgres:
     image: postgres:18
+    pull_policy: if_not_present
     env_file:
       - ./backend/.env
     healthcheck:
@@ -46,6 +47,7 @@ services:
 
   redis:
     image: redis:8
+    pull_policy: if_not_present
     ports:
       - "6379:6379"
     volumes:

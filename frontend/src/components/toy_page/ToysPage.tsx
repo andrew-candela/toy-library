@@ -120,6 +120,7 @@ export default function ToysPage({ token }: Props) {
           </div>
 
           <ToyTable
+            token={token}
             toys={hook.toys}
             ownedToyIds={hook.ownedToyIds}
             pendingIncomingToyIds={hook.pendingIncomingToyIds}

@@ -1,5 +1,3 @@
-const API_URL = import.meta.env.VITE_API_URL ?? 'http://localhost:8000'
-
 export const TOKEN_KEY = 'auth_token'
 
 /**
@@ -110,7 +108,7 @@ export interface VerifyEmailResponse {
 
 export async function login(username: string, password: string): Promise<string> {
   const body = new URLSearchParams({ username, password })
-  const response = await fetch(`${API_URL}/api/auth/login`, {
+  const response = await fetch(`/api/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
     body: body.toString(),
@@ -124,7 +122,7 @@ export async function login(username: string, password: string): Promise<string>
 }
 
 export async function register(username: string, email: string, password: string): Promise<UserResponse> {
-  const response = await fetch(`${API_URL}/api/auth/register`, {
+  const response = await fetch(`/api/auth/register`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, email, password }),
@@ -137,7 +135,7 @@ export async function register(username: string, email: string, password: string
 }
 
 export async function verifyEmail(token: string): Promise<VerifyEmailResponse> {
-  const response = await fetch(`${API_URL}/api/auth/verify-email?token=${encodeURIComponent(token)}`)
+  const response = await fetch(`/api/auth/verify-email?token=${encodeURIComponent(token)}`)
   if (!response.ok) {
     const detail = await response.text()
     throw new Error(detail || 'Verification failed')
@@ -146,7 +144,7 @@ export async function verifyEmail(token: string): Promise<VerifyEmailResponse> {
 }
 
 export async function resendVerification(email: string): Promise<VerifyEmailResponse> {
-  const response = await fetch(`${API_URL}/api/auth/resend-verification`, {
+  const response = await fetch(`/api/auth/resend-verification`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email }),
@@ -159,7 +157,7 @@ export async function resendVerification(email: string): Promise<VerifyEmailResp
 }
 
 export async function forgotPassword(email: string): Promise<VerifyEmailResponse> {
-  const response = await fetch(`${API_URL}/api/auth/forgot-password`, {
+  const response = await fetch(`/api/auth/forgot-password`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email }),
@@ -172,7 +170,7 @@ export async function forgotPassword(email: string): Promise<VerifyEmailResponse
 }
 
 export async function resetPassword(token: string, newPassword: string): Promise<VerifyEmailResponse> {
-  const response = await fetch(`${API_URL}/api/auth/reset-password`, {
+  const response = await fetch(`/api/auth/reset-password`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ token, new_password: newPassword }),
@@ -185,7 +183,7 @@ export async function resetPassword(token: string, newPassword: string): Promise
 }
 
 export async function logout(token: string): Promise<void> {
-  await authedFetch(token, `${API_URL}/api/auth/logout`, {
+  await authedFetch(token, `/api/auth/logout`, {
     method: 'POST',
   })
 }
@@ -193,7 +191,7 @@ export async function logout(token: string): Promise<void> {
 
 
 export async function getProfile(token: string): Promise<ProfileResponse> {
-  const response = await authedFetch(token, `${API_URL}/api/profile/me`)
+  const response = await authedFetch(token, `/api/profile/me`)
   if (!response.ok) {
     const detail = await response.text()
     throw new Error(detail || 'Failed to fetch profile')
@@ -202,7 +200,7 @@ export async function getProfile(token: string): Promise<ProfileResponse> {
 }
 
 export async function getUserProfile(token: string, username: string): Promise<ProfileResponse> {
-  const response = await authedFetch(token, `${API_URL}/api/profile/${encodeURIComponent(username)}`)
+  const response = await authedFetch(token, `/api/profile/${encodeURIComponent(username)}`)
   if (!response.ok) {
     const detail = await response.text()
     throw new Error(detail || 'User not found')
@@ -211,7 +209,7 @@ export async function getUserProfile(token: string, username: string): Promise<P
 }
 
 export async function updateUsername(token: string, username: string): Promise<UpdateUsernameResponse> {
-  const response = await authedFetch(token, `${API_URL}/api/profile/username`, {
+  const response = await authedFetch(token, `/api/profile/username`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username }),
@@ -224,7 +222,7 @@ export async function updateUsername(token: string, username: string): Promise<U
 }
 
 export async function updateEmail(token: string, email: string): Promise<{ message: string }> {
-  const response = await authedFetch(token, `${API_URL}/api/profile/email`, {
+  const response = await authedFetch(token, `/api/profile/email`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email }),
@@ -237,7 +235,7 @@ export async function updateEmail(token: string, email: string): Promise<{ messa
 }
 
 export async function updateNeighborhood(token: string, neighborhood: string | null): Promise<{ neighborhood: string | null }> {
-  const response = await authedFetch(token, `${API_URL}/api/profile/neighborhood`, {
+  const response = await authedFetch(token, `/api/profile/neighborhood`, {
     method: 'PATCH',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ neighborhood }),
@@ -270,7 +268,7 @@ export async function fetchToys(
   params.set('page', String(page))
   params.set('page_size', String(pageSize))
   const qs = params.toString()
-  const response = await authedFetch(token, `${API_URL}/api/toys/?${qs}`)
+  const response = await authedFetch(token, `/api/toys/?${qs}`)
   if (!response.ok) {
     throw new Error(`Failed to fetch toys: ${response.statusText}`)
   }
@@ -278,7 +276,7 @@ export async function fetchToys(
 }
 
 export async function fetchTagSuggestions(token: string, prefix: string): Promise<string[]> {
-  const response = await authedFetch(token, `${API_URL}/api/toys/tags?q=${encodeURIComponent(prefix)}`)
+  const response = await authedFetch(token, `/api/toys/tags?q=${encodeURIComponent(prefix)}`)
   if (!response.ok) {
     throw new Error('Failed to fetch tag suggestions')
   }
@@ -307,7 +305,7 @@ export function appendToyFormFields(formData: FormData, data: ToyCreate | ToyUpd
 }
 
 export async function createToy(token: string, data: FormData): Promise<Toy> {
-  const response = await authedFetch(token, `${API_URL}/api/toys`, {
+  const response = await authedFetch(token, `/api/toys`, {
     method: 'POST',
     body: data,
   })
@@ -319,7 +317,7 @@ export async function createToy(token: string, data: FormData): Promise<Toy> {
 }
 
 export async function updateToy(token: string, id: number, data: FormData): Promise<Toy> {
-  const response = await authedFetch(token, `${API_URL}/api/toys/${id}`, {
+  const response = await authedFetch(token, `/api/toys/${id}`, {
     method: 'PUT',
     body: data,
   })
@@ -331,7 +329,7 @@ export async function updateToy(token: string, id: number, data: FormData): Prom
 }
 
 export async function deleteToy(token: string, id: number): Promise<void> {
-  const response = await authedFetch(token, `${API_URL}/api/toys/${id}`, {
+  const response = await authedFetch(token, `/api/toys/${id}`, {
     method: 'DELETE',
   })
   if (!response.ok) {
@@ -348,7 +346,7 @@ export async function deleteToy(token: string, id: number): Promise<void> {
 }
 
 export async function fetchMyToys(token: string): Promise<UserToy[]> {
-  const response = await authedFetch(token, `${API_URL}/api/user-toys`)
+  const response = await authedFetch(token, `/api/user-toys`)
   if (!response.ok) {
     throw new Error(`Failed to fetch your toys: ${response.statusText}`)
   }
@@ -356,15 +354,27 @@ export async function fetchMyToys(token: string): Promise<UserToy[]> {
 }
 
 export async function fetchToy(token: string, id: number): Promise<Toy> {
-  const response = await authedFetch(token, `${API_URL}/api/toys/${id}`)
+  const response = await authedFetch(token, `/api/toys/${id}`)
   if (!response.ok) {
     throw new Error(`Failed to fetch toy: ${response.statusText}`)
   }
   return response.json() as Promise<Toy>
 }
 
+export async function fetchImage(
+  token: string,
+  image_path: string
+): Promise<Blob> {
+  const filename = image_path.split('/').pop() || '';
+  const response = await authedFetch(token, `/api/images/${filename}`)
+  if (!response.ok) {
+    throw new Error(`Failed to fetch image: ${response.statusText}`)
+  }
+  return response.blob()
+}
+
 export async function fetchPendingIncoming(token: string): Promise<UserToy[]> {
-  const response = await authedFetch(token, `${API_URL}/api/user-toys/pending-incoming`)
+  const response = await authedFetch(token, `/api/user-toys/pending-incoming`)
   if (!response.ok) {
     throw new Error(`Failed to fetch pending transfers: ${response.statusText}`)
   }
@@ -376,7 +386,7 @@ export async function initiateTransfer(
   toyId: number,
   toUsername: string,
 ): Promise<UserToy> {
-  const response = await authedFetch(token, `${API_URL}/api/user-toys/${toyId}/transfer`, {
+  const response = await authedFetch(token, `/api/user-toys/${toyId}/transfer`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ to_username: toUsername }),
@@ -389,7 +399,7 @@ export async function initiateTransfer(
 }
 
 export async function cancelTransfer(token: string, toyId: number): Promise<UserToy> {
-  const response = await authedFetch(token, `${API_URL}/api/user-toys/${toyId}/transfer`, {
+  const response = await authedFetch(token, `/api/user-toys/${toyId}/transfer`, {
     method: 'DELETE',
   })
   if (!response.ok) {
@@ -400,7 +410,7 @@ export async function cancelTransfer(token: string, toyId: number): Promise<User
 }
 
 export async function acceptTransfer(token: string, toyId: number): Promise<UserToy> {
-  const response = await authedFetch(token, `${API_URL}/api/user-toys/${toyId}/transfer/accept`, {
+  const response = await authedFetch(token, `/api/user-toys/${toyId}/transfer/accept`, {
     method: 'POST',
   })
   if (!response.ok) {
@@ -431,7 +441,7 @@ export interface InterestDetail {
 }
 
 export async function fetchAllInterests(token: string): Promise<InterestSummary[]> {
-  const response = await authedFetch(token, `${API_URL}/api/interests`)
+  const response = await authedFetch(token, `/api/interests`)
   if (!response.ok) {
     throw new Error(`Failed to fetch interests: ${response.statusText}`)
   }
@@ -439,7 +449,7 @@ export async function fetchAllInterests(token: string): Promise<InterestSummary[
 }
 
 export async function fetchInterests(token: string, toyId: number): Promise<InterestDetail> {
-  const response = await authedFetch(token, `${API_URL}/api/interests/${toyId}`)
+  const response = await authedFetch(token, `/api/interests/${toyId}`)
   if (!response.ok) {
     throw new Error(`Failed to fetch interests: ${response.statusText}`)
   }
@@ -447,7 +457,7 @@ export async function fetchInterests(token: string, toyId: number): Promise<Inte
 }
 
 export async function expressInterest(token: string, toyId: number): Promise<Interest> {
-  const response = await authedFetch(token, `${API_URL}/api/interests/${toyId}`, {
+  const response = await authedFetch(token, `/api/interests/${toyId}`, {
     method: 'POST',
   })
   if (!response.ok) {
@@ -458,7 +468,7 @@ export async function expressInterest(token: string, toyId: number): Promise<Int
 }
 
 export async function deleteInterest(token: string, toyId: number): Promise<void> {
-  const response = await authedFetch(token, `${API_URL}/api/interests/${toyId}`, {
+  const response = await authedFetch(token, `/api/interests/${toyId}`, {
     method: 'DELETE',
   })
   if (!response.ok) {
@@ -502,7 +512,7 @@ export async function fetchUsers(
   params.set('page', String(page))
   params.set('page_size', String(pageSize))
   const qs = params.toString()
-  const response = await authedFetch(token, `${API_URL}/api/users/?${qs}`)
+  const response = await authedFetch(token, `/api/users/?${qs}`)
   if (!response.ok) {
     throw new Error(`Failed to fetch users: ${response.statusText}`)
   }
@@ -510,7 +520,7 @@ export async function fetchUsers(
 }
 
 export async function fetchUserDetail(token: string, username: string): Promise<UserDetail> {
-  const response = await authedFetch(token, `${API_URL}/api/users/${encodeURIComponent(username)}`)
+  const response = await authedFetch(token, `/api/users/${encodeURIComponent(username)}`)
   if (!response.ok) {
     const detail = await response.text()
     throw new Error(detail || 'User not found')
@@ -523,7 +533,7 @@ export async function sendUserContactEmail(
   toUsername: string,
   message: string,
 ): Promise<UserContactEmailResponse> {
-  const response = await authedFetch(token, `${API_URL}/api/user-messages/send`, {
+  const response = await authedFetch(token, `/api/user-messages/send`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ to_username: toUsername, message }),

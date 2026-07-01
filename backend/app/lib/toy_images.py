@@ -71,9 +71,6 @@ def _resolve_image_suffix(upload: UploadFile) -> str:
 
 async def save_toy_image(upload: UploadFile) -> str:
     suffix = _resolve_image_suffix(upload)
-    contents = await upload.read()
-    if len(contents) > MAX_TOY_IMAGE_BYTES:
-        raise HTTPException(status_code=413, detail="Image is too large.")
 
     storage_dir = get_toy_image_storage_dir()
     storage_dir.mkdir(parents=True, exist_ok=True)

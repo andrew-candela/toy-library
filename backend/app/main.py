@@ -23,6 +23,7 @@ from app.lib.redis import connect_redis, disconnect_redis
 from app.routers import (
     admin,
     auth,
+    images,
     interests,
     profile,
     toys,
@@ -68,7 +69,9 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:5173",
+        "http://localhost:81",
         "http://127.0.0.1:5173",
+        # "http://127.0.0.1:81",
     ],
     allow_credentials=True,
     allow_methods=["*"],
@@ -81,10 +84,13 @@ app.include_router(admin.router, prefix="/api/admin", tags=["admin"])
 app.include_router(auth.router, prefix="/api/auth", tags=["auth"])
 app.include_router(profile.router, prefix="/api/profile", tags=["profile"])
 app.include_router(toys.router, prefix="/api/toys", tags=["toys"])
+app.include_router(images.router, prefix="/api/images", tags=["images"])
 app.include_router(interests.router, prefix="/api/interests", tags=["interests"])
 
 app.include_router(user_toys.router, prefix="/api/user-toys", tags=["user-toys"])
-app.include_router(user_messages.router, prefix="/api/user-messages", tags=["user-messages"])
+app.include_router(
+    user_messages.router, prefix="/api/user-messages", tags=["user-messages"]
+)
 app.include_router(users.router, prefix="/api/users", tags=["users"])
 graphql_app = GraphQLRouter(schema, context_getter=get_graphql_context)
 app.include_router(graphql_app, prefix="/graphql")

@@ -1,10 +1,13 @@
 // ToyTable.tsx
+import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { type Toy } from '../../api/client'
+import { useToyImage } from '../useToyImage'
 import { useTheme } from '../../theme/ThemeContext'
 import { useIsCompactLayout } from '../../theme/useIsCompactLayout'
 
 interface ToyTableProps {
+  token: string
   toys: Toy[]
   ownedToyIds: Set<number>
   pendingIncomingToyIds: Set<number>
@@ -22,7 +25,69 @@ interface ToyTableProps {
   onTagClick: (tag: string) => void
 }
 
+interface ToyThumbnailProps {
+  token: string
+  toy: Toy
+  size: number
+  borderRadius: number
+  borderColor: string
+  placeholderBg: string
+  flexShrink?: 0
+}
+
+function ToyThumbnail({
+  token,
+  toy,
+  size,
+  borderRadius,
+  borderColor,
+  placeholderBg,
+  flexShrink,
+}: ToyThumbnailProps) {
+  const { imageSrc } = useToyImage(token, toy.image_path ?? null)
+  const [imageFailed, setImageFailed] = useState(false)
+
+  useEffect(() => {
+    setImageFailed(false)
+  }, [imageSrc, toy.image_path])
+
+  const showImage = Boolean(toy.image_path && imageSrc && !imageFailed)
+
+  return (
+    <>
+      {showImage ? (
+        <img
+          src={imageSrc ?? undefined}
+          alt={toy.title}
+          onError={() => setImageFailed(true)}
+          style={{
+            width: size,
+            height: size,
+            objectFit: 'cover',
+            borderRadius,
+            border: `1px solid ${borderColor}`,
+            display: 'block',
+            flexShrink,
+          }}
+        />
+      ) : null}
+      <div
+        style={{
+          display: showImage ? 'none' : 'block',
+          width: size,
+          height: size,
+          borderRadius,
+          background: placeholderBg,
+          border: `1px solid ${borderColor}`,
+          flexShrink,
+        }}
+      />
+    </>
+  )
+}
+
 export function ToyTable({
+  token,
   toys,
   ownedToyIds,
   pendingIncomingToyIds,
@@ -124,37 +189,14 @@ export function ToyTable({
           return (
             <article key={toy.id} style={cardStyle}>
               <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-                {toy.image_path ? (
-                  <img
-                    src={toy.image_path}
-                    alt={toy.title}
-                    onError={(e) => {
-                      const img = e.currentTarget as HTMLImageElement
-                      img.style.display = 'none'
-                      const placeholder = img.nextElementSibling as HTMLElement | null
-                      if (placeholder) placeholder.style.display = 'block'
-                    }}
-                    style={{
-                      width: 72,
-                      height: 72,
-                      objectFit: 'cover',
-                      borderRadius: 8,
-                      border: `1px solid ${theme.border}`,
-                      display: 'block',
-                      flexShrink: 0,
-                    }}
-                  />
-                ) : null}
-                <div
-                  style={{
-                    display: toy.image_path ? 'none' : 'block',
-                    width: 72,
-                    height: 72,
-                    borderRadius: 8,
-                    background: theme.imagePlaceholderBg,
-                    border: `1px solid ${theme.border}`,
-                    flexShrink: 0,
-                  }}
+                <ToyThumbnail
+                  token={token}
+                  toy={toy}
+                  size={72}
+                  borderRadius={8}
+                  borderColor={theme.border}
+                  placeholderBg={theme.imagePlaceholderBg}
+                  flexShrink={0}
                 />
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <Link
@@ -303,35 +345,13 @@ export function ToyTable({
             <tr key={toy.id}>
               {/* Image Column */}
               <td style={tdStyle}>
-                {toy.image_path ? (
-                  <img
-                    src={toy.image_path}
-                    alt={toy.title}
-                    onError={(e) => {
-                      const img = e.currentTarget as HTMLImageElement
-                      img.style.display = 'none'
-                      const placeholder = img.nextElementSibling as HTMLElement | null
-                      if (placeholder) placeholder.style.display = 'block'
-                    }}
-                    style={{
-                      width: 48,
-                      height: 48,
-                      objectFit: 'cover',
-                      borderRadius: 6,
-                      border: `1px solid ${theme.border}`,
-                      display: 'block',
-                    }}
-                  />
-                ) : null}
-                <div
-                  style={{
-                    display: toy.image_path ? 'none' : 'block',
-                    width: 48,
-                    height: 48,
-                    borderRadius: 6,
-                    background: theme.imagePlaceholderBg,
-                    border: `1px solid ${theme.border}`,
-                  }}
+                <ToyThumbnail
+                  token={token}
+                  toy={toy}
+                  size={48}
+                  borderRadius={6}
+                  borderColor={theme.border}
+                  placeholderBg={theme.imagePlaceholderBg}
                 />
               </td>
 
