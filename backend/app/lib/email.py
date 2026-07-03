@@ -156,10 +156,9 @@ async def send_user_contact_email(
 
     html = f"""
     <p>Hello {safe_to_username},</p>
-    <p><strong>{safe_from_username}</strong> sent you a message through Toy Library:</p>
+    <p><a href="{_FRONTEND_URL}/users/{from_username}">{from_username}</a> sent you a message through Toy Library:</p>
     <blockquote style=\"margin: 12px 0; padding: 10px 14px; border-left: 3px solid #ccc;\">{safe_message}</blockquote>
-    <p>Want to continue the conversation? Feel free to connect outside Toy Library.</p>
-    <p>For privacy, Toy Library does not explicitly share either person's contact information unless it is included directly in the message.</p>
+    <p>Want to continue the conversation? Feel free to share your contact info and connect outside Toy Library.</p>
     <p><a href=\"{_FRONTEND_URL}\">Open Toy Library</a></p>
     """
 
