@@ -107,7 +107,6 @@ async def initiate_transfer(
         target_user.email,
         toy_title,
         current_user.username,
-        current_user.email,
     )
     return user_toy
 

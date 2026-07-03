@@ -1,6 +1,6 @@
-import { useState } from 'react'
-import { Navigate, Route, Routes } from 'react-router-dom'
-import { TOKEN_KEY } from './api/client'
+import { useEffect, useState } from 'react'
+import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
+import { TOKEN_KEY, getStoredToken, setStoredToken } from './api/client'
 import ForgotPasswordPage from './components/ForgotPasswordPage'
 import HomePage from './components/HomePage'
 import ResendVerificationPage from './components/ResendVerificationPage'
@@ -18,10 +18,11 @@ import { useIsCompactLayout } from './theme/useIsCompactLayout'
 import { useTheme } from './theme/ThemeContext'
 
 function ProtectedLayout({ children, onLogout }: { children: React.ReactNode; onLogout: () => void }) {
-  const token = sessionStorage.getItem(TOKEN_KEY)
+  const token = getStoredToken()
+  const location = useLocation()
   const isCompactSidebar = useIsCompactLayout()
   if (!token) {
-    return <Navigate to="/login" replace />
+    return <Navigate to="/login" replace state={{ from: location.pathname }} />
   }
 
   const sidebarWidth = isCompactSidebar ? MOBILE_RAIL_WIDTH : DESKTOP_SIDEBAR_WIDTH
@@ -48,20 +49,31 @@ function ProtectedLayout({ children, onLogout }: { children: React.ReactNode; on
 function App() {
   // token state drives re-renders after login/logout
   const [token, setToken] = useState<string | null>(() =>
-    sessionStorage.getItem(TOKEN_KEY),
+    getStoredToken(),
   )
   const { theme } = useTheme()
+
+  useEffect(() => {
+    function handleStorage(event: StorageEvent) {
+      if (event.key === TOKEN_KEY) {
+        setToken(getStoredToken())
+      }
+    }
+
+    window.addEventListener('storage', handleStorage)
+    return () => window.removeEventListener('storage', handleStorage)
+  }, [])
 
   function handleLogout() {
     setToken(null)
   }
 
   function handleLogin() {
-    setToken(sessionStorage.getItem(TOKEN_KEY))
+    setToken(getStoredToken())
   }
 
   function handleTokenUpdate(newToken: string) {
-    sessionStorage.setItem(TOKEN_KEY, newToken)
+    setStoredToken(newToken)
     setToken(newToken)
   }
 

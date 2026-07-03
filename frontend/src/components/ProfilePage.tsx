@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { TOKEN_KEY, getProfile, updateEmail, updateNeighborhood, updateUsername } from '../api/client'
+import { getProfile, setStoredToken, updateEmail, updateNeighborhood, updateUsername } from '../api/client'
 import { useTheme } from '../theme/ThemeContext'
 import { useIsCompactLayout } from '../theme/useIsCompactLayout'
 
@@ -49,7 +49,7 @@ export default function ProfilePage({ token, onTokenUpdate }: Props) {
     setUsername((s) => ({ ...s, saving: true, success: null, error: null }))
     try {
       const res = await updateUsername(token, username.value.trim())
-      sessionStorage.setItem(TOKEN_KEY, res.access_token)
+      setStoredToken(res.access_token)
       onTokenUpdate(res.access_token)
       setUsername((s) => ({ ...s, saving: false, success: 'Username updated.' }))
     } catch (err: unknown) {

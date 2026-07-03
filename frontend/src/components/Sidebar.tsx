@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useLocation, useNavigate } from 'react-router-dom'
-import { logout, TOKEN_KEY } from '../api/client'
+import { clearStoredToken, getStoredToken, logout } from '../api/client'
 import { DESKTOP_SIDEBAR_WIDTH, MOBILE_RAIL_WIDTH } from '../theme/tokens'
 import { useTheme } from '../theme/ThemeContext'
 
@@ -82,11 +82,11 @@ export default function Sidebar({ onLogout, isCompact = false }: Props) {
 
   async function handleLogout() {
     setLoggingOut(true)
-    const token = sessionStorage.getItem(TOKEN_KEY) ?? ''
+    const token = getStoredToken() ?? ''
     try {
       await logout(token)
     } finally {
-      sessionStorage.removeItem(TOKEN_KEY)
+      clearStoredToken()
       onLogout()
       navigate('/login', { replace: true })
     }

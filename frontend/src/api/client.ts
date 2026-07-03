@@ -1,5 +1,17 @@
 export const TOKEN_KEY = 'auth_token'
 
+export function getStoredToken(): string | null {
+  return localStorage.getItem(TOKEN_KEY)
+}
+
+export function setStoredToken(token: string): void {
+  localStorage.setItem(TOKEN_KEY, token)
+}
+
+export function clearStoredToken(): void {
+  localStorage.removeItem(TOKEN_KEY)
+}
+
 /**
  * Wrapper around fetch that injects the Authorization header and handles 401
  * responses by clearing the stored token and redirecting to /login.
@@ -13,8 +25,11 @@ async function authedFetch(token: string, url: string, init: RequestInit = {}): 
     },
   })
   if (response.status === 401) {
-    sessionStorage.removeItem(TOKEN_KEY)
-    window.location.replace('/login')
+    clearStoredToken()
+    const currentPath = window.location.pathname || '/home'
+    const loginPath =
+      currentPath !== '/login' ? `/login?next=${encodeURIComponent(currentPath)}` : '/login'
+    window.location.replace(loginPath)
     return new Promise<Response>(() => {})
   }
   return response

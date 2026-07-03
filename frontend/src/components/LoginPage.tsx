@@ -1,6 +1,6 @@
 import { type FormEvent, useState } from 'react'
-import { Link, useNavigate } from 'react-router-dom'
-import { login, register, TOKEN_KEY } from '../api/client'
+import { Link, useLocation, useNavigate } from 'react-router-dom'
+import { login, register, setStoredToken } from '../api/client'
 import { useTheme } from '../theme/ThemeContext'
 
 type Mode = 'login' | 'register'
@@ -18,7 +18,20 @@ export default function LoginPage({ onLogin }: Props) {
   const [loading, setLoading] = useState(false)
   const [registered, setRegistered] = useState(false)
   const navigate = useNavigate()
+  const location = useLocation()
   const { theme } = useTheme()
+
+  function getPostLoginPath() {
+    const state = location.state as { from?: unknown } | null
+    const statePath = typeof state?.from === 'string' ? state.from : null
+    const queryPath = new URLSearchParams(location.search).get('next')
+    const target = statePath ?? queryPath
+
+    if (target && target.startsWith('/') && !target.startsWith('//') && target !== '/login') {
+      return target
+    }
+    return '/home'
+  }
 
   async function handleSubmit(e: FormEvent) {
     e.preventDefault()
@@ -32,9 +45,9 @@ export default function LoginPage({ onLogin }: Props) {
         return
       }
       const token = await login(username, password)
-      sessionStorage.setItem(TOKEN_KEY, token)
+      setStoredToken(token)
       onLogin()
-      navigate('/', { replace: true })
+      navigate(getPostLoginPath(), { replace: true })
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Something went wrong')
     } finally {
