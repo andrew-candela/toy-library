@@ -8,7 +8,7 @@ logger = structlog.get_logger(__name__)
 
 _SEND_EMAIL = os.getenv("LIVE_EMAIL", "false").lower() == "true"
 _EMAIL_FROM = os.getenv("EMAIL_FROM", "")
-_FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:5173")
+_FRONTEND_URL = os.getenv("FRONTEND_URL", "http://localhost:81")
 
 
 async def _send_email(to_email: str, subject: str, html: str) -> None:
