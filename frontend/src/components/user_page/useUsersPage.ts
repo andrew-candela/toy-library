@@ -20,20 +20,39 @@ export function useUsersPage(token: string): UseUsersPageReturn {
   const [searchParams, setSearchParams] = useSearchParams()
 
   const [users, setUsers] = useState<UserListItem[]>([])
-  const [currentPage, setCurrentPage] = useState(1)
   const [totalPages, setTotalPages] = useState(1)
   const [neighborhoods, setNeighborhoods] = useState<string[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
 
-  // Get filter values from URL params
-  const filterNeighborhood = searchParams.get('neighborhood') || null
-  const searchInput = searchParams.get('search') || ''
-  const pageFromUrl = parseInt(searchParams.get('page') || '1', 10)
+  // Filter/page state lives locally so multiple changes made in the same
+  // event handler (e.g. "Clear filters") are batched together before being
+  // synced to the URL, avoiding a stale-searchParams race.
+  const [filterNeighborhood, setFilterNeighborhood] = useState<string | null>(
+    () => searchParams.get('neighborhood') || null,
+  )
+  const [searchInput, setSearchInput] = useState<string>(
+    () => searchParams.get('search') || '',
+  )
+  const [currentPage, setCurrentPage] = useState<number>(
+    () => parseInt(searchParams.get('page') || '1', 10),
+  )
 
+  // Sync all filter/page state to the URL in a single effect so simultaneous
+  // updates (e.g. clearing both search and neighborhood) land together.
   useEffect(() => {
-    setCurrentPage(pageFromUrl)
-  }, [pageFromUrl])
+    const next = new URLSearchParams()
+    if (filterNeighborhood) {
+      next.set('neighborhood', filterNeighborhood)
+    }
+    if (searchInput) {
+      next.set('search', searchInput)
+    }
+    if (currentPage > 1) {
+      next.set('page', String(currentPage))
+    }
+    setSearchParams(next, { replace: true })
+  }, [filterNeighborhood, searchInput, currentPage, setSearchParams])
 
   // Fetch users whenever filters or page changes
   useEffect(() => {
@@ -73,31 +92,17 @@ export function useUsersPage(token: string): UseUsersPageReturn {
   }, [token, filterNeighborhood, searchInput, currentPage])
 
   const handleFilterNeighborhood = (neighborhood: string | null) => {
-    const newParams = new URLSearchParams(searchParams)
-    if (neighborhood) {
-      newParams.set('neighborhood', neighborhood)
-    } else {
-      newParams.delete('neighborhood')
-    }
-    newParams.set('page', '1') // Reset to page 1 when filtering
-    setSearchParams(newParams)
+    setFilterNeighborhood(neighborhood)
+    setCurrentPage(1) // Reset to page 1 when filtering
   }
 
   const handleSearch = (search: string) => {
-    const newParams = new URLSearchParams(searchParams)
-    if (search) {
-      newParams.set('search', search)
-    } else {
-      newParams.delete('search')
-    }
-    newParams.set('page', '1') // Reset to page 1 when searching
-    setSearchParams(newParams)
+    setSearchInput(search)
+    setCurrentPage(1) // Reset to page 1 when searching
   }
 
   const handlePageChange = (page: number) => {
-    const newParams = new URLSearchParams(searchParams)
-    newParams.set('page', String(page))
-    setSearchParams(newParams)
+    setCurrentPage(page)
   }
 
   return {

@@ -55,7 +55,8 @@ class Toy(Base):
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     title: Mapped[str] = mapped_column(String, nullable=False)
     description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    age_range: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    min_age: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
+    max_age: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     image_path: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     condition: Mapped[Optional[ToyCondition]] = mapped_column(
         Enum(ToyCondition), nullable=True

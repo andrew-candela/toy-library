@@ -1,4 +1,5 @@
 // ToysPage.tsx
+import { useEffect, useState } from 'react'
 import { useToysPage } from './useToysPage'
 import { TagFilterBar } from './TagFilterBar'
 import { ToyFormModal } from './ToyFormModal'
@@ -17,6 +18,20 @@ export default function ToysPage({ token }: Props) {
   
   // Custom hook injects everything we need
   const hook = useToysPage(token)
+
+  // Locally-buffered "suitable for age" text so the query only fires once the
+  // user pauses typing, instead of on every keystroke (which was also causing
+  // this input to unmount/lose focus while a request was in flight).
+  const [ageInput, setAgeInput] = useState(hook.filterAge)
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      hook.setFilterAge(ageInput)
+      hook.setCurrentPage(1)
+    }, 400)
+    return () => clearTimeout(timer)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [ageInput])
 
   // --- Scoped CSS Styles ---
   const btnStyle: React.CSSProperties = {
@@ -62,6 +77,64 @@ export default function ToysPage({ token }: Props) {
         setCurrentPage={hook.setCurrentPage}
       />
 
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: isCompactLayout ? 'flex-start' : 'flex-end',
+          alignItems: 'center',
+          gap: 16,
+          flexDirection: isCompactLayout ? 'column' : 'row',
+          marginBottom: 16,
+        }}
+      >
+        <label
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            fontSize: 14,
+            color: theme.textSecondary,
+          }}
+        >
+          Suitable for age
+          <input
+            type="number"
+            min={0}
+            value={ageInput}
+            onChange={(e) => setAgeInput(e.target.value)}
+            style={{
+              width: 72,
+              padding: '4px 8px',
+              borderRadius: 6,
+              border: `1px solid ${theme.border}`,
+              background: theme.inputBg,
+              color: theme.textPrimary,
+              fontSize: 14,
+            }}
+          />
+        </label>
+        <label
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            fontSize: 14,
+            color: theme.textSecondary,
+          }}
+        >
+          <input
+            type="checkbox"
+            checked={hook.showOnlyMyToys}
+            onChange={(e) => {
+              hook.setShowOnlyMyToys(e.target.checked)
+              if (e.target.checked) hook.setOwnerUsername('')
+              hook.setCurrentPage(1)
+            }}
+          />
+          My toys only
+        </label>
+      </div>
+
       {/* 2. Create / Edit Form Modal */}
       {hook.formOpen && (
         <ToyFormModal
@@ -96,29 +169,6 @@ export default function ToysPage({ token }: Props) {
       {/* 4. Core Grid Data Layout */}
       {!hook.loading && (
         <>
-          <div style={{ display: 'flex', justifyContent: isCompactLayout ? 'flex-start' : 'flex-end', marginBottom: 10 }}>
-            <label
-              style={{
-                display: 'inline-flex',
-                alignItems: 'center',
-                gap: 8,
-                fontSize: 14,
-                color: theme.textSecondary,
-              }}
-            >
-              <input
-                type="checkbox"
-                checked={hook.showOnlyMyToys}
-                onChange={(e) => {
-                  hook.setShowOnlyMyToys(e.target.checked)
-                  if (e.target.checked) hook.setOwnerUsername('')
-                  hook.setCurrentPage(1)
-                }}
-              />
-              My toys only
-            </label>
-          </div>
-
           <ToyTable
             token={token}
             toys={hook.toys}

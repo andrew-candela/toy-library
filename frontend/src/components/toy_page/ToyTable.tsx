@@ -207,8 +207,12 @@ export function ToyTable({
                   </Link>
                   <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <div>
-                      <div style={labelStyle}>Age Range</div>
-                      <div style={{ color: theme.textPrimary, fontSize: 14 }}>{toy.age_range ?? '—'}</div>
+                      <div style={labelStyle}>Min Age</div>
+                      <div style={{ color: theme.textPrimary, fontSize: 14 }}>{toy.min_age ?? '—'}</div>
+                    </div>
+                    <div>
+                      <div style={labelStyle}>Max Age</div>
+                      <div style={{ color: theme.textPrimary, fontSize: 14 }}>{toy.max_age ?? '—'}</div>
                     </div>
                     <div>
                       <div style={labelStyle}>Tags</div>
@@ -319,14 +323,15 @@ export function ToyTable({
           <th style={{ ...thStyle, width: 64 }}>Image</th>
           <th style={thStyle}>Title</th>
           <th style={thStyle}>Tags</th>
-          <th style={thStyle}>Age Range</th>
+          <th style={thStyle}>Min Age</th>
+          <th style={thStyle}>Max Age</th>
           <th style={thStyle}>Actions</th>
         </tr>
       </thead>
       <tbody>
         {toys.length === 0 && (
           <tr>
-            <td colSpan={5} style={{ ...tdStyle, color: theme.textMuted }}>
+            <td colSpan={6} style={{ ...tdStyle, color: theme.textMuted }}>
               No toys yet.
             </td>
           </tr>
@@ -385,8 +390,11 @@ export function ToyTable({
                 </div>
               </td>
 
-              {/* Age Range Column */}
-              <td style={tdStyle}>{toy.age_range ?? '—'}</td>
+              {/* Min Age Column */}
+              <td style={tdStyle}>{toy.min_age ?? '—'}</td>
+
+              {/* Max Age Column */}
+              <td style={tdStyle}>{toy.max_age ?? '—'}</td>
 
               {/* Actions Column */}
               <td style={tdStyle}>

@@ -38,7 +38,8 @@ class ToyType:
     id: int
     title: str
     description: Optional[str]
-    age_range: Optional[str]
+    min_age: Optional[int]
+    max_age: Optional[int]
     image_path: Optional[str]
     tags: list[ToyTagType]
 
@@ -48,7 +49,8 @@ class ToyType:
             id=model.id,
             title=model.title,
             description=model.description,
-            age_range=model.age_range,
+            min_age=model.min_age,
+            max_age=model.max_age,
             image_path=model.image_path,
             tags=[ToyTagType.from_model(t) for t in model.tags],
         )

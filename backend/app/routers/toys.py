@@ -16,16 +16,31 @@ def _normalize_tag(raw: str) -> str:
     return raw.lstrip("#").strip().lower()
 
 
+def _validate_age_range(min_age: int | None, max_age: int | None) -> None:
+    if min_age is not None and min_age < 0:
+        raise HTTPException(status_code=400, detail="Minimum age must be 0 or greater")
+    if max_age is not None and max_age < 0:
+        raise HTTPException(status_code=400, detail="Maximum age must be 0 or greater")
+    if min_age is not None and max_age is not None and min_age > max_age:
+        raise HTTPException(
+            status_code=400,
+            detail="Minimum age must be less than or equal to maximum age",
+        )
+
+
 @router.get("/", response_model=PaginatedResponse[ToyOut])
 async def list_toys(
     tags: list[str] = Query(default=[]),
     owned_by_current_user: bool = Query(False),
     owner_username: str | None = Query(None),
+    age: int | None = Query(None),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    if age is not None and age < 0:
+        raise HTTPException(status_code=400, detail="Age must be 0 or greater")
     query = select(Toy)
     if owned_by_current_user:
         query = query.where(
@@ -38,6 +53,13 @@ async def list_toys(
                 .join(User, UserToy.user_id == User.id)
                 .where(User.username == owner_username)
             )
+        )
+    if age is not None:
+        query = query.where(
+            Toy.min_age.is_not(None),
+            Toy.max_age.is_not(None),
+            Toy.min_age <= age,
+            Toy.max_age >= age,
         )
     for tag in tags:
         normalized = _normalize_tag(tag)
@@ -101,7 +123,8 @@ async def get_toy(
 async def create_toy(
     title: str = Form(...),
     description: str | None = Form(None),
-    age_range: str | None = Form(None),
+    min_age: int | None = Form(None),
+    max_age: int | None = Form(None),
     condition: ToyCondition | None = Form(None),
     date_added: datetime | None = Form(None),
     tags: list[str] = Form(default=[]),
@@ -109,11 +132,13 @@ async def create_toy(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    _validate_age_range(min_age, max_age)
     image_path = await save_toy_image(image_file) if image_file is not None else None
     toy = Toy(
         title=title,
         description=description,
-        age_range=age_range,
+        min_age=min_age,
+        max_age=max_age,
         image_path=image_path,
         condition=condition,
         date_added=date_added,
@@ -139,7 +164,8 @@ async def update_toy(
     toy_id: int,
     title: str | None = Form(None),
     description: str | None = Form(None),
-    age_range: str | None = Form(None),
+    min_age: int | None = Form(None),
+    max_age: int | None = Form(None),
     condition: ToyCondition | None = Form(None),
     date_added: datetime | None = Form(None),
     tags: list[str] = Form(default=[]),
@@ -154,13 +180,19 @@ async def update_toy(
     old_image_path = toy.image_path
     new_image_path: str | None = None
 
+    effective_min_age = min_age if min_age is not None else toy.min_age
+    effective_max_age = max_age if max_age is not None else toy.max_age
+    _validate_age_range(effective_min_age, effective_max_age)
+
     try:
         if title is not None:
             toy.title = title
         if description is not None:
             toy.description = description
-        if age_range is not None:
-            toy.age_range = age_range
+        if min_age is not None:
+            toy.min_age = min_age
+        if max_age is not None:
+            toy.max_age = max_age
         if condition is not None:
             toy.condition = condition
         if date_added is not None:

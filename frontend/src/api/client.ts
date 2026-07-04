@@ -35,13 +35,41 @@ async function authedFetch(token: string, url: string, init: RequestInit = {}): 
   return response
 }
 
+/**
+ * Parses an error response body and returns a human-readable message.
+ * Handles FastAPI's `{"detail": "..."}` shape as well as pydantic's
+ * `{"detail": [{"msg": "...", ...}, ...]}` validation-error shape, falling
+ * back to the raw response text (or the provided fallback) otherwise.
+ */
+async function extractErrorDetail(response: Response, fallback: string): Promise<string> {
+  const text = await response.text()
+  try {
+    const json = JSON.parse(text)
+    if (typeof json.detail === 'string' && json.detail) {
+      return json.detail
+    }
+    if (Array.isArray(json.detail)) {
+      const messages = json.detail
+        .map((item: { msg?: string }) => item?.msg)
+        .filter((msg: unknown): msg is string => typeof msg === 'string' && msg.length > 0)
+      if (messages.length > 0) {
+        return messages.join('; ')
+      }
+    }
+  } catch {
+    // not JSON — fall through to raw text
+  }
+  return text || fallback
+}
+
 export type ToyCondition = 'new' | 'like_new' | 'good' | 'fair' | 'poor'
 
 export interface Toy {
   id: number
   title: string
   description?: string
-  age_range?: string
+  min_age?: number
+  max_age?: number
   image_path?: string
   tags: string[]
   condition?: ToyCondition
@@ -51,7 +79,8 @@ export interface Toy {
 export interface ToyCreate {
   title: string
   description?: string
-  age_range?: string
+  min_age?: number
+  max_age?: number
   image_path?: string
   tags: string[]
   condition?: ToyCondition
@@ -61,7 +90,8 @@ export interface ToyCreate {
 export interface ToyUpdate {
   title?: string
   description?: string
-  age_range?: string
+  min_age?: number
+  max_age?: number
   image_path?: string
   tags?: string[]
   condition?: ToyCondition
@@ -269,6 +299,7 @@ export async function fetchToys(
   pageSize: number = 20,
   ownedByCurrentUser: boolean = false,
   ownerUsername?: string,
+  age?: number,
 ): Promise<PaginatedResponse<Toy>> {
   const params = new URLSearchParams()
   for (const tag of tags) {
@@ -280,12 +311,15 @@ export async function fetchToys(
   if (ownerUsername) {
     params.set('owner_username', ownerUsername)
   }
+  if (age !== undefined) {
+    params.set('age', String(age))
+  }
   params.set('page', String(page))
   params.set('page_size', String(pageSize))
   const qs = params.toString()
   const response = await authedFetch(token, `/api/toys/?${qs}`)
   if (!response.ok) {
-    throw new Error(`Failed to fetch toys: ${response.statusText}`)
+    throw new Error(await extractErrorDetail(response, `Failed to fetch toys: ${response.statusText}`))
   }
   return response.json() as Promise<PaginatedResponse<Toy>>
 }
@@ -303,8 +337,11 @@ export function appendToyFormFields(formData: FormData, data: ToyCreate | ToyUpd
   if (data.description !== undefined) {
     formData.append('description', data.description)
   }
-  if (data.age_range !== undefined) {
-    formData.append('age_range', data.age_range)
+  if (data.min_age !== undefined) {
+    formData.append('min_age', String(data.min_age))
+  }
+  if (data.max_age !== undefined) {
+    formData.append('max_age', String(data.max_age))
   }
   if (data.condition !== undefined) {
     formData.append('condition', data.condition)
@@ -325,8 +362,7 @@ export async function createToy(token: string, data: FormData): Promise<Toy> {
     body: data,
   })
   if (!response.ok) {
-    const detail = await response.text()
-    throw new Error(detail || 'Failed to create toy')
+    throw new Error(await extractErrorDetail(response, 'Failed to create toy'))
   }
   return response.json() as Promise<Toy>
 }
@@ -337,8 +373,7 @@ export async function updateToy(token: string, id: number, data: FormData): Prom
     body: data,
   })
   if (!response.ok) {
-    const detail = await response.text()
-    throw new Error(detail || 'Failed to update toy')
+    throw new Error(await extractErrorDetail(response, 'Failed to update toy'))
   }
   return response.json() as Promise<Toy>
 }
@@ -348,15 +383,7 @@ export async function deleteToy(token: string, id: number): Promise<void> {
     method: 'DELETE',
   })
   if (!response.ok) {
-    const text = await response.text()
-    let detail = text
-    try {
-      const json = JSON.parse(text)
-      if (json.detail) detail = json.detail
-    } catch {
-      // not JSON — use raw text
-    }
-    throw new Error(detail || 'Failed to delete toy')
+    throw new Error(await extractErrorDetail(response, 'Failed to delete toy'))
   }
 }
 

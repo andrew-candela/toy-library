@@ -33,7 +33,8 @@ function parsePage(raw: string | null): number {
 export interface ToyFormData {
   title: string
   description: string
-  age_range: string
+  min_age: string
+  max_age: string
   image_path: string
   image_file: File | null
   image_preview_url: string | null
@@ -43,7 +44,8 @@ export interface ToyFormData {
 const emptyForm: ToyFormData = {
   title: '',
   description: '',
-  age_range: '',
+  min_age: '',
+  max_age: '',
   image_path: '',
   image_file: null,
   image_preview_url: null,
@@ -80,6 +82,9 @@ export function useToysPage(token: string) {
   )
   const [ownerUsername, setOwnerUsername] = useState<string>(
     () => searchParams.get('owner') ?? ''
+  )
+  const [filterAge, setFilterAge] = useState<string>(
+    () => searchParams.get('age') ?? ''
   )
 
   // --- 3. Toy Form Modal State ---
@@ -189,16 +194,27 @@ export function useToysPage(token: string) {
     if (ownerUsername) {
       next.set('owner', ownerUsername)
     }
+    if (filterAge) {
+      next.set('age', filterAge)
+    }
     if (currentPage > 1) {
       next.set('page', String(currentPage))
     }
     setSearchParams(next, { replace: true })
-  }, [filterTags, showOnlyMyToys, ownerUsername, currentPage, setSearchParams])
+  }, [filterTags, showOnlyMyToys, ownerUsername, filterAge, currentPage, setSearchParams])
 
   useEffect(() => {
     setLoading(true)
     setError(null)
-    fetchToys(token, filterTags, currentPage, PAGE_SIZE, showOnlyMyToys, ownerUsername || undefined)
+    fetchToys(
+      token,
+      filterTags,
+      currentPage,
+      PAGE_SIZE,
+      showOnlyMyToys,
+      ownerUsername || undefined,
+      filterAge ? Number(filterAge) : undefined,
+    )
       .then((data) => {
         setToys(data.items)
         setTotalPages(data.total_pages)
@@ -207,7 +223,7 @@ export function useToysPage(token: string) {
         setError(err instanceof Error ? err.message : 'Failed to load toys'),
       )
       .finally(() => setLoading(false))
-  }, [token, filterTags, currentPage, refreshKey, showOnlyMyToys, ownerUsername])
+  }, [token, filterTags, currentPage, refreshKey, showOnlyMyToys, ownerUsername, filterAge])
 
   useEffect(() => {
     refreshMetadata().catch((err: unknown) => {
@@ -229,7 +245,8 @@ export function useToysPage(token: string) {
     setFormDataWithPreview({
       title: toy.title,
       description: toy.description ?? '',
-      age_range: toy.age_range ?? '',
+      min_age: toy.min_age?.toString() ?? '',
+      max_age: toy.max_age?.toString() ?? '',
       image_path: toy.image_path ?? '',
       image_file: null,
       image_preview_url: null,
@@ -263,7 +280,8 @@ export function useToysPage(token: string) {
       appendToyFormFields(payload, {
         title: formData.title,
         description: formData.description || undefined,
-        age_range: formData.age_range || undefined,
+        min_age: formData.min_age !== '' ? Number(formData.min_age) : undefined,
+        max_age: formData.max_age !== '' ? Number(formData.max_age) : undefined,
         tags: finalTags,
       })
       if (formData.image_file) {
@@ -423,6 +441,8 @@ export function useToysPage(token: string) {
     setShowOnlyMyToys,
     ownerUsername,
     setOwnerUsername,
+    filterAge,
+    setFilterAge,
     
     // Ownership metadata context
     ownedToyIds,

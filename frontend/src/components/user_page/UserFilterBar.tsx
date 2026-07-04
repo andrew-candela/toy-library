@@ -1,4 +1,4 @@
-import React, { useState } from 'react'
+import React, { useEffect, useState } from 'react'
 import { useTheme } from '../../theme/ThemeContext'
 import { useIsCompactLayout } from '../../theme/useIsCompactLayout'
 
@@ -20,6 +20,10 @@ export function UserFilterBar({
   const { theme } = useTheme()
   const [localSearch, setLocalSearch] = useState(searchInput)
   const isCompactLayout = useIsCompactLayout()
+
+  useEffect(() => {
+    setLocalSearch(searchInput)
+  }, [searchInput])
 
   const handleSearchInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value

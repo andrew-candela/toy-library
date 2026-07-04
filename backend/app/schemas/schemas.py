@@ -1,7 +1,7 @@
 from datetime import datetime
 from typing import Any, Generic, TypeVar
 
-from pydantic import BaseModel, EmailStr, field_validator
+from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 
 from app.models.models import ToyCondition
 
@@ -69,18 +69,30 @@ class ResetPasswordResponse(BaseModel):
 class ToyCreate(BaseModel):
     title: str
     description: str | None = None
-    age_range: str | None = None
+    min_age: int | None = Field(default=None, ge=0)
+    max_age: int | None = Field(default=None, ge=0)
     image_path: str | None = None
     tags: list[str] = []
     condition: ToyCondition | None = None
     date_added: datetime | None = None
+
+    @model_validator(mode="after")
+    def validate_age_range(self) -> "ToyCreate":
+        if (
+            self.min_age is not None
+            and self.max_age is not None
+            and self.min_age > self.max_age
+        ):
+            raise ValueError("min_age must be less than or equal to max_age")
+        return self
 
 
 class ToyOut(BaseModel):
     id: int
     title: str
     description: str | None = None
-    age_range: str | None = None
+    min_age: int | None = None
+    max_age: int | None = None
     image_path: str | None = None
     tags: list[str] = []
     condition: ToyCondition | None = None
@@ -105,7 +117,8 @@ class ToyOut(BaseModel):
 class ToyUpdate(BaseModel):
     title: str | None = None
     description: str | None = None
-    age_range: str | None = None
+    min_age: int | None = Field(default=None, ge=0)
+    max_age: int | None = Field(default=None, ge=0)
     image_path: str | None = None
     tags: list[str] | None = None
     condition: ToyCondition | None = None

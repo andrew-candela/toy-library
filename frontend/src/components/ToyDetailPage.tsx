@@ -159,10 +159,12 @@ export default function ToyDetailPage({ token }: Props) {
             <div style={{ flex: 1 }}>
               <h1 style={{ margin: '0 0 8px 0' }}>{toy.title}</h1>
 
-              {toy.age_range && (
+              {(toy.min_age !== undefined || toy.max_age !== undefined) && (
                 <div style={{ marginBottom: 12 }}>
                   <div style={labelStyle}>Age Range</div>
-                  <span style={{ fontSize: 15 }}>{toy.age_range}</span>
+                  <span style={{ fontSize: 15 }}>
+                    {toy.min_age ?? '?'} – {toy.max_age ?? '?'}
+                  </span>
                 </div>
               )}
 

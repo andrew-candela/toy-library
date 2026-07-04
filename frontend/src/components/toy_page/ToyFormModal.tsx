@@ -212,10 +212,23 @@ export function ToyFormModal({
       </label>
 
       <label style={labelStyle}>
-        Age Range
+        Min Age
         <input
-          value={formData.age_range}
-          onChange={(e) => handleFormChange('age_range', e.target.value)}
+          type="number"
+          min={0}
+          value={formData.min_age}
+          onChange={(e) => handleFormChange('min_age', e.target.value)}
+          style={inputStyle}
+        />
+      </label>
+
+      <label style={labelStyle}>
+        Max Age
+        <input
+          type="number"
+          min={0}
+          value={formData.max_age}
+          onChange={(e) => handleFormChange('max_age', e.target.value)}
           style={inputStyle}
         />
       </label>
