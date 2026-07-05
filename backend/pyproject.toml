@@ -20,6 +20,8 @@ dependencies = [
     "strawberry-graphql[fastapi]>=0.315.4",
     "resend[async]>=2.30.1",
     "prometheus-fastapi-instrumentator==8.0.0",
+    "openai>=2.44.0",
+    "pgvector>=0.4.2",
 ]
 
 [build-system]

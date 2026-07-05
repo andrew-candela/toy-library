@@ -16,7 +16,7 @@ from app.lib.auth import (
     oauth2_scheme,
 )
 from app.lib.database import get_db
-from app.lib.email import send_verification_email
+from app.lib.email_tools import send_verification_email
 from app.lib.redis import get_redis_client
 from app.models.models import Address, User
 from app.schemas.schemas import (

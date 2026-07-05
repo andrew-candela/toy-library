@@ -1,6 +1,7 @@
 services:
   postgres:
-    image: postgres:18
+    # image: postgres:18
+    image: pgvector/pgvector:0.8.4-pg18-trixie
     pull_policy: if_not_present
     env_file:
       - ./backend/.env

@@ -1,11 +1,26 @@
 from datetime import datetime, timezone
-from fastapi import APIRouter, Depends, File, Form, HTTPException, Query, UploadFile
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    Form,
+    HTTPException,
+    Query,
+    UploadFile,
+    BackgroundTasks,
+)
+from typing import Sequence
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.lib.auth import get_current_user
+from app.lib.auth import get_current_user, get_admin_user
 from app.lib.database import get_db
-from app.lib.toy_images import delete_toy_image, save_toy_image
+from app.lib.toy_images import (
+    delete_toy_image,
+    save_toy_image,
+    toy_embedding,
+    embed_description,
+)
 from app.models.models import Toy, ToyCondition, ToyInterest, ToyTag, User, UserToy
 from app.schemas.schemas import PaginatedResponse, ToyOut
 
@@ -34,6 +49,7 @@ async def list_toys(
     owned_by_current_user: bool = Query(False),
     owner_username: str | None = Query(None),
     age: int | None = Query(None),
+    search: str | None = Query(None),
     page: int = Query(1, ge=1),
     page_size: int = Query(20, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
@@ -66,6 +82,13 @@ async def list_toys(
         query = query.where(
             Toy.id.in_(select(ToyTag.toy_id).where(ToyTag.tag == normalized))
         )
+
+    order_by = Toy.id
+    trimmed_search = search.strip() if search else None
+    if trimmed_search:
+        query_vector = await embed_description(trimmed_search)
+        order_by = Toy.embedding.cosine_distance(query_vector)
+
     total = (
         await db.execute(select(func.count()).select_from(query.subquery()))
     ).scalar_one()
@@ -73,7 +96,7 @@ async def list_toys(
     rows = (
         (
             await db.execute(
-                query.order_by(Toy.id).offset((page - 1) * page_size).limit(page_size)
+                query.order_by(order_by).offset((page - 1) * page_size).limit(page_size)
             )
         )
         .scalars()
@@ -119,8 +142,22 @@ async def get_toy(
     return toy
 
 
+@router.post("/semantic_search", response_model=Sequence[ToyOut])
+async def semantic_toy_search(
+    description: str,
+    db: AsyncSession = Depends(get_db),
+    # current_user: User = Depends(get_current_user),
+):
+    query_vector = await embed_description(description)
+    result = await db.execute(
+        select(Toy).order_by(Toy.embedding.cosine_distance(query_vector)).limit(5)
+    )
+    return result.scalars().all()
+
+
 @router.post("", response_model=ToyOut, status_code=201)
 async def create_toy(
+    background_tasks: BackgroundTasks,
     title: str = Form(...),
     description: str | None = Form(None),
     min_age: int | None = Form(None),
@@ -156,12 +193,14 @@ async def create_toy(
         if normalized:
             db.add(ToyTag(toy_id=toy.id, tag=normalized))
     await db.commit()
+    background_tasks.add_task(toy_embedding, toy.id)
     return (await db.execute(select(Toy).where(Toy.id == toy.id))).scalar_one()
 
 
 @router.put("/{toy_id}", response_model=ToyOut)
 async def update_toy(
     toy_id: int,
+    background_tasks: BackgroundTasks,
     title: str | None = Form(None),
     description: str | None = Form(None),
     min_age: int | None = Form(None),
@@ -179,6 +218,7 @@ async def update_toy(
         raise HTTPException(status_code=404, detail="Toy not found")
     old_image_path = toy.image_path
     new_image_path: str | None = None
+    rerun_embedding = False
 
     effective_min_age = min_age if min_age is not None else toy.min_age
     effective_max_age = max_age if max_age is not None else toy.max_age
@@ -199,6 +239,7 @@ async def update_toy(
             toy.date_added = date_added
 
         if image_file is not None:
+            rerun_embedding = True
             new_image_path = await save_toy_image(image_file)
             toy.image_path = new_image_path
         elif remove_image:
@@ -211,6 +252,8 @@ async def update_toy(
                 db.add(ToyTag(toy_id=toy.id, tag=normalized))
 
         await db.commit()
+        if rerun_embedding:
+            background_tasks.add_task(toy_embedding, toy.id)
     except Exception:
         if new_image_path is not None:
             delete_toy_image(new_image_path)
@@ -220,6 +263,18 @@ async def update_toy(
         delete_toy_image(old_image_path)
 
     return (await db.execute(select(Toy).where(Toy.id == toy_id))).scalar_one()
+
+
+@router.post("/trigger_embedding")
+async def rerun_embedding(
+    toy_id: int,
+    background_tasks: BackgroundTasks,
+    # _: User = Depends(get_admin_user),
+):
+    """
+    Reruns the embedding for a given toy
+    """
+    background_tasks.add_task(toy_embedding, toy_id)
 
 
 @router.delete("/{toy_id}", status_code=204)

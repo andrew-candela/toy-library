@@ -86,6 +86,9 @@ export function useToysPage(token: string) {
   const [filterAge, setFilterAge] = useState<string>(
     () => searchParams.get('age') ?? ''
   )
+  const [searchQuery, setSearchQuery] = useState<string>(
+    () => searchParams.get('q') ?? ''
+  )
 
   // --- 3. Toy Form Modal State ---
   const [formOpen, setFormOpen] = useState(false)
@@ -197,11 +200,14 @@ export function useToysPage(token: string) {
     if (filterAge) {
       next.set('age', filterAge)
     }
+    if (searchQuery) {
+      next.set('q', searchQuery)
+    }
     if (currentPage > 1) {
       next.set('page', String(currentPage))
     }
     setSearchParams(next, { replace: true })
-  }, [filterTags, showOnlyMyToys, ownerUsername, filterAge, currentPage, setSearchParams])
+  }, [filterTags, showOnlyMyToys, ownerUsername, filterAge, searchQuery, currentPage, setSearchParams])
 
   useEffect(() => {
     setLoading(true)
@@ -214,6 +220,7 @@ export function useToysPage(token: string) {
       showOnlyMyToys,
       ownerUsername || undefined,
       filterAge ? Number(filterAge) : undefined,
+      searchQuery || undefined,
     )
       .then((data) => {
         setToys(data.items)
@@ -223,7 +230,7 @@ export function useToysPage(token: string) {
         setError(err instanceof Error ? err.message : 'Failed to load toys'),
       )
       .finally(() => setLoading(false))
-  }, [token, filterTags, currentPage, refreshKey, showOnlyMyToys, ownerUsername, filterAge])
+  }, [token, filterTags, currentPage, refreshKey, showOnlyMyToys, ownerUsername, filterAge, searchQuery])
 
   useEffect(() => {
     refreshMetadata().catch((err: unknown) => {
@@ -443,6 +450,8 @@ export function useToysPage(token: string) {
     setOwnerUsername,
     filterAge,
     setFilterAge,
+    searchQuery,
+    setSearchQuery,
     
     // Ownership metadata context
     ownedToyIds,

@@ -1,9 +1,12 @@
 import os
 
+from contextlib import asynccontextmanager
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker, create_async_engine
 from sqlalchemy.orm import DeclarativeBase
 
-_DATABASE_URL = os.getenv("DATABASE_URL", "postgresql://toy_library:toy_library@postgres:5432/toy_library")
+_DATABASE_URL = os.getenv(
+    "DATABASE_URL", "postgresql://toy_library:toy_library@postgres:5432/toy_library"
+)
 
 # Convert postgresql:// -> postgresql+asyncpg:// for async support.
 # Alembic migrations read the raw DATABASE_URL env var directly and are unaffected.
@@ -22,4 +25,10 @@ class Base(DeclarativeBase):
 
 async def get_db():
     async with AsyncSessionLocal() as session:
-        yield session
+        try:
+            yield session
+        except Exception:
+            await session.rollback()
+            raise
+        finally:
+            await session.close()

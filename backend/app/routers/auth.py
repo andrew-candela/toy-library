@@ -19,7 +19,10 @@ from app.lib.auth import (
     password_form_type,
 )
 from app.lib.database import get_db
-from app.lib.email import send_password_reset_email, send_verification_email
+from app.lib.email_tools import (
+    send_password_reset_email,
+    send_verification_email,
+)
 from app.lib.redis import get_redis_client
 from app.lib.dependencies import rate_limit_request
 from app.models.models import Address, User, AllowList

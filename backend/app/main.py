@@ -17,7 +17,7 @@ from strawberry.fastapi import GraphQLRouter
 
 from app.graphql.context import get_graphql_context
 from app.graphql.schema import schema
-from app.lib.logging import configure_structlog
+from app.lib.app_logging import configure_structlog
 from app.lib.toy_images import get_toy_image_public_path, get_toy_image_storage_dir
 from app.lib.redis import connect_redis, disconnect_redis
 from app.routers import (

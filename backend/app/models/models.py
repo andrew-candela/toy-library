@@ -12,7 +12,7 @@ from sqlalchemy import (
     UniqueConstraint,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-
+from pgvector.sqlalchemy import Vector
 from app.lib.database import Base
 
 
@@ -58,6 +58,7 @@ class Toy(Base):
     min_age: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     max_age: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
     image_path: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    ai_description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
     condition: Mapped[Optional[ToyCondition]] = mapped_column(
         Enum(ToyCondition), nullable=True
     )
@@ -74,6 +75,7 @@ class Toy(Base):
     user_toy: Mapped[Optional["UserToy"]] = relationship(
         "UserToy", back_populates="toy", uselist=False
     )
+    embedding: Mapped[Optional[Vector]] = mapped_column(Vector(1536), nullable=True)
 
 
 class ToyTag(Base):

@@ -33,6 +33,17 @@ export default function ToysPage({ token }: Props) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [ageInput])
 
+  // Semantic search is computationally expensive (embedding + vector search),
+  // so unlike the age filter we don't debounce-fire on every pause in typing.
+  // The input stays always-mounted; the query only runs when the user
+  // explicitly presses Enter.
+  const [searchInput, setSearchInput] = useState(hook.searchQuery)
+
+  function submitSearch() {
+    hook.setSearchQuery(searchInput)
+    hook.setCurrentPage(1)
+  }
+
   // --- Scoped CSS Styles ---
   const btnStyle: React.CSSProperties = {
     padding: '6px 14px',
@@ -69,7 +80,33 @@ export default function ToysPage({ token }: Props) {
         </div>
       )}
 
-      {/* 1. Filtering Module */}
+      {/* 1. Semantic Search */}
+      <div style={{ marginBottom: 16 }}>
+        <input
+          type="text"
+          value={searchInput}
+          onChange={(e) => setSearchInput(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+              e.preventDefault()
+              submitSearch()
+            }
+          }}
+          placeholder="Search toys by description, then press Enter (e.g. 'wooden building blocks')…"
+          style={{
+            width: '100%',
+            boxSizing: 'border-box',
+            padding: '8px 12px',
+            borderRadius: 6,
+            border: `1px solid ${theme.border}`,
+            background: theme.inputBg,
+            color: theme.textPrimary,
+            fontSize: 14,
+          }}
+        />
+      </div>
+
+      {/* 2. Filtering Module */}
       <TagFilterBar
         token={token}
         filterTags={hook.filterTags}

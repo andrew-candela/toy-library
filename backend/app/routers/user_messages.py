@@ -7,7 +7,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.lib.auth import get_current_user
 from app.lib.database import get_db
-from app.lib.email import send_user_contact_email
+from app.lib.email_tools import send_user_contact_email
 from app.lib.redis import get_redis_client
 from app.models.models import ToyInterest, User, UserToy
 from app.schemas.schemas import UserContactEmailRequest, UserContactEmailResponse

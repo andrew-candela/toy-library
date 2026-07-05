@@ -300,6 +300,7 @@ export async function fetchToys(
   ownedByCurrentUser: boolean = false,
   ownerUsername?: string,
   age?: number,
+  search?: string,
 ): Promise<PaginatedResponse<Toy>> {
   const params = new URLSearchParams()
   for (const tag of tags) {
@@ -313,6 +314,9 @@ export async function fetchToys(
   }
   if (age !== undefined) {
     params.set('age', String(age))
+  }
+  if (search) {
+    params.set('search', search)
   }
   params.set('page', String(page))
   params.set('page_size', String(pageSize))

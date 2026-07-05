@@ -1,7 +1,7 @@
 import time
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
-from app.lib.logging import structlog
+from app.lib.app_logging import structlog
 
 logger = structlog.get_logger(__name__)
 

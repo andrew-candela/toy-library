@@ -5,7 +5,7 @@ from sqlalchemy.orm import selectinload
 
 from app.lib.auth import get_current_user
 from app.lib.database import get_db
-from app.lib.email import (
+from app.lib.email_tools import (
     send_transfer_accepted_email,
     send_transfer_canceled_email,
     send_transfer_initiated_email,
