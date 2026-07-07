@@ -76,7 +76,6 @@ export function useToysPage(token: string) {
     }
     return initialTags
   })
-  const [filterInput, setFilterInput] = useState('')
   const [showOnlyMyToys, setShowOnlyMyToys] = useState<boolean>(
     () => searchParams.get('my') === '1'
   )
@@ -94,7 +93,6 @@ export function useToysPage(token: string) {
   const [formOpen, setFormOpen] = useState(false)
   const [editToy, setEditToy] = useState<Toy | null>(null)
   const [formData, setFormData] = useState<ToyFormData>(emptyForm)
-  const [tagInput, setTagInput] = useState('')
   const [formError, setFormError] = useState<string | null>(null)
   const [formLoading, setFormLoading] = useState(false)
 
@@ -242,7 +240,6 @@ export function useToysPage(token: string) {
   function openCreate() {
     setEditToy(null)
     setFormDataWithPreview(emptyForm)
-    setTagInput('')
     setFormError(null)
     setFormOpen(true)
   }
@@ -259,7 +256,6 @@ export function useToysPage(token: string) {
       image_preview_url: null,
       tags: [...toy.tags],
     })
-    setTagInput('')
     setFormError(null)
     setFormOpen(true)
   }
@@ -267,7 +263,6 @@ export function useToysPage(token: string) {
   function closeForm() {
     setFormOpen(false)
     setEditToy(null)
-    setTagInput('')
     setFormError(null)
     setFormDataWithPreview(emptyForm)
   }
@@ -279,7 +274,7 @@ export function useToysPage(token: string) {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
-  async function handleFormSubmit(finalTags: string[]) {
+  async function handleFormSubmit() {
     setFormLoading(true)
     setFormError(null)
     try {
@@ -289,7 +284,7 @@ export function useToysPage(token: string) {
         description: formData.description || undefined,
         min_age: formData.min_age !== '' ? Number(formData.min_age) : undefined,
         max_age: formData.max_age !== '' ? Number(formData.max_age) : undefined,
-        tags: finalTags,
+        tags: formData.tags,
       })
       if (formData.image_file) {
         payload.append('image_file', formData.image_file)
@@ -439,11 +434,6 @@ export function useToysPage(token: string) {
     totalPages,
     setCurrentPage,
     
-    // Tag Filters
-    filterTags,
-    setFilterTags,
-    filterInput,
-    setFilterInput,
     showOnlyMyToys,
     setShowOnlyMyToys,
     ownerUsername,
@@ -466,8 +456,6 @@ export function useToysPage(token: string) {
     editToy,
     formData,
     setFormData,
-    tagInput,
-    setTagInput,
     formError,
     formLoading,
     handleImageFileChange,

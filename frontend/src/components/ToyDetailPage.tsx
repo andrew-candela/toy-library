@@ -175,17 +175,6 @@ export default function ToyDetailPage({ token }: Props) {
                 </div>
               )}
 
-              {toy.tags.length > 0 && (
-                <div style={{ marginBottom: 16 }}>
-                  <div style={labelStyle}>Tags</div>
-                  <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                    {toy.tags.map((tag) => (
-                      <span key={tag} style={chipStyle}>#{tag}</span>
-                    ))}
-                  </div>
-                </div>
-              )}
-
               {interestDetail && (
                 <div style={{ marginBottom: 16 }}>
                   <div style={labelStyle}>Interested Users</div>

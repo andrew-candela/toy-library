@@ -7,6 +7,10 @@ and to express interest in toys the'd like to borrow.
 
 ## ToDo
 
+
+- add a guidelines page
+- add more UI docs
+- add neighborhood to toys list page
 - implement semantic search.
     - index images when they are added
 - change style of toys link on user list page

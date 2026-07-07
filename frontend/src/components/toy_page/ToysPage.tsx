@@ -1,7 +1,6 @@
 // ToysPage.tsx
 import { useEffect, useState } from 'react'
 import { useToysPage } from './useToysPage'
-import { TagFilterBar } from './TagFilterBar'
 import { ToyFormModal } from './ToyFormModal'
 import { ToyTable } from './ToyTable'
 import { TransferModal } from './TransferModal'
@@ -106,14 +105,6 @@ export default function ToysPage({ token }: Props) {
         />
       </div>
 
-      {/* 2. Filtering Module */}
-      <TagFilterBar
-        token={token}
-        filterTags={hook.filterTags}
-        setFilterTags={hook.setFilterTags}
-        setCurrentPage={hook.setCurrentPage}
-      />
-
       <div
         style={{
           display: 'flex',
@@ -178,7 +169,6 @@ export default function ToysPage({ token }: Props) {
           token={token}
           editToy={hook.editToy}
           formData={hook.formData}
-          setFormData={hook.setFormData}
           formError={hook.formError}
           formLoading={hook.formLoading}
           onClose={hook.closeForm}
@@ -222,11 +212,6 @@ export default function ToysPage({ token }: Props) {
             onOpenEdit={hook.openEdit}
             onDelete={hook.handleDelete}
             onOpenTransferModal={hook.openTransferModal}
-            onTagClick={(tag) => {
-              if (!hook.filterTags.includes(tag)) {
-                hook.setFilterTags((prev) => [...prev, tag])
-              }
-            }}
           />
 
           {/* Pagination Controls */}

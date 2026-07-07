@@ -22,7 +22,6 @@ interface ToyTableProps {
   onOpenEdit: (toy: Toy) => void
   onDelete: (toy: Toy) => void
   onOpenTransferModal: (toy: Toy) => void
-  onTagClick: (tag: string) => void
 }
 
 interface ToyThumbnailProps {
@@ -102,7 +101,6 @@ export function ToyTable({
   onOpenEdit,
   onDelete,
   onOpenTransferModal,
-  onTagClick,
 }: ToyTableProps) {
   const { theme } = useTheme()
   const isCompactLayout = useIsCompactLayout()
@@ -214,25 +212,6 @@ export function ToyTable({
                       <div style={labelStyle}>Max Age</div>
                       <div style={{ color: theme.textPrimary, fontSize: 14 }}>{toy.max_age ?? '—'}</div>
                     </div>
-                    <div>
-                      <div style={labelStyle}>Tags</div>
-                      <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4, marginTop: 4 }}>
-                        {toy.tags.length === 0 ? (
-                          <span style={{ color: theme.textDisabled }}>—</span>
-                        ) : (
-                          toy.tags.map((tag) => (
-                            <span
-                              key={tag}
-                              style={{ ...chipStyle, cursor: 'pointer' }}
-                              title={`Filter by #${tag}`}
-                              onClick={() => onTagClick(tag)}
-                            >
-                              #{tag}
-                            </span>
-                          ))
-                        )}
-                      </div>
-                    </div>
                   </div>
                 </div>
               </div>
@@ -322,7 +301,6 @@ export function ToyTable({
         <tr>
           <th style={{ ...thStyle, width: 64 }}>Image</th>
           <th style={thStyle}>Title</th>
-          <th style={thStyle}>Tags</th>
           <th style={thStyle}>Min Age</th>
           <th style={thStyle}>Max Age</th>
           <th style={thStyle}>Actions</th>
@@ -331,7 +309,7 @@ export function ToyTable({
       <tbody>
         {toys.length === 0 && (
           <tr>
-            <td colSpan={6} style={{ ...tdStyle, color: theme.textMuted }}>
+            <td colSpan={5} style={{ ...tdStyle, color: theme.textMuted }}>
               No toys yet.
             </td>
           </tr>
@@ -368,26 +346,6 @@ export function ToyTable({
                 >
                   {toy.title}
                 </Link>
-              </td>
-
-              {/* Tags Column */}
-              <td style={tdStyle}>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 4 }}>
-                  {toy.tags.length === 0 ? (
-                    <span style={{ color: theme.textDisabled }}>—</span>
-                  ) : (
-                    toy.tags.map((tag) => (
-                      <span
-                        key={tag}
-                        style={{ ...chipStyle, cursor: 'pointer' }}
-                        title={`Filter by #${tag}`}
-                        onClick={() => onTagClick(tag)}
-                      >
-                        #{tag}
-                      </span>
-                    ))
-                  )}
-                </div>
               </td>
 
               {/* Min Age Column */}

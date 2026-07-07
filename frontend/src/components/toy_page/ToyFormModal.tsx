@@ -1,6 +1,5 @@
 // ToyFormModal.tsx
-import { useEffect, useState } from 'react'
-import { fetchTagSuggestions, type Toy } from '../../api/client'
+import { type Toy } from '../../api/client'
 import { useToyImage } from '../useToyImage'
 import { useTheme } from '../../theme/ThemeContext'
 import { useIsCompactLayout } from '../../theme/useIsCompactLayout'
@@ -11,24 +10,18 @@ interface ToyFormModalProps {
   token: string
   editToy: Toy | null
   formData: ToyFormData
-  setFormData: React.Dispatch<React.SetStateAction<ToyFormData>>
   formError: string | null
   formLoading: boolean
   onClose: () => void
   handleFormChange: (field: keyof Omit<ToyFormData, 'tags' | 'image_file' | 'image_preview_url'>, value: string) => void
   handleImageFileChange: (file: File | null) => void
-  handleFormSubmit: (finalTags: string[]) => Promise<void>
-}
-
-function normalizeTag(raw: string): string {
-  return raw.replace(/^#+/, '').trim().toLowerCase()
+  handleFormSubmit: () => Promise<void>
 }
 
 export function ToyFormModal({
   token,
   editToy,
   formData,
-  setFormData,
   formError,
   formLoading,
   onClose,
@@ -39,80 +32,10 @@ export function ToyFormModal({
   const { theme } = useTheme()
   const isCompactLayout = useIsCompactLayout()
 
-  // 2. Local, self-contained UI state for tag autocomplete
-  const [tagInput, setTagInput] = useState('')
-  const [formSuggestions, setFormSuggestions] = useState<string[]>([])
-  const [showFormDropdown, setShowFormDropdown] = useState(false)
-
-  // 3. Isolated debounce effect for tag autocomplete suggestions
-  useEffect(() => {
-    const normalized = normalizeTag(tagInput)
-    if (!normalized) {
-      setFormSuggestions([])
-      setShowFormDropdown(false)
-      return
-    }
-    const timer = setTimeout(() => {
-      fetchTagSuggestions(token, normalized)
-        .then((tags) => {
-          setFormSuggestions(tags)
-          setShowFormDropdown(tags.length > 0)
-        })
-        .catch(() => {
-          setFormSuggestions([])
-          setShowFormDropdown(false)
-        })
-    }, 150)
-    return () => clearTimeout(timer)
-  }, [tagInput, token])
-
-  // 4. Tag pill manipulation functions
-  function addFormTag(raw: string) {
-    const tag = normalizeTag(raw)
-    if (tag && !formData.tags.includes(tag)) {
-      setFormData((prev) => ({ ...prev, tags: [...prev.tags, tag] }))
-    }
-    setTagInput('')
-    setFormSuggestions([])
-    setShowFormDropdown(false)
-  }
-
-  function removeFormTag(tag: string) {
-    setFormData((prev) => ({ ...prev, tags: prev.tags.filter((t) => t !== tag) }))
-  }
-
-  function handleTagKeyDown(e: React.KeyboardEvent<HTMLInputElement>) {
-    if (e.key === 'Enter') {
-      e.preventDefault()
-      addFormTag(tagInput)
-    } else if (e.key === 'Escape') {
-      setShowFormDropdown(false)
-    }
-  }
-
-  function handleTagInputChange(value: string) {
-    if (value.endsWith(',')) {
-      addFormTag(value.slice(0, -1))
-    } else {
-      setTagInput(value)
-    }
-  }
-
   const { imageSrc: existingImageSrc } = useToyImage(token, formData.image_path || null, {
     enabled: !formData.image_preview_url,
   })
   const previewSrc = formData.image_preview_url ?? existingImageSrc
-
-  // Intercepting actual HTML submit to flush the tag input cleanly
-  function onSubmitWrapper(e: React.FormEvent) {
-    e.preventDefault()
-    const pendingTag = normalizeTag(tagInput)
-    const finalTags =
-      pendingTag && !formData.tags.includes(pendingTag)
-        ? [...formData.tags, pendingTag]
-        : formData.tags
-    handleFormSubmit(finalTags)
-  }
 
   // --- Scoped Styling Objects ---
   const inputStyle: React.CSSProperties = {
@@ -148,45 +71,12 @@ export function ToyFormModal({
     border: 'none',
   }
 
-  const chipStyle: React.CSSProperties = {
-    display: 'inline-flex',
-    alignItems: 'center',
-    gap: 4,
-    padding: '2px 8px',
-    borderRadius: 12,
-    background: theme.chipBg,
-    color: theme.chipText,
-    fontSize: 12,
-    fontWeight: 500,
-  }
-
-  const chipXStyle: React.CSSProperties = {
-    background: 'none',
-    border: 'none',
-    cursor: 'pointer',
-    padding: 0,
-    lineHeight: 1,
-    color: theme.chipText,
-    fontSize: 14,
-  }
-
-  const dropdownStyle: React.CSSProperties = {
-    position: 'absolute',
-    top: '100%',
-    left: 0,
-    right: 0,
-    zIndex: 100,
-    background: theme.dropdownBg,
-    border: `1px solid ${theme.border}`,
-    borderRadius: 6,
-    boxShadow: '0 4px 12px rgba(0,0,0,0.08)',
-    marginTop: 2,
-    overflow: 'hidden',
-  }
-
   return (
     <form
-      onSubmit={onSubmitWrapper}
+      onSubmit={(e) => {
+        e.preventDefault()
+        handleFormSubmit()
+      }}
       style={{
         background: theme.surfaceAlt,
         border: `1px solid ${theme.border}`,
@@ -274,74 +164,6 @@ export function ToyFormModal({
           />
         </div>
       )}
-
-      <div style={{ ...labelStyle, gridColumn: '1 / -1' }}>
-        <span>Tags</span>
-        <div
-          style={{
-            position: 'relative',
-            display: 'flex',
-            flexWrap: 'wrap',
-            alignItems: 'center',
-            gap: 6,
-            padding: '6px 8px',
-            borderRadius: 6,
-            border: `1px solid ${theme.border}`,
-            background: theme.inputBg,
-            minHeight: 38,
-          }}
-        >
-          {formData.tags.map((tag) => (
-            <span key={tag} style={chipStyle}>
-              #{tag}
-              <button
-                type="button"
-                onClick={() => removeFormTag(tag)}
-                style={chipXStyle}
-                aria-label={`Remove tag ${tag}`}
-              >
-                ×
-              </button>
-            </span>
-          ))}
-          <input
-            value={tagInput}
-            onChange={(e) => handleTagInputChange(e.target.value)}
-            onKeyDown={handleTagKeyDown}
-            onBlur={() => setTimeout(() => setShowFormDropdown(false), 150)}
-            placeholder={formData.tags.length === 0 ? 'Type a tag, then Enter or comma…' : ''}
-            style={{
-              border: 'none',
-              outline: 'none',
-              fontSize: 14,
-              padding: '2px 4px',
-              flexGrow: 1,
-              minWidth: 120,
-              background: 'transparent',
-              color: theme.textPrimary,
-            }}
-          />
-          {showFormDropdown && (
-            <div style={dropdownStyle}>
-              {formSuggestions.map((tag) => (
-                <div
-                  key={tag}
-                  onMouseDown={() => addFormTag(tag)}
-                  onMouseEnter={(e) => {
-                    ;(e.currentTarget as HTMLDivElement).style.background = theme.surfaceHover
-                  }}
-                  onMouseLeave={(e) => {
-                    ;(e.currentTarget as HTMLDivElement).style.background = theme.dropdownBg
-                  }}
-                  style={{ padding: '8px 12px', cursor: 'pointer', fontSize: 13 }}
-                >
-                  #{tag}
-                </div>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
 
       {formError && (
         <p style={{ margin: 0, color: theme.error, fontSize: 13, gridColumn: '1 / -1' }}>
