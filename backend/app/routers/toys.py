@@ -9,6 +9,7 @@ from fastapi import (
     UploadFile,
     BackgroundTasks,
 )
+import structlog
 from typing import Sequence
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -24,7 +25,10 @@ from app.lib.toy_images import (
 from app.models.models import Toy, ToyCondition, ToyInterest, ToyTag, User, UserToy
 from app.schemas.schemas import PaginatedResponse, ToyOut
 
+logger = structlog.getLogger(__name__)
 router = APIRouter()
+
+MAX_COSINE_DISTANCE = 0.8
 
 
 def _normalize_tag(raw: str) -> str:
@@ -83,12 +87,13 @@ async def list_toys(
             Toy.id.in_(select(ToyTag.toy_id).where(ToyTag.tag == normalized))
         )
 
-    order_by = Toy.id
+    order_by_criteria = Toy.id
     trimmed_search = search.strip() if search else None
     if trimmed_search:
         query_vector = await embed_description(trimmed_search)
-        order_by = Toy.embedding.cosine_distance(query_vector)
-
+        distance = Toy.embedding.cosine_distance(query_vector)
+        query = query.where(distance < MAX_COSINE_DISTANCE)
+        order_by_criteria = distance
     total = (
         await db.execute(select(func.count()).select_from(query.subquery()))
     ).scalar_one()
@@ -96,7 +101,9 @@ async def list_toys(
     rows = (
         (
             await db.execute(
-                query.order_by(order_by).offset((page - 1) * page_size).limit(page_size)
+                query.order_by(order_by_criteria)
+                .offset((page - 1) * page_size)
+                .limit(page_size)
             )
         )
         .scalars()
@@ -143,15 +150,35 @@ async def get_toy(
 
 
 @router.post("/semantic_search", response_model=Sequence[ToyOut])
-async def semantic_toy_search(
+async def semantic_toy_search_debug(
     description: str,
     db: AsyncSession = Depends(get_db),
-    # current_user: User = Depends(get_current_user),
+    current_user: User = Depends(get_current_user),
 ):
+    # max_distance = 0.8
     query_vector = await embed_description(description)
+    distance = Toy.embedding.cosine_distance(query_vector)
     result = await db.execute(
-        select(Toy).order_by(Toy.embedding.cosine_distance(query_vector)).limit(5)
+        select(Toy, distance.label("score"))
+        # .where(distance < max_distance)
+        .order_by(distance)
     )
+    rows = result.all()
+    matched_toys = []
+
+    logger.warning(f"--- Search Results for: '{description}' ---")
+    if not rows:
+        logger.warning("No results found below the threshold.")
+
+    for toy, score in rows:
+        # Format the score to 4 decimal places for readability
+        logger.warning(f"Distance: {score:.4f} | Toy ID: {toy.id} | Name: {toy.title}")
+        matched_toys.append(toy)
+
+    logger.warning("---------------------------------------------")
+
+    # 5. Return only the toys so your FastAPI response remains unchanged
+    return matched_toys
     return result.scalars().all()
 
 
@@ -269,7 +296,7 @@ async def update_toy(
 async def rerun_embedding(
     toy_id: int,
     background_tasks: BackgroundTasks,
-    # _: User = Depends(get_admin_user),
+    _: User = Depends(get_admin_user),
 ):
     """
     Reruns the embedding for a given toy

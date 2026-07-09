@@ -107,3 +107,8 @@ def metrics() -> Response:
 @app.get("/health")
 async def health():
     return "Hello World!"
+
+
+@app.get("/error")
+async def error():
+    raise Exception("This is supposed to happen! Or is it...")

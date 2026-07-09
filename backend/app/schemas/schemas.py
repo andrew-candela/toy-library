@@ -159,11 +159,16 @@ class InterestSummaryOut(BaseModel):
     viewer_interested: bool
 
 
+class InterestUserOut(BaseModel):
+    username: str
+    created_at: datetime
+
+
 class InterestDetailOut(BaseModel):
     toy_id: int
     interested_count: int
     can_view_usernames: bool
-    interested_usernames: list[str] = []
+    interested_usernames: list[InterestUserOut] = []
 
 
 class ProfileOut(BaseModel):

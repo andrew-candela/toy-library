@@ -81,6 +81,49 @@ export default function ToyDetailPage({ token }: Props) {
     setTransferLoading(false)
   }
 
+  function formatRelativeTime(isoTimestamp: string): string {
+    const date = new Date(isoTimestamp)
+    if (Number.isNaN(date.getTime())) {
+      return 'Unknown time'
+    }
+
+    const diffMs = Date.now() - date.getTime()
+    if (diffMs < 0) {
+      return 'just now'
+    }
+
+    const minutes = Math.floor(diffMs / (1000 * 60))
+    if (minutes < 1) return 'just now'
+    if (minutes < 60) return `${minutes}m ago`
+
+    const hours = Math.floor(minutes / 60)
+    if (hours < 24) return `${hours}h ago`
+
+    const days = Math.floor(hours / 24)
+    if (days < 7) return `${days}d ago`
+
+    const weeks = Math.floor(days / 7)
+    if (weeks < 5) return `${weeks}w ago`
+
+    const months = Math.floor(days / 30)
+    if (months < 12) return `${months}mo ago`
+
+    const years = Math.floor(days / 365)
+    return `${years}y ago`
+  }
+
+  function formatAbsoluteLocalTime(isoTimestamp: string): string {
+    const date = new Date(isoTimestamp)
+    if (Number.isNaN(date.getTime())) {
+      return 'Unknown date'
+    }
+
+    return date.toLocaleString(undefined, {
+      dateStyle: 'medium',
+      timeStyle: 'short',
+    })
+  }
+
   async function handleTransferSubmit(username: string) {
     if (!transferToy) return
     setTransferLoading(true)
@@ -238,14 +281,14 @@ export default function ToyDetailPage({ token }: Props) {
                         <p style={{ margin: '0 0 8px 0', color: theme.textMuted, fontSize: 14 }}>
                           {pendingTransferTo
                             ? 'Cancel the pending transfer before starting a new one.'
-                            : 'Click a username to start a transfer to that interested user.'}
+                            : 'Click a username to start a transfer.'}
                         </p>
                         <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                          {interestDetail.interested_usernames.map((username) => (
+                          {interestDetail.interested_usernames.map((interestUser) => (
                             <button
-                              key={username}
+                              key={interestUser.username}
                               type="button"
-                              onClick={() => openTransferModal(username)}
+                              onClick={() => openTransferModal(interestUser.username)}
                               style={{
                                 ...chipStyle,
                                 border: 'none',
@@ -253,11 +296,17 @@ export default function ToyDetailPage({ token }: Props) {
                                 opacity: pendingTransferTo ? 0.7 : 1,
                                 width: isCompactLayout ? '100%' : undefined,
                                 textAlign: isCompactLayout ? 'left' : 'center',
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: 8,
                               }}
-                              title={`Start a transfer to ${username}`}
+                              title={`Start a transfer to ${interestUser.username}\nInterested ${formatAbsoluteLocalTime(interestUser.created_at)}`}
                               disabled={Boolean(pendingTransferTo)}
                             >
-                              {username}
+                              <span>{interestUser.username}</span>
+                              <span style={{ fontSize: 12, opacity: 0.85 }}>
+                                {formatRelativeTime(interestUser.created_at)}
+                              </span>
                             </button>
                           ))}
                         </div>

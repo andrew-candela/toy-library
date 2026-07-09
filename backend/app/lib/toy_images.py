@@ -92,6 +92,9 @@ OPENAI_MODEL = "gpt-4o"
 OPENAI_EMBEDDING_MODEL = "text-embedding-3-small"
 
 _client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+_local_client = AsyncOpenAI(
+    base_url="http://192.168.1.113:8080/v1", api_key="None Needed for local"
+)
 
 
 async def describe_image(image_path: str) -> str:
@@ -113,7 +116,7 @@ async def describe_image(image_path: str) -> str:
                         "text": (
                             "Describe this toy in detail. This description will be used to identify the toy in searches later. "
                             "If you know anything about the brand, manufacturer or name of the character the toy is meant to "
-                            "protray, please also include that information."
+                            "portray, please also include that information."
                         ),
                     },
                     {
@@ -130,7 +133,9 @@ async def describe_image(image_path: str) -> str:
 async def embed_description(description: str) -> list[float]:
     """Generates a vector embedding for a given text string."""
     response = await _client.embeddings.create(
-        model=OPENAI_EMBEDDING_MODEL, input=description
+        # llama uses whatever is loaded, so we may as well use the openAI value here.
+        model=OPENAI_EMBEDDING_MODEL,
+        input=description,
     )
     return response.data[0].embedding
 

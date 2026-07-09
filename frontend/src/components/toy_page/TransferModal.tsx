@@ -96,11 +96,13 @@ export function TransferModal({
         <label style={labelStyle}>
           Recipient Username
           <input
+            name="recipient-search"
             value={recipientUsername}
             onChange={(e) => setRecipientUsername(e.target.value)}
             style={inputStyle}
             placeholder="Enter username"
             autoFocus
+            autoComplete="off"
           />
         </label>
         {error && <p style={{ margin: 0, color: theme.error, fontSize: 13 }}>{error}</p>}

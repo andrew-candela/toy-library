@@ -479,11 +479,16 @@ export interface InterestSummary {
   viewer_interested: boolean
 }
 
+export interface InterestedUserDetail {
+  username: string
+  created_at: string
+}
+
 export interface InterestDetail {
   toy_id: number
   interested_count: number
   can_view_usernames: boolean
-  interested_usernames: string[]
+  interested_usernames: InterestedUserDetail[]
 }
 
 export async function fetchAllInterests(token: string): Promise<InterestSummary[]> {

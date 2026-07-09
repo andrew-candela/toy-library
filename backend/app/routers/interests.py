@@ -8,7 +8,12 @@ from sqlalchemy.orm import selectinload
 from app.lib.auth import get_current_user
 from app.lib.database import get_db
 from app.models.models import Toy, ToyInterest, User, UserToy
-from app.schemas.schemas import InterestDetailOut, InterestOut, InterestSummaryOut
+from app.schemas.schemas import (
+    InterestDetailOut,
+    InterestOut,
+    InterestSummaryOut,
+    InterestUserOut,
+)
 
 router = APIRouter()
 
@@ -64,15 +69,18 @@ async def list_interests(
     )
     can_view_usernames = owner_result.scalar_one_or_none() is not None
 
-    interested_usernames: list[str] = []
+    interested_usernames: list[InterestUserOut] = []
     if can_view_usernames:
-        usernames_result = await db.execute(
-            select(User.username)
+        users_result = await db.execute(
+            select(User.username, ToyInterest.created_at)
             .join(ToyInterest, ToyInterest.user_id == User.id)
             .where(ToyInterest.toy_id == toy_id)
-            .order_by(User.username)
+            .order_by(ToyInterest.created_at.desc(), User.username.asc())
         )
-        interested_usernames = list(usernames_result.scalars().all())
+        interested_usernames = [
+            InterestUserOut(username=username, created_at=created_at)
+            for username, created_at in users_result.all()
+        ]
 
     return InterestDetailOut(
         toy_id=toy_id,

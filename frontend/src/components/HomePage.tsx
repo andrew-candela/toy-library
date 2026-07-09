@@ -11,8 +11,8 @@ const quotes = [
     attribution: 'Charles Eames',
   },
   {
-    text: "Pick up your legos or I'm throwing them all in the trash!",
-    attribution: 'You, probably',
+    text: "If he doesn't start picking them up I'm going to throw all these goddamn legos in the trash.",
+    attribution: 'You, probably. Definitely me sometimes',
   },
 ]
 
