@@ -97,6 +97,7 @@ class ToyOut(BaseModel):
     tags: list[str] = []
     condition: ToyCondition | None = None
     date_added: datetime | None = None
+    neighborhood: str | None = None
 
     model_config = {"from_attributes": True}
 

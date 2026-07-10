@@ -89,6 +89,10 @@ export function useToysPage(token: string) {
   const [searchQuery, setSearchQuery] = useState<string>(
     () => searchParams.get('q') ?? ''
   )
+  const [filterNeighborhood, setFilterNeighborhood] = useState<string>(
+    () => searchParams.get('neighborhood') ?? ''
+  )
+  const [neighborhoods, setNeighborhoods] = useState<string[]>([])
 
   // --- 3. Toy Form Modal State ---
   const [formOpen, setFormOpen] = useState(false)
@@ -216,11 +220,14 @@ export function useToysPage(token: string) {
     if (searchQuery) {
       next.set('q', searchQuery)
     }
+    if (filterNeighborhood) {
+      next.set('neighborhood', filterNeighborhood)
+    }
     if (currentPage > 1) {
       next.set('page', String(currentPage))
     }
     setSearchParams(next, { replace: true })
-  }, [filterTags, showOnlyMyToys, ownerUsername, filterAge, searchQuery, currentPage, setSearchParams])
+  }, [filterTags, showOnlyMyToys, ownerUsername, filterAge, searchQuery, filterNeighborhood, currentPage, setSearchParams])
 
   useEffect(() => {
     setLoading(true)
@@ -234,16 +241,29 @@ export function useToysPage(token: string) {
       ownerUsername || undefined,
       filterAge ? Number(filterAge) : undefined,
       searchQuery || undefined,
+      filterNeighborhood || undefined,
     )
       .then((data) => {
         setToys(data.items)
         setTotalPages(data.total_pages)
+
+        // Populate the neighborhood dropdown from the neighborhoods actually
+        // present among toys matching the other active filters, mirroring
+        // the convention used on the Users page.
+        const uniqueNeighborhoods = Array.from(
+          new Set(
+            data.items
+              .map((toy) => toy.neighborhood)
+              .filter((n): n is string => Boolean(n)),
+          ),
+        ).sort()
+        setNeighborhoods(uniqueNeighborhoods)
       })
       .catch((err: unknown) =>
         setError(err instanceof Error ? err.message : 'Failed to load toys'),
       )
       .finally(() => setLoading(false))
-  }, [token, filterTags, currentPage, refreshKey, showOnlyMyToys, ownerUsername, filterAge, searchQuery])
+  }, [token, filterTags, currentPage, refreshKey, showOnlyMyToys, ownerUsername, filterAge, searchQuery, filterNeighborhood])
 
   useEffect(() => {
     refreshMetadata().catch((err: unknown) => {
@@ -457,6 +477,9 @@ export function useToysPage(token: string) {
     setFilterAge,
     searchQuery,
     setSearchQuery,
+    filterNeighborhood,
+    setFilterNeighborhood,
+    neighborhoods,
     
     // Ownership metadata context
     ownedToyIds,

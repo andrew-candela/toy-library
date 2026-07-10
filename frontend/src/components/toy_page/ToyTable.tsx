@@ -212,6 +212,10 @@ export function ToyTable({
                       <div style={labelStyle}>Max Age</div>
                       <div style={{ color: theme.textPrimary, fontSize: 14 }}>{toy.max_age ?? '—'}</div>
                     </div>
+                    <div>
+                      <div style={labelStyle}>Neighborhood</div>
+                      <div style={{ color: theme.textPrimary, fontSize: 14 }}>{toy.neighborhood ?? '—'}</div>
+                    </div>
                   </div>
                 </div>
               </div>
@@ -303,13 +307,14 @@ export function ToyTable({
           <th style={thStyle}>Title</th>
           <th style={thStyle}>Min Age</th>
           <th style={thStyle}>Max Age</th>
+          <th style={thStyle}>Neighborhood</th>
           <th style={thStyle}>Actions</th>
         </tr>
       </thead>
       <tbody>
         {toys.length === 0 && (
           <tr>
-            <td colSpan={5} style={{ ...tdStyle, color: theme.textMuted }}>
+            <td colSpan={6} style={{ ...tdStyle, color: theme.textMuted }}>
               No toys yet.
             </td>
           </tr>
@@ -353,6 +358,9 @@ export function ToyTable({
 
               {/* Max Age Column */}
               <td style={tdStyle}>{toy.max_age ?? '—'}</td>
+
+              {/* Neighborhood Column */}
+              <td style={tdStyle}>{toy.neighborhood ?? '—'}</td>
 
               {/* Actions Column */}
               <td style={tdStyle}>

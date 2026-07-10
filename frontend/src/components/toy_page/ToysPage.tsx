@@ -150,6 +150,39 @@ export default function ToysPage({ token }: Props) {
             color: theme.textSecondary,
           }}
         >
+          Neighborhood
+          <select
+            value={hook.filterNeighborhood}
+            onChange={(e) => {
+              hook.setFilterNeighborhood(e.target.value)
+              hook.setCurrentPage(1)
+            }}
+            style={{
+              padding: '4px 8px',
+              borderRadius: 6,
+              border: `1px solid ${theme.border}`,
+              background: theme.inputBg,
+              color: theme.textPrimary,
+              fontSize: 14,
+            }}
+          >
+            <option value="">All neighborhoods</option>
+            {hook.neighborhoods.map((neighborhood) => (
+              <option key={neighborhood} value={neighborhood}>
+                {neighborhood}
+              </option>
+            ))}
+          </select>
+        </label>
+        <label
+          style={{
+            display: 'inline-flex',
+            alignItems: 'center',
+            gap: 8,
+            fontSize: 14,
+            color: theme.textSecondary,
+          }}
+        >
           <input
             type="checkbox"
             checked={hook.showOnlyMyToys}

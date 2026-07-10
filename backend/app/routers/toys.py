@@ -22,7 +22,15 @@ from app.lib.toy_images import (
     toy_embedding,
     embed_description,
 )
-from app.models.models import Toy, ToyCondition, ToyInterest, ToyTag, User, UserToy
+from app.models.models import (
+    Address,
+    Toy,
+    ToyCondition,
+    ToyInterest,
+    ToyTag,
+    User,
+    UserToy,
+)
 from app.schemas.schemas import PaginatedResponse, ToyOut
 
 logger = structlog.getLogger(__name__)
@@ -52,6 +60,7 @@ async def list_toys(
     tags: list[str] = Query(default=[]),
     owned_by_current_user: bool = Query(False),
     owner_username: str | None = Query(None),
+    neighborhood: str | None = Query(None),
     age: int | None = Query(None),
     search: str | None = Query(None),
     page: int = Query(1, ge=1),
@@ -72,6 +81,15 @@ async def list_toys(
                 select(UserToy.toy_id)
                 .join(User, UserToy.user_id == User.id)
                 .where(User.username == owner_username)
+            )
+        )
+    if neighborhood:
+        query = query.where(
+            Toy.id.in_(
+                select(UserToy.toy_id)
+                .join(User, UserToy.user_id == User.id)
+                .join(Address, Address.user_id == User.id)
+                .where(Address.neighborhood == neighborhood)
             )
         )
     if age is not None:
@@ -109,8 +127,30 @@ async def list_toys(
         .scalars()
         .all()
     )
+
+    toy_ids = [toy.id for toy in rows]
+    neighborhood_by_toy_id: dict[int, str | None] = {}
+    if toy_ids:
+        neighborhood_rows = (
+            await db.execute(
+                select(UserToy.toy_id, Address.neighborhood)
+                .join(User, UserToy.user_id == User.id)
+                .join(Address, Address.user_id == User.id)
+                .where(UserToy.toy_id.in_(toy_ids))
+            )
+        ).all()
+        neighborhood_by_toy_id = {
+            row.toy_id: row.neighborhood for row in neighborhood_rows
+        }
+
+    items = []
+    for toy in rows:
+        toy_out = ToyOut.model_validate(toy)
+        toy_out.neighborhood = neighborhood_by_toy_id.get(toy.id)
+        items.append(toy_out)
+
     return PaginatedResponse(
-        items=list(rows),
+        items=items,
         total=total,
         page=page,
         page_size=page_size,

@@ -11,7 +11,6 @@ and to express interest in toys the'd like to borrow.
 - add a guidelines page
 - add more UI docs
 - add a feedback formx
-- add neighborhood to toys list page
 - change style of toys link on user list page
 - Create `ToyBox`s. Users can add toys they have into a ToyBox. Other users can request the box.
 - original ownership of an item

@@ -74,6 +74,7 @@ export interface Toy {
   tags: string[]
   condition?: ToyCondition
   date_added?: string
+  neighborhood?: string | null
 }
 
 export interface ToyCreate {
@@ -301,6 +302,7 @@ export async function fetchToys(
   ownerUsername?: string,
   age?: number,
   search?: string,
+  neighborhood?: string,
 ): Promise<PaginatedResponse<Toy>> {
   const params = new URLSearchParams()
   for (const tag of tags) {
@@ -311,6 +313,9 @@ export async function fetchToys(
   }
   if (ownerUsername) {
     params.set('owner_username', ownerUsername)
+  }
+  if (neighborhood) {
+    params.set('neighborhood', neighborhood)
   }
   if (age !== undefined) {
     params.set('age', String(age))
