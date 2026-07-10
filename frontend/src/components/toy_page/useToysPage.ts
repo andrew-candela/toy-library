@@ -17,6 +17,7 @@ import {
   updateToy,
   type Toy,
 } from '../../api/client'
+import { compressImage } from '../../lib/imageCompression'
 
 const PAGE_SIZE = 20
 
@@ -64,7 +65,7 @@ export function useToysPage(token: string) {
   const [error, setError] = useState<string | null>(null)
 
   // --- 2. Filter Bar State ---
-  const [filterTags, setFilterTags] = useState<string[]>(() => {
+  const [filterTags, _] = useState<string[]>(() => {
     const seen = new Set<string>()
     const initialTags: string[] = []
     for (const rawTag of searchParams.getAll('tags')) {
@@ -95,6 +96,7 @@ export function useToysPage(token: string) {
   const [formData, setFormData] = useState<ToyFormData>(emptyForm)
   const [formError, setFormError] = useState<string | null>(null)
   const [formLoading, setFormLoading] = useState(false)
+  const [imageCompressing, setImageCompressing] = useState(false)
 
   // --- 4. Relational / Metadata State ---
   const [myInterestedToyIds, setMyInterestedToyIds] = useState<Set<number>>(new Set())
@@ -127,24 +129,37 @@ export function useToysPage(token: string) {
     })
   }
 
-  function handleImageFileChange(file: File | null) {
-    setFormData((prev) => {
-      if (prev.image_preview_url?.startsWith('blob:')) {
-        URL.revokeObjectURL(prev.image_preview_url)
-      }
-      if (!file) {
+  async function handleImageFileChange(file: File | null) {
+    if (!file) {
+      setFormData((prev) => {
+        if (prev.image_preview_url?.startsWith('blob:')) {
+          URL.revokeObjectURL(prev.image_preview_url)
+        }
         return {
           ...prev,
           image_file: null,
           image_preview_url: null,
         }
-      }
-      return {
-        ...prev,
-        image_file: file,
-        image_preview_url: URL.createObjectURL(file),
-      }
-    })
+      })
+      return
+    }
+
+    setImageCompressing(true)
+    try {
+      const compressedFile = await compressImage(file)
+      setFormData((prev) => {
+        if (prev.image_preview_url?.startsWith('blob:')) {
+          URL.revokeObjectURL(prev.image_preview_url)
+        }
+        return {
+          ...prev,
+          image_file: compressedFile,
+          image_preview_url: URL.createObjectURL(compressedFile),
+        }
+      })
+    } finally {
+      setImageCompressing(false)
+    }
   }
 
   // --- 7. Data Sync Effects ---
@@ -458,6 +473,7 @@ export function useToysPage(token: string) {
     setFormData,
     formError,
     formLoading,
+    imageCompressing,
     handleImageFileChange,
     openCreate,
     openEdit,

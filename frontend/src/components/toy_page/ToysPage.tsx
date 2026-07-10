@@ -91,7 +91,7 @@ export default function ToysPage({ token }: Props) {
               submitSearch()
             }
           }}
-          placeholder="Search toys by description, then press Enter (e.g. 'wooden building blocks')…"
+          placeholder="Sort toys by description, then press Enter (e.g. 'wooden building blocks')…"
           style={{
             width: '100%',
             boxSizing: 'border-box',
@@ -171,6 +171,7 @@ export default function ToysPage({ token }: Props) {
           formData={hook.formData}
           formError={hook.formError}
           formLoading={hook.formLoading}
+          imageCompressing={hook.imageCompressing}
           onClose={hook.closeForm}
           handleFormChange={hook.handleFormChange}
           handleImageFileChange={hook.handleImageFileChange}

@@ -12,6 +12,7 @@ interface ToyFormModalProps {
   formData: ToyFormData
   formError: string | null
   formLoading: boolean
+  imageCompressing: boolean
   onClose: () => void
   handleFormChange: (field: keyof Omit<ToyFormData, 'tags' | 'image_file' | 'image_preview_url'>, value: string) => void
   handleImageFileChange: (file: File | null) => void
@@ -24,6 +25,7 @@ export function ToyFormModal({
   formData,
   formError,
   formLoading,
+  imageCompressing,
   onClose,
   handleFormChange,
   handleImageFileChange,
@@ -137,9 +139,13 @@ export function ToyFormModal({
         <input
           type="file"
           accept="image/*"
+          disabled={imageCompressing}
           onChange={(e) => handleImageFileChange(e.target.files?.[0] ?? null)}
           style={inputStyle}
         />
+        {imageCompressing && (
+          <span style={{ fontSize: 12, color: theme.textSecondary }}>Compressing image…</span>
+        )}
       </label>
 
       {previewSrc && (
