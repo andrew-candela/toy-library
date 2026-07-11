@@ -98,6 +98,7 @@ class ToyOut(BaseModel):
     condition: ToyCondition | None = None
     date_added: datetime | None = None
     neighborhood: str | None = None
+    owner_username: str | None = None
 
     model_config = {"from_attributes": True}
 

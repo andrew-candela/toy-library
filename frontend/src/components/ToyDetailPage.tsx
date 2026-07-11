@@ -202,6 +202,18 @@ export default function ToyDetailPage({ token }: Props) {
             <div style={{ flex: 1 }}>
               <h1 style={{ margin: '0 0 8px 0' }}>{toy.title}</h1>
 
+              {toy.owner_username && (
+                <div style={{ marginBottom: 12 }}>
+                  <div style={labelStyle}>Owner</div>
+                  <Link
+                    to={`/users/${encodeURIComponent(toy.owner_username)}`}
+                    style={{ fontSize: 15, color: theme.link }}
+                  >
+                    {toy.owner_username}
+                  </Link>
+                </div>
+              )}
+
               {(toy.min_age !== undefined || toy.max_age !== undefined) && (
                 <div style={{ marginBottom: 12 }}>
                   <div style={labelStyle}>Age Range</div>

@@ -75,6 +75,7 @@ export interface Toy {
   condition?: ToyCondition
   date_added?: string
   neighborhood?: string | null
+  owner_username?: string | null
 }
 
 export interface ToyCreate {

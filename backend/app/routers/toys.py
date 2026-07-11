@@ -186,7 +186,18 @@ async def get_toy(
     toy = (await db.execute(select(Toy).where(Toy.id == toy_id))).scalar_one_or_none()
     if not toy:
         raise HTTPException(status_code=404, detail="Toy not found")
-    return toy
+
+    owner_username = (
+        await db.execute(
+            select(User.username)
+            .join(UserToy, UserToy.user_id == User.id)
+            .where(UserToy.toy_id == toy_id)
+        )
+    ).scalar_one_or_none()
+
+    toy_out = ToyOut.model_validate(toy)
+    toy_out.owner_username = owner_username
+    return toy_out
 
 
 @router.post("/semantic_search", response_model=Sequence[ToyOut])
