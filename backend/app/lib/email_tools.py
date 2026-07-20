@@ -132,8 +132,8 @@ async def send_transfer_accepted_email(
     """
 
     html = f"""
-    <p><strong>{to_username}</strong> has accepted the transfer of <strong>{item_title}</strong> on Toy Library.</p>
-    <p>The item now belongs to them.</p>
+    <p><strong>{to_username}</strong> has accepted the transfer of <strong>{item_title}</strong> in the Toy Library.</p>
+    <p>The toy now belongs to them.</p>
     """
     await _send_email(to_email, f"Transfer accepted: {item_title}", html)
 

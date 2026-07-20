@@ -1,3 +1,4 @@
+from enum import Enum
 import sys
 import structlog
 
@@ -23,3 +24,20 @@ def configure_structlog():
             structlog.processors.JSONRenderer(),
         ]
     structlog.configure(processors)
+
+
+class LoggerEventType(str, Enum):
+    ACTIVITY = "activity"
+    REQUEST = "request"
+
+
+_activity_logger = structlog.getLogger()
+
+
+def log_activity(type: str, user_id: int, **kwargs):
+    """
+    Convenience method to log an activity payload
+    """
+    _activity_logger.info(
+        LoggerEventType.ACTIVITY, type=type, user_id=user_id, **kwargs
+    )

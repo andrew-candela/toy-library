@@ -10,6 +10,7 @@ from app.lib.database import get_db
 from app.lib.email_tools import send_user_contact_email
 from app.lib.redis import get_redis_client
 from app.models.models import ToyInterest, User, UserToy
+from app.lib.app_logging import log_activity
 from app.schemas.schemas import UserContactEmailRequest, UserContactEmailResponse
 
 router = APIRouter()
@@ -148,5 +149,7 @@ async def send_user_message(
         from_username=current_user.username,
         message=body.message,
     )
-
+    log_activity(
+        type="UserSentMessage", user_id=current_user.id, target_user=recipient.id
+    )
     return UserContactEmailResponse(message="Email sent")

@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
 from app.lib.auth import get_current_user
+from app.lib.app_logging import log_activity
 from app.lib.database import get_db
 from app.lib.email_tools import (
     send_transfer_accepted_email,
@@ -102,7 +103,12 @@ async def initiate_transfer(
         select(UserToy).options(*_user_toy_options()).where(UserToy.id == user_toy.id)
     )
     user_toy = result.scalar_one()
-
+    log_activity(
+        type="ToyTransferInitiated",
+        user_id=current_user.id,
+        toy_id=toy_id,
+        target_user_id=target_user.id,
+    )
     await send_transfer_initiated_email(
         target_user.email,
         toy_title,
@@ -148,11 +154,16 @@ async def accept_transfer(
     existing_interest = interest_result.scalar_one_or_none()
     if existing_interest is not None:
         await db.delete(existing_interest)
-
+    original_user_id = user_toy.user_id
     user_toy.user_id = current_user.id
     user_toy.pending_user_id = None
     await db.commit()
-
+    log_activity(
+        type="ToyTransferAccepted",
+        user_id=current_user.id,
+        toy_id=toy_id,
+        original_user_id=original_user_id,
+    )
     result = await db.execute(
         select(UserToy).options(*_user_toy_options()).where(UserToy.id == user_toy.id)
     )
@@ -189,10 +200,17 @@ async def cancel_transfer(
         )
 
     pending_user_email = user_toy.pending_user.email
+    pending_user_id = user_toy.pending_user.id
     toy_title = user_toy.toy.title
 
     user_toy.pending_user_id = None
     await db.commit()
+    log_activity(
+        type="ToyTransferDeleted",
+        user_id=current_user.id,
+        toy_id=toy_id,
+        pending_user_id=pending_user_id,
+    )
 
     result = await db.execute(
         select(UserToy).options(*_user_toy_options()).where(UserToy.id == user_toy.id)

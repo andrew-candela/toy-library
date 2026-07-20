@@ -15,6 +15,7 @@ from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.lib.auth import get_current_user, get_admin_user
+from app.lib.app_logging import log_activity
 from app.lib.database import get_db
 from app.lib.toy_images import (
     delete_toy_image,
@@ -271,6 +272,7 @@ async def create_toy(
         if normalized:
             db.add(ToyTag(toy_id=toy.id, tag=normalized))
     await db.commit()
+    log_activity(type="ToyCreated", user_id=current_user.id, toy_id=toy.id)
     background_tasks.add_task(toy_embedding, toy.id)
     return (await db.execute(select(Toy).where(Toy.id == toy.id))).scalar_one()
 
@@ -294,6 +296,7 @@ async def update_toy(
     toy = (await db.execute(select(Toy).where(Toy.id == toy_id))).scalar_one_or_none()
     if not toy:
         raise HTTPException(status_code=404, detail="Toy not found")
+    old = ToyOut.model_validate(toy).model_dump(mode="json")
     old_image_path = toy.image_path
     new_image_path: str | None = None
     rerun_embedding = False
@@ -330,6 +333,13 @@ async def update_toy(
                 db.add(ToyTag(toy_id=toy.id, tag=normalized))
 
         await db.commit()
+        log_activity(
+            type="ToyUpdated",
+            user_id=current_user.id,
+            toy_id=toy.id,
+            new=ToyOut.model_validate(toy).model_dump(mode="json"),
+            old=old,
+        )
         if rerun_embedding:
             background_tasks.add_task(toy_embedding, toy.id)
     except Exception:
@@ -387,3 +397,9 @@ async def delete_toy(
     await db.delete(user_toy)
     await db.delete(toy)
     await db.commit()
+    log_activity(
+        type="ToyDeleted",
+        user_id=current_user.id,
+        toy_id=toy.id,
+        old=ToyOut.model_validate(toy).model_dump(mode="json"),
+    )

@@ -1,7 +1,7 @@
 import time
 from fastapi import Request, Response
 from starlette.middleware.base import BaseHTTPMiddleware
-from app.lib.app_logging import structlog
+from app.lib.app_logging import structlog, LoggerEventType
 
 logger = structlog.get_logger(__name__)
 
@@ -17,7 +17,7 @@ class AccessLogMiddleware(BaseHTTPMiddleware):
         )
 
         logger.info(
-            "request",
+            LoggerEventType.REQUEST,
             method=request.method,
             path=request.url.path,
             client_ip=client_ip,

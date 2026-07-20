@@ -24,6 +24,7 @@ from app.lib.email_tools import (
     send_verification_email,
 )
 from app.lib.redis import get_redis_client
+from app.lib.app_logging import log_activity
 from app.lib.dependencies import rate_limit_request
 from app.models.models import Address, User, AllowList
 from app.schemas.schemas import (
@@ -80,6 +81,7 @@ async def register(
     )
     db.add(user)
     await db.commit()
+    log_activity(type="NewUserRegistered", user_id=user.id, email=user.email)
     await db.refresh(user)
     address = Address(user_id=user.id, neighborhood=None)
     db.add(address)

@@ -7,6 +7,7 @@ from sqlalchemy.orm import selectinload
 
 from app.lib.auth import get_current_user
 from app.lib.database import get_db
+from app.lib.app_logging import log_activity
 from app.models.models import Toy, ToyInterest, User, UserToy
 from app.schemas.schemas import (
     InterestDetailOut,
@@ -133,6 +134,11 @@ async def express_interest(
     )
     interest = result.scalar_one()
     await db.commit()
+    log_activity(
+        type="InterestExpressed",
+        user_id=current_user.id,
+        toy_id=toy_id,
+    )
     return interest
 
 
@@ -156,3 +162,8 @@ async def delete_interest(
         )
     await db.delete(interest)
     await db.commit()
+    log_activity(
+        type="InterestRemoved",
+        user_id=current_user.id,
+        toy_id=toy_id,
+    )
