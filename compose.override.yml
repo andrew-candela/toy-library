@@ -1,8 +1,11 @@
 services:
   frontend:
-    build: 
-      target: prod
-    ports: 
-      - "81:80"
+    build:
+      target: dev
+    ports:
+      - "5173:5173"
     volumes:
-      - toy-images-data:/data/images:ro
+      - ./frontend:/app
+      - /app/node_modules   # anonymous volume so the container's own node_modules aren't shadowed
+    environment:
+      VITE_IMAGE_PROXY_TARGET: http://backend:8000
