@@ -149,7 +149,6 @@ async def embed_description(description: str) -> list[float]:
     elapsed = time.perf_counter() - start
     logger.info(
         "local_embedding_request_completed",
-        model=OPENAI_EMBEDDING_MODEL,
         elapsed_seconds=round(elapsed, 3),
     )
     return response.data[0].embedding
@@ -172,7 +171,9 @@ async def toy_embedding(
             raise ValueError(f"Toy id {toy_id} does not have an image")
 
         description = await describe_image(toy.image_path)
-        vector = await embed_description(description + " " + (toy.description or ""))
+        vector = await embed_description(
+            ". ".join([toy.title, (toy.description or ""), description])
+        )
         toy.embedding, toy.ai_description = cast(Vector, vector), description
 
         await db.commit()
