@@ -75,7 +75,7 @@ class Toy(Base):
     user_toy: Mapped[Optional["UserToy"]] = relationship(
         "UserToy", back_populates="toy", uselist=False
     )
-    embedding: Mapped[Optional[Vector]] = mapped_column(Vector(1536), nullable=True)
+    embedding: Mapped[Optional[Vector]] = mapped_column(Vector(768), nullable=True)
 
 
 class ToyTag(Base):

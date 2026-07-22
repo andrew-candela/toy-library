@@ -2,21 +2,26 @@ from __future__ import annotations
 
 import contextlib
 import os
+import time
 from pathlib import Path
 from uuid import uuid4
 import base64
 from typing import cast
 from pgvector.sqlalchemy import Vector
 from openai import AsyncOpenAI
+import structlog
 
 from app.models.models import Toy
 from app.lib.database import AsyncSessionLocal
 
 from fastapi import HTTPException, UploadFile
 
+logger = structlog.get_logger(__name__)
+
 MAX_TOY_IMAGE_BYTES = 10 * 1024 * 1024
 TOY_IMAGE_PUBLIC_PATH_ENV = "TOY_IMAGE_PUBLIC_PATH"
 TOY_IMAGE_STORAGE_DIR_ENV = "TOY_IMAGE_STORAGE_DIR"
+LOCAL_EMBEDDING_BASE_URL_ENV = "LOCAL_EMBEDDING_BASE_URL"
 
 _ALLOWED_IMAGE_MIME_TYPES = {
     "image/jpeg": ".jpg",
@@ -93,7 +98,10 @@ OPENAI_EMBEDDING_MODEL = "text-embedding-3-small"
 
 _client = AsyncOpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 _local_client = AsyncOpenAI(
-    base_url="http://192.168.1.113:8080/v1", api_key="None Needed for local"
+    base_url=os.environ.get(
+        LOCAL_EMBEDDING_BASE_URL_ENV, "http://192.168.1.113:8080/v1"
+    ),
+    api_key="None Needed for local",
 )
 
 
@@ -131,11 +139,18 @@ async def describe_image(image_path: str) -> str:
 
 
 async def embed_description(description: str) -> list[float]:
-    """Generates a vector embedding for a given text string."""
-    response = await _client.embeddings.create(
+    """Generates a vector embedding for a given text string using the local embedding model."""
+    start = time.perf_counter()
+    response = await _local_client.embeddings.create(
         # llama uses whatever is loaded, so we may as well use the openAI value here.
         model=OPENAI_EMBEDDING_MODEL,
         input=description,
+    )
+    elapsed = time.perf_counter() - start
+    logger.info(
+        "local_embedding_request_completed",
+        model=OPENAI_EMBEDDING_MODEL,
+        elapsed_seconds=round(elapsed, 3),
     )
     return response.data[0].embedding
 
@@ -157,7 +172,7 @@ async def toy_embedding(
             raise ValueError(f"Toy id {toy_id} does not have an image")
 
         description = await describe_image(toy.image_path)
-        vector = await embed_description(description)
+        vector = await embed_description(description + " " + (toy.description or ""))
         toy.embedding, toy.ai_description = cast(Vector, vector), description
 
         await db.commit()

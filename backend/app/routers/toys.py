@@ -37,7 +37,7 @@ from app.schemas.schemas import PaginatedResponse, ToyOut
 logger = structlog.getLogger(__name__)
 router = APIRouter()
 
-MAX_COSINE_DISTANCE = 0.8
+MAX_COSINE_DISTANCE = 0.35
 
 
 def _normalize_tag(raw: str) -> str:
