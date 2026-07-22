@@ -28,6 +28,7 @@ services:
     environment:
       TOY_IMAGE_STORAGE_DIR: /data/images
       TOY_IMAGE_PUBLIC_PATH: /images
+      LOCAL_EMBEDDING_BASE_URL: http://192.168.1.113:8080/v1
     depends_on:
       postgres:
         condition: service_healthy

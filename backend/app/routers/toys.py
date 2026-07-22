@@ -37,8 +37,6 @@ from app.schemas.schemas import PaginatedResponse, ToyOut
 logger = structlog.getLogger(__name__)
 router = APIRouter()
 
-MAX_COSINE_DISTANCE = 0.8
-
 
 def _normalize_tag(raw: str) -> str:
     return raw.lstrip("#").strip().lower()
@@ -106,28 +104,77 @@ async def list_toys(
             Toy.id.in_(select(ToyTag.toy_id).where(ToyTag.tag == normalized))
         )
 
-    order_by_criteria = Toy.id
     trimmed_search = search.strip() if search else None
     if trimmed_search:
+        # PATH 1: SEMANTIC SEARCH (Apply Band + Cliff)
         query_vector = await embed_description(trimmed_search)
-        distance = Toy.embedding.cosine_distance(query_vector)
-        query = query.where(distance < MAX_COSINE_DISTANCE)
-        order_by_criteria = distance
-    total = (
-        await db.execute(select(func.count()).select_from(query.subquery()))
-    ).scalar_one()
-    total_pages = max(1, (total + page_size - 1) // page_size)
-    rows = (
-        (
-            await db.execute(
-                query.order_by(order_by_criteria)
-                .offset((page - 1) * page_size)
-                .limit(page_size)
+
+        # Ask for both the Toy model and the calculated distance
+        distance_col = Toy.embedding.cosine_distance(query_vector).label("distance")
+        search_query = query.add_columns(distance_col).order_by(distance_col).limit(100)
+
+        # .all() returns a list of tuples: (Toy, float)
+        candidates = (await db.execute(search_query)).all()
+
+        filtered_toys = []
+        if candidates:
+            # For distance, lower is better. best_dist is the smallest distance.
+            best_dist = candidates[0].distance
+
+            # Thresholds to tune for your specific embeddings
+            MAX_ABSOLUTE_DIST = 0.50  # Safety floor (ignore items further than this)
+            MAX_RELATIVE_MARGIN = (
+                0.15  # Band: ignore items this much further than the top match
             )
+            CLIFF_GAP_THRESHOLD = (
+                0.05  # Cliff: cutoff if gap between adjacent items exceeds this
+            )
+
+            for i, row in enumerate(candidates):
+                toy_obj, current_dist = row
+
+                # 1. Absolute floor cutoff
+                if current_dist > MAX_ABSOLUTE_DIST:
+                    break
+
+                # 2. Relative band cutoff
+                if current_dist > best_dist + MAX_RELATIVE_MARGIN:
+                    break
+
+                # 3. Cliff detection
+                if i > 0:
+                    prev_dist = candidates[i - 1].distance
+                    gap = current_dist - prev_dist
+                    if gap >= CLIFF_GAP_THRESHOLD:
+                        break
+
+                filtered_toys.append(toy_obj)
+
+        # In-memory pagination for the filtered results
+        total = len(filtered_toys)
+        total_pages = max(1, (total + page_size - 1) // page_size)
+
+        start_idx = (page - 1) * page_size
+        rows = filtered_toys[start_idx : start_idx + page_size]
+
+    else:
+        # PATH 2: STANDARD RELATIONAL FILTERS (SQL Pagination)
+        total = (
+            await db.execute(select(func.count()).select_from(query.subquery()))
+        ).scalar_one()
+        total_pages = max(1, (total + page_size - 1) // page_size)
+
+        rows = (
+            (
+                await db.execute(
+                    query.order_by(Toy.id)
+                    .offset((page - 1) * page_size)
+                    .limit(page_size)
+                )
+            )
+            .scalars()
+            .all()
         )
-        .scalars()
-        .all()
-    )
 
     toy_ids = [toy.id for toy in rows]
     neighborhood_by_toy_id: dict[int, str | None] = {}
