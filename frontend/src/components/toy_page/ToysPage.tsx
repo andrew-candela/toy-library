@@ -79,6 +79,44 @@ export default function ToysPage({ token }: Props) {
         </div>
       )}
 
+      {hook.transferAcceptedMessage && (
+        <div
+          style={{
+            marginBottom: 16,
+            padding: '12px 14px',
+            borderRadius: 8,
+            border: `1px solid ${theme.border}`,
+            background: theme.surfaceAlt,
+            display: 'flex',
+            flexDirection: isCompactLayout ? 'column' : 'row',
+            alignItems: isCompactLayout ? 'flex-start' : 'center',
+            justifyContent: 'space-between',
+            gap: 10,
+          }}
+        >
+          <span style={{ fontSize: 14, color: theme.textSecondary }}>
+            You have accepted the transfer of <strong>{hook.transferAcceptedMessage}</strong>. You
+            are now the owner of this toy.
+          </span>
+          <button
+            type="button"
+            onClick={hook.dismissTransferAcceptedMessage}
+            style={{
+              padding: '4px 10px',
+              borderRadius: 6,
+              border: `1px solid ${theme.border}`,
+              background: theme.bg,
+              color: theme.textPrimary,
+              cursor: 'pointer',
+              fontSize: 13,
+              width: isCompactLayout ? '100%' : undefined,
+            }}
+          >
+            Dismiss
+          </button>
+        </div>
+      )}
+
       {/* 1. Semantic Search */}
       <div style={{ marginBottom: 16 }}>
         <input

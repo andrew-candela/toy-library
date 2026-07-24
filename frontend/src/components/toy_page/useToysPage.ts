@@ -109,6 +109,7 @@ export function useToysPage(token: string) {
   const [pendingIncomingToyIds, setPendingIncomingToyIds] = useState<Set<number>>(new Set())
   const [pendingTransferToByToy, setPendingTransferToByToy] = useState<Record<number, string>>({})
   const [actionLoadingByKey, setActionLoadingByKey] = useState<Record<string, boolean>>({})
+  const [transferAcceptedMessage, setTransferAcceptedMessage] = useState<string | null>(null)
 
   // --- 5. Transfer Modal State ---
   const [transferToy, setTransferToy] = useState<Toy | null>(null)
@@ -450,8 +451,10 @@ export function useToysPage(token: string) {
     setActionLoading(key, true)
     setError(null)
     try {
+      const acceptedToy = toys.find((t) => t.id === toyId)
       await acceptTransfer(token, toyId)
       await refreshMetadata()
+      setTransferAcceptedMessage(acceptedToy?.title ?? 'the toy')
     } catch (err: unknown) {
       setError(err instanceof Error ? err.message : 'Failed to accept transfer')
     } finally {
@@ -488,6 +491,8 @@ export function useToysPage(token: string) {
     pendingIncomingToyIds,
     pendingTransferToByToy,
     isActionLoading,
+    transferAcceptedMessage,
+    dismissTransferAcceptedMessage: () => setTransferAcceptedMessage(null),
 
     // Form controls
     formOpen,

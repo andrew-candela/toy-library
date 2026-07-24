@@ -1,25 +1,48 @@
-import { useEffect, useState } from 'react'
-import { Link, useParams } from 'react-router-dom'
+import { useCallback, useEffect, useState } from 'react'
+import { Link, useNavigate, useParams } from 'react-router-dom'
 import {
+  acceptTransfer,
+  appendToyFormFields,
   cancelTransfer,
+  deleteInterest,
+  deleteToy,
+  expressInterest,
+  fetchAllInterests,
   fetchInterests,
   fetchMyToys,
+  fetchPendingIncoming,
   fetchToy,
   initiateTransfer,
+  updateToy,
   type InterestDetail,
   type Toy,
 } from '../api/client'
+import { compressImage } from '../lib/imageCompression'
 import { useTheme } from '../theme/ThemeContext'
 import { useIsCompactLayout } from '../theme/useIsCompactLayout'
+import { ToyFormModal } from './toy_page/ToyFormModal'
 import { TransferModal } from './toy_page/TransferModal'
+import type { ToyFormData } from './toy_page/useToysPage'
 import { useToyImage } from './useToyImage'
 
 interface Props {
   token: string
 }
 
+const emptyForm: ToyFormData = {
+  title: '',
+  description: '',
+  min_age: '',
+  max_age: '',
+  image_path: '',
+  image_file: null,
+  image_preview_url: null,
+  tags: [],
+}
+
 export default function ToyDetailPage({ token }: Props) {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
   const [toy, setToy] = useState<Toy | null>(null)
   const [interestDetail, setInterestDetail] = useState<InterestDetail | null>(null)
   const [loading, setLoading] = useState(true)
@@ -31,41 +54,60 @@ export default function ToyDetailPage({ token }: Props) {
   const [pendingTransferTo, setPendingTransferTo] = useState<string | null>(null)
   const [pendingTransferError, setPendingTransferError] = useState<string | null>(null)
   const [cancelTransferLoading, setCancelTransferLoading] = useState(false)
+
+  // Ownership / interest / incoming-transfer metadata for the action buttons.
+  const [isOwner, setIsOwner] = useState(false)
+  const [isPendingRecipient, setIsPendingRecipient] = useState(false)
+  const [hasExpressedInterest, setHasExpressedInterest] = useState(false)
+  const [interestActionLoading, setInterestActionLoading] = useState(false)
+  const [acceptTransferLoading, setAcceptTransferLoading] = useState(false)
+  const [showTransferAcceptedMessage, setShowTransferAcceptedMessage] = useState(false)
+
+  // Edit form modal state.
+  const [formOpen, setFormOpen] = useState(false)
+  const [formData, setFormData] = useState<ToyFormData>(emptyForm)
+  const [formError, setFormError] = useState<string | null>(null)
+  const [formLoading, setFormLoading] = useState(false)
+  const [imageCompressing, setImageCompressing] = useState(false)
+
   const { theme } = useTheme()
   const isCompactLayout = useIsCompactLayout()
   const { imageSrc } = useToyImage(token, toy?.image_path ?? null)
 
-  useEffect(() => {
+  const refreshAll = useCallback(async () => {
     if (!id) return
-
     setLoading(true)
     setError(null)
 
-    async function loadToyPageData() {
-      try {
-        const [toyData, interestData, myToys] = await Promise.all([
-          fetchToy(token, Number(id)),
-          fetchInterests(token, Number(id)),
-          fetchMyToys(token),
-        ])
-        
-        const myToyRecord = myToys.find((userToy) => userToy.toy_id === Number(id))
-        
-        setToy(toyData)
-        setInterestDetail(interestData)
-        setPendingTransferTo(myToyRecord?.pending_user?.username ?? null)
-        setPendingTransferError(null)
+    try {
+      const [toyData, interestData, myToys, allInterests, pendingIncoming] = await Promise.all([
+        fetchToy(token, Number(id)),
+        fetchInterests(token, Number(id)),
+        fetchMyToys(token),
+        fetchAllInterests(token),
+        fetchPendingIncoming(token),
+      ])
 
-      } catch (err: unknown) {
-        setError(err instanceof Error ? err.message : 'Failed to load toy')
-      } finally {
-        setLoading(false)
-      }
+      const myToyRecord = myToys.find((userToy) => userToy.toy_id === Number(id))
+      const interestSummary = allInterests.find((summary) => summary.toy_id === Number(id))
+
+      setToy(toyData)
+      setInterestDetail(interestData)
+      setPendingTransferTo(myToyRecord?.pending_user?.username ?? null)
+      setPendingTransferError(null)
+      setIsOwner(Boolean(myToyRecord))
+      setIsPendingRecipient(pendingIncoming.some((userToy) => userToy.toy_id === Number(id)))
+      setHasExpressedInterest(interestSummary?.viewer_interested ?? false)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to load toy')
+    } finally {
+      setLoading(false)
     }
-
-    loadToyPageData()
-
   }, [token, id])
+
+  useEffect(() => {
+    refreshAll()
+  }, [refreshAll])
 
   function openTransferModal(username: string) {
     if (!toy || pendingTransferTo) return
@@ -158,6 +200,154 @@ export default function ToyDetailPage({ token }: Props) {
     }
   }
 
+  async function handleExpressInterest() {
+    if (!toy || interestActionLoading) return
+    setInterestActionLoading(true)
+    setError(null)
+    try {
+      await expressInterest(token, toy.id)
+      setHasExpressedInterest(true)
+      setInterestDetail((prev) =>
+        prev ? { ...prev, interested_count: prev.interested_count + 1 } : prev,
+      )
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to express interest')
+    } finally {
+      setInterestActionLoading(false)
+    }
+  }
+
+  async function handleCancelInterest() {
+    if (!toy || interestActionLoading) return
+    setInterestActionLoading(true)
+    setError(null)
+    try {
+      await deleteInterest(token, toy.id)
+      setHasExpressedInterest(false)
+      setInterestDetail((prev) =>
+        prev ? { ...prev, interested_count: Math.max(0, prev.interested_count - 1) } : prev,
+      )
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to cancel interest')
+    } finally {
+      setInterestActionLoading(false)
+    }
+  }
+
+  async function handleAcceptTransferOnDetail() {
+    if (!toy || acceptTransferLoading) return
+    setAcceptTransferLoading(true)
+    setError(null)
+    try {
+      await acceptTransfer(token, toy.id)
+      await refreshAll()
+      setShowTransferAcceptedMessage(true)
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to accept transfer')
+    } finally {
+      setAcceptTransferLoading(false)
+    }
+  }
+
+  function openEdit() {
+    if (!toy) return
+    setFormData({
+      title: toy.title,
+      description: toy.description ?? '',
+      min_age: toy.min_age?.toString() ?? '',
+      max_age: toy.max_age?.toString() ?? '',
+      image_path: toy.image_path ?? '',
+      image_file: null,
+      image_preview_url: null,
+      tags: [...toy.tags],
+    })
+    setFormError(null)
+    setFormOpen(true)
+  }
+
+  function closeForm() {
+    setFormOpen(false)
+    setFormError(null)
+    if (formData.image_preview_url?.startsWith('blob:')) {
+      URL.revokeObjectURL(formData.image_preview_url)
+    }
+    setFormData(emptyForm)
+  }
+
+  function handleFormChange(
+    field: keyof Omit<ToyFormData, 'tags' | 'image_file' | 'image_preview_url'>,
+    value: string,
+  ) {
+    setFormData((prev) => ({ ...prev, [field]: value }))
+  }
+
+  async function handleImageFileChange(file: File | null) {
+    if (!file) {
+      setFormData((prev) => {
+        if (prev.image_preview_url?.startsWith('blob:')) {
+          URL.revokeObjectURL(prev.image_preview_url)
+        }
+        return { ...prev, image_file: null, image_preview_url: null }
+      })
+      return
+    }
+
+    setImageCompressing(true)
+    try {
+      const compressedFile = await compressImage(file)
+      setFormData((prev) => {
+        if (prev.image_preview_url?.startsWith('blob:')) {
+          URL.revokeObjectURL(prev.image_preview_url)
+        }
+        return {
+          ...prev,
+          image_file: compressedFile,
+          image_preview_url: URL.createObjectURL(compressedFile),
+        }
+      })
+    } finally {
+      setImageCompressing(false)
+    }
+  }
+
+  async function handleFormSubmit() {
+    if (!toy) return
+    setFormLoading(true)
+    setFormError(null)
+    try {
+      const payload = new FormData()
+      appendToyFormFields(payload, {
+        title: formData.title,
+        description: formData.description || undefined,
+        min_age: formData.min_age !== '' ? Number(formData.min_age) : undefined,
+        max_age: formData.max_age !== '' ? Number(formData.max_age) : undefined,
+        tags: formData.tags,
+      })
+      if (formData.image_file) {
+        payload.append('image_file', formData.image_file)
+      }
+
+      const updated = await updateToy(token, toy.id, payload)
+      setToy(updated)
+      closeForm()
+    } catch (err: unknown) {
+      setFormError(err instanceof Error ? err.message : 'Save failed')
+    } finally {
+      setFormLoading(false)
+    }
+  }
+
+  async function handleDeleteToy() {
+    if (!toy) return
+    if (!window.confirm(`Delete "${toy.title}"?`)) return
+    try {
+      await deleteToy(token, toy.id)
+      navigate('/toys', { replace: true })
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Delete failed')
+    }
+  }
+
   const chipStyle: React.CSSProperties = {
     display: 'inline-block',
     padding: '3px 10px',
@@ -177,6 +367,23 @@ export default function ToyDetailPage({ token }: Props) {
     marginBottom: 4,
   }
 
+  const btnStyle: React.CSSProperties = {
+    padding: '6px 14px',
+    borderRadius: 6,
+    border: `1px solid ${theme.border}`,
+    background: theme.bg,
+    color: theme.textPrimary,
+    cursor: 'pointer',
+    fontSize: 14,
+  }
+
+  const primaryBtnStyle: React.CSSProperties = {
+    ...btnStyle,
+    background: theme.ctaBg,
+    color: theme.ctaText,
+    border: 'none',
+  }
+
   return (
     <main style={{ padding: isCompactLayout ? '24px 16px' : '40px 32px', maxWidth: 720 }}>
       <Link
@@ -191,6 +398,44 @@ export default function ToyDetailPage({ token }: Props) {
 
       {toy && (
         <>
+          {showTransferAcceptedMessage && (
+            <div
+              style={{
+                marginBottom: 20,
+                padding: '12px 14px',
+                borderRadius: 8,
+                border: `1px solid ${theme.border}`,
+                background: theme.surfaceAlt,
+                display: 'flex',
+                flexDirection: isCompactLayout ? 'column' : 'row',
+                alignItems: isCompactLayout ? 'flex-start' : 'center',
+                justifyContent: 'space-between',
+                gap: 10,
+              }}
+            >
+              <span style={{ fontSize: 14, color: theme.textSecondary }}>
+                You have accepted the transfer of <strong>{toy.title}</strong>. You are now the
+                owner of this toy.
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowTransferAcceptedMessage(false)}
+                style={{
+                  padding: '4px 10px',
+                  borderRadius: 6,
+                  border: `1px solid ${theme.border}`,
+                  background: theme.bg,
+                  color: theme.textPrimary,
+                  cursor: 'pointer',
+                  fontSize: 13,
+                  width: isCompactLayout ? '100%' : undefined,
+                }}
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+
           <div style={{ display: 'flex', flexDirection: isCompactLayout ? 'column' : 'row', gap: isCompactLayout ? 20 : 32, alignItems: 'flex-start', marginBottom: 32 }}>
             {imageSrc && (
               <img
@@ -201,6 +446,60 @@ export default function ToyDetailPage({ token }: Props) {
             )}
             <div style={{ flex: 1 }}>
               <h1 style={{ margin: '0 0 8px 0' }}>{toy.title}</h1>
+
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, marginBottom: 16 }}>
+                {!isOwner &&
+                  (hasExpressedInterest ? (
+                    <button
+                      style={btnStyle}
+                      onClick={handleCancelInterest}
+                      disabled={interestActionLoading}
+                    >
+                      {interestActionLoading ? 'Saving…' : 'Cancel Interest'}
+                    </button>
+                  ) : (
+                    <button
+                      style={btnStyle}
+                      onClick={handleExpressInterest}
+                      disabled={interestActionLoading}
+                    >
+                      {interestActionLoading ? 'Saving…' : 'Interested'}
+                    </button>
+                  ))}
+
+                {isPendingRecipient && (
+                  <button
+                    style={primaryBtnStyle}
+                    onClick={handleAcceptTransferOnDetail}
+                    disabled={acceptTransferLoading}
+                  >
+                    {acceptTransferLoading ? 'Saving…' : 'Accept Transfer'}
+                  </button>
+                )}
+
+                {isOwner && (
+                  <>
+                    <button style={btnStyle} onClick={openEdit}>
+                      Edit
+                    </button>
+                    <button style={{ ...btnStyle, color: theme.danger }} onClick={handleDeleteToy}>
+                      Delete
+                    </button>
+                    {pendingTransferTo && (
+                      <button
+                        style={btnStyle}
+                        onClick={handleCancelPendingTransfer}
+                        disabled={cancelTransferLoading}
+                        title={`Pending transfer to ${pendingTransferTo}`}
+                      >
+                        {cancelTransferLoading
+                          ? 'Canceling…'
+                          : `Cancel Transfer to ${pendingTransferTo}`}
+                      </button>
+                    )}
+                  </>
+                )}
+              </div>
 
               {toy.owner_username && (
                 <div style={{ marginBottom: 12 }}>
@@ -249,25 +548,9 @@ export default function ToyDetailPage({ token }: Props) {
                       }}
                     >
                       <span style={{ color: theme.textSecondary, fontSize: 14 }}>
-                        Pending transfer to <strong>{pendingTransferTo}</strong>
+                        Pending transfer to <strong>{pendingTransferTo}</strong>. Use the "Cancel
+                        Transfer" button above to cancel it.
                       </span>
-                      <button
-                        type="button"
-                        onClick={handleCancelPendingTransfer}
-                        disabled={cancelTransferLoading}
-                        style={{
-                          padding: '4px 10px',
-                          borderRadius: 6,
-                          border: `1px solid ${theme.border}`,
-                          background: theme.bg,
-                          color: theme.textPrimary,
-                          cursor: 'pointer',
-                          fontSize: 13,
-                          width: isCompactLayout ? '100%' : undefined,
-                        }}
-                      >
-                        {cancelTransferLoading ? 'Canceling…' : 'Cancel Transfer'}
-                      </button>
                     </div>
                   )}
                   {pendingTransferError && (
@@ -345,6 +628,21 @@ export default function ToyDetailPage({ token }: Props) {
             onClose={closeTransferModal}
             onSubmit={handleTransferSubmit}
           />
+
+          {formOpen && (
+            <ToyFormModal
+              token={token}
+              editToy={toy}
+              formData={formData}
+              formError={formError}
+              formLoading={formLoading}
+              imageCompressing={imageCompressing}
+              onClose={closeForm}
+              handleFormChange={handleFormChange}
+              handleImageFileChange={handleImageFileChange}
+              handleFormSubmit={handleFormSubmit}
+            />
+          )}
         </>
       )}
     </main>
