@@ -141,6 +141,7 @@ export interface ProfileResponse {
   email: string
   is_email_verified: boolean
   neighborhood: string | null
+  is_admin?: boolean
 }
 
 export interface UpdateUsernameResponse {
@@ -602,4 +603,49 @@ export async function sendUserContactEmail(
   }
 
   return response.json() as Promise<UserContactEmailResponse>
+}
+
+export interface AllowListResponse {
+  emails: string[]
+}
+
+export interface AllowListDeleteResponse {
+  email: string
+}
+
+export async function getAllowlist(token: string): Promise<AllowListResponse> {
+  const response = await authedFetch(token, `/api/admin/allowlist`)
+  if (!response.ok) {
+    throw new Error(await extractErrorDetail(response, 'Failed to fetch allowlist'))
+  }
+  return response.json() as Promise<AllowListResponse>
+}
+
+export async function addAllowlistEmail(token: string, email: string): Promise<AllowListResponse> {
+  const response = await authedFetch(token, `/api/admin/allowlist/${encodeURIComponent(email)}`, {
+    method: 'POST',
+  })
+  if (!response.ok) {
+    throw new Error(await extractErrorDetail(response, 'Failed to add email to allowlist'))
+  }
+  return response.json() as Promise<AllowListResponse>
+}
+
+export async function removeAllowlistEmail(token: string, email: string): Promise<AllowListDeleteResponse> {
+  const response = await authedFetch(token, `/api/admin/allowlist/${encodeURIComponent(email)}`, {
+    method: 'DELETE',
+  })
+  if (!response.ok) {
+    throw new Error(await extractErrorDetail(response, 'Failed to remove email from allowlist'))
+  }
+  return response.json() as Promise<AllowListDeleteResponse>
+}
+
+export async function triggerToyEmbedding(token: string, toyId: number): Promise<void> {
+  const response = await authedFetch(token, `/api/admin/trigger_embedding?toy_id=${toyId}`, {
+    method: 'POST',
+  })
+  if (!response.ok) {
+    throw new Error(await extractErrorDetail(response, 'Failed to trigger embedding'))
+  }
 }

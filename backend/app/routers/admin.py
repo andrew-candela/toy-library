@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException
+from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
 from starlette.status import HTTP_200_OK, HTTP_404_NOT_FOUND
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy import select
@@ -8,6 +8,7 @@ from app.lib.database import get_db
 from app.lib.auth import get_admin_user
 
 from app.models.models import User, AllowList
+from app.lib.toy_images import toy_embedding
 
 router = APIRouter()
 
@@ -78,3 +79,15 @@ async def remove_email_from_allowlist(
     await db.delete(entry)
     await db.commit()
     return AllowListDeleteResponse(email=lowered_email)
+
+
+@router.post("/trigger_embedding")
+async def rerun_embedding(
+    toy_id: int,
+    background_tasks: BackgroundTasks,
+    _: User = Depends(get_admin_user),
+):
+    """
+    Reruns the embedding for a given toy
+    """
+    background_tasks.add_task(toy_embedding, toy_id)

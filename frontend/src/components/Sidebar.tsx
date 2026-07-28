@@ -7,6 +7,7 @@ import { useTheme } from '../theme/ThemeContext'
 interface Props {
   onLogout: () => void
   isCompact?: boolean
+  isAdmin?: boolean | null
 }
 
 function ToysIcon() {
@@ -49,6 +50,15 @@ function LogoutIcon() {
   )
 }
 
+function AdminIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <path d="M12 4l6.5 2.4v5.2c0 4-2.7 7.3-6.5 8.4-3.8-1.1-6.5-4.4-6.5-8.4V6.4L12 4z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M9.2 12.2l1.8 1.8 3.8-3.8" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+    </svg>
+  )
+}
+
 type NavIconProps = { active: boolean }
 
 function NavItem({
@@ -74,7 +84,7 @@ function NavItem({
   )
 }
 
-export default function Sidebar({ onLogout, isCompact = false }: Props) {
+export default function Sidebar({ onLogout, isCompact = false, isAdmin = false }: Props) {
   const [loggingOut, setLoggingOut] = useState(false)
   const navigate = useNavigate()
   const location = useLocation()
@@ -155,6 +165,9 @@ export default function Sidebar({ onLogout, isCompact = false }: Props) {
       <NavItem to="/toys" label="Toys" compact={isCompact} active={location.pathname.startsWith('/toys')} style={linkStyle('/toys')} icon={ToysIcon} />
       <NavItem to="/users" label="Users" compact={isCompact} active={location.pathname.startsWith('/users')} style={linkStyle('/users')} icon={UsersIcon} />
       <NavItem to="/profile" label="Profile" compact={isCompact} active={location.pathname.startsWith('/profile')} style={linkStyle('/profile')} icon={ProfileIcon} />
+      {isAdmin && (
+        <NavItem to="/admin" label="Admin" compact={isCompact} active={location.pathname.startsWith('/admin')} style={linkStyle('/admin')} icon={AdminIcon} />
+      )}
       <div style={{ flex: 1 }} />
       <button
         type="button"

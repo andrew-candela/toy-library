@@ -183,6 +183,10 @@ class ProfileOut(BaseModel):
     model_config = {"from_attributes": True}
 
 
+class MyProfileOut(ProfileOut):
+    is_admin: bool
+
+
 class UpdateUsernameRequest(BaseModel):
     username: str
 

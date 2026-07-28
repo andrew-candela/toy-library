@@ -8,6 +8,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import joinedload
 
 from app.lib.auth import (
+    ADMIN_USER_EMAILS,
     ALGORITHM,
     SECRET_KEY,
     add_jti_to_blocklist,
@@ -20,6 +21,7 @@ from app.lib.email_tools import send_verification_email
 from app.lib.redis import get_redis_client
 from app.models.models import Address, User
 from app.schemas.schemas import (
+    MyProfileOut,
     ProfileOut,
     UpdateEmailRequest,
     UpdateEmailResponse,
@@ -34,7 +36,7 @@ router = APIRouter()
 _VERIFY_EMAIL_TTL = 24 * 60 * 60  # 24 hours in seconds
 
 
-@router.get("/me", response_model=ProfileOut)
+@router.get("/me", response_model=MyProfileOut)
 async def get_profile(
     current_user: User = Depends(get_current_user),
     db: AsyncSession = Depends(get_db),
@@ -48,6 +50,7 @@ async def get_profile(
         "email": current_user.email,
         "is_email_verified": current_user.is_email_verified,
         "neighborhood": address.neighborhood if address else None,
+        "is_admin": current_user.email.lower() in ADMIN_USER_EMAILS,
     }
 
 

@@ -400,18 +400,6 @@ async def update_toy(
     return (await db.execute(select(Toy).where(Toy.id == toy_id))).scalar_one()
 
 
-@router.post("/trigger_embedding")
-async def rerun_embedding(
-    toy_id: int,
-    background_tasks: BackgroundTasks,
-    _: User = Depends(get_admin_user),
-):
-    """
-    Reruns the embedding for a given toy
-    """
-    background_tasks.add_task(toy_embedding, toy_id)
-
-
 @router.delete("/{toy_id}", status_code=204)
 async def delete_toy(
     toy_id: int,

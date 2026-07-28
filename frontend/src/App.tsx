@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
-import { TOKEN_KEY, getStoredToken, setStoredToken } from './api/client'
+import { TOKEN_KEY, getProfile, getStoredToken, setStoredToken } from './api/client'
+import AdminPage from './components/AdminPage'
 import ForgotPasswordPage from './components/ForgotPasswordPage'
 import HomePage from './components/HomePage'
 import ResendVerificationPage from './components/ResendVerificationPage'
@@ -17,19 +18,54 @@ import { DESKTOP_SIDEBAR_WIDTH, MOBILE_RAIL_WIDTH } from './theme/tokens'
 import { useIsCompactLayout } from './theme/useIsCompactLayout'
 import { useTheme } from './theme/ThemeContext'
 
-function ProtectedLayout({ children, onLogout }: { children: React.ReactNode; onLogout: () => void }) {
+function ProtectedLayout({
+  children,
+  onLogout,
+  adminOnly = false,
+}: {
+  children: React.ReactNode
+  onLogout: () => void
+  adminOnly?: boolean
+}) {
   const token = getStoredToken()
   const location = useLocation()
   const isCompactSidebar = useIsCompactLayout()
+  const [isAdmin, setIsAdmin] = useState<boolean | null>(null)
+
+  useEffect(() => {
+    if (!token) {
+      return
+    }
+    let cancelled = false
+    getProfile(token)
+      .then((profile) => {
+        if (!cancelled) {
+          setIsAdmin(profile.is_admin ?? false)
+        }
+      })
+      .catch(() => {
+        if (!cancelled) {
+          setIsAdmin(false)
+        }
+      })
+    return () => {
+      cancelled = true
+    }
+  }, [token])
+
   if (!token) {
     return <Navigate to="/login" replace state={{ from: location.pathname }} />
+  }
+
+  if (adminOnly && isAdmin === false) {
+    return <Navigate to="/home" replace />
   }
 
   const sidebarWidth = isCompactSidebar ? MOBILE_RAIL_WIDTH : DESKTOP_SIDEBAR_WIDTH
 
   return (
     <div style={{ display: 'flex', height: '100dvh', minHeight: '100vh', overflow: 'hidden' }}>
-      <Sidebar onLogout={onLogout} isCompact={isCompactSidebar} />
+      <Sidebar onLogout={onLogout} isCompact={isCompactSidebar} isAdmin={isAdmin} />
       <div
         style={{
           flex: 1,
@@ -40,7 +76,7 @@ function ProtectedLayout({ children, onLogout }: { children: React.ReactNode; on
           overflowY: 'auto',
         }}
       >
-        {children}
+        {adminOnly && isAdmin === null ? null : children}
       </div>
     </div>
   )
@@ -126,6 +162,14 @@ function App() {
         element={
           <ProtectedLayout onLogout={handleLogout}>
             <UserDetailPage token={token!} />
+          </ProtectedLayout>
+        }
+      />
+      <Route
+        path="/admin"
+        element={
+          <ProtectedLayout onLogout={handleLogout} adminOnly>
+            <AdminPage token={token!} />
           </ProtectedLayout>
         }
       />
