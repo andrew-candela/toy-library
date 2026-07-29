@@ -260,6 +260,7 @@ export default function ToysPage({ token }: Props) {
         error={hook.transferError}
         onClose={hook.closeTransferModal}
         onSubmit={hook.handleTransferSubmit}
+        token={token}
       />
 
       {hook.error && <p style={{ color: theme.error }}>{hook.error}</p>}

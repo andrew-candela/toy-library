@@ -627,6 +627,7 @@ export default function ToyDetailPage({ token }: Props) {
             error={transferError}
             onClose={closeTransferModal}
             onSubmit={handleTransferSubmit}
+            token={token}
           />
 
           {formOpen && (

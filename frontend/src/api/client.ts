@@ -343,6 +343,14 @@ export async function fetchTagSuggestions(token: string, prefix: string): Promis
   return response.json() as Promise<string[]>
 }
 
+export async function fetchUsernameSuggestions(token: string, q: string): Promise<string[]> {
+  const response = await authedFetch(token, `/api/users/username-suggestions?q=${encodeURIComponent(q)}`)
+  if (!response.ok) {
+    throw new Error('Failed to fetch username suggestions')
+  }
+  return response.json() as Promise<string[]>
+}
+
 export function appendToyFormFields(formData: FormData, data: ToyCreate | ToyUpdate): void {
   formData.append('title', data.title ?? '')
   if (data.description !== undefined) {

@@ -80,6 +80,25 @@ async def list_users(
     )
 
 
+@router.get("/username-suggestions", response_model=list[str])
+async def suggest_usernames(
+    q: str = Query(default=""),
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    prefix = q.strip()
+    if not prefix:
+        return []
+    result = await db.execute(
+        select(User.username)
+        .where((User.is_email_verified) | (User.id == current_user.id))
+        .where(User.username.ilike(f"%{prefix}%"))
+        .order_by(User.username)
+        .limit(5)
+    )
+    return result.scalars().all()
+
+
 @router.get("/{username}", response_model=UserDetailOut)
 async def get_user_detail(
     username: str,
