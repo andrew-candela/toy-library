@@ -1,4 +1,14 @@
 services:
+  backend:
+    environment:
+      # Turns on uvicorn --reload (paired with the ./backend/app bind mount in
+      # compose.yml) and access logs. start.sh defaults this to prod.
+      ENVIRONMENT: dev
+      # No nginx in front of the backend locally (Vite's dev server proxies /api
+      # straight through), so nothing can act on X-Accel-Redirect. Serve the
+      # image bytes from the backend instead.
+      TOY_IMAGE_USE_ACCEL_REDIRECT: "false"
+
   frontend:
     build:
       target: dev
