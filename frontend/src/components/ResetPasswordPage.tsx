@@ -52,7 +52,9 @@ export default function ResetPasswordPage() {
       <h1>Toy Library</h1>
       <h2>Reset your password</h2>
       {!token && (
-        <p style={{ color: theme.error }}>No reset token found. Please use the link from your email.</p>
+        <p style={{ color: theme.error }}>
+          No reset token found. Please use the link from your email.
+        </p>
       )}
       <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
         <label>
@@ -63,7 +65,16 @@ export default function ResetPasswordPage() {
             onChange={(e) => setNewPassword(e.target.value)}
             required
             autoComplete="new-password"
-            style={{ display: 'block', width: '100%', marginTop: 4, background: theme.inputBg, color: theme.textPrimary, border: `1px solid ${theme.inputBorder}`, borderRadius: 4, padding: '6px 8px' }}
+            style={{
+              display: 'block',
+              width: '100%',
+              marginTop: 4,
+              background: theme.inputBg,
+              color: theme.textPrimary,
+              border: `1px solid ${theme.inputBorder}`,
+              borderRadius: 4,
+              padding: '6px 8px',
+            }}
           />
         </label>
         <label>
@@ -74,7 +85,16 @@ export default function ResetPasswordPage() {
             onChange={(e) => setConfirmPassword(e.target.value)}
             required
             autoComplete="new-password"
-            style={{ display: 'block', width: '100%', marginTop: 4, background: theme.inputBg, color: theme.textPrimary, border: `1px solid ${theme.inputBorder}`, borderRadius: 4, padding: '6px 8px' }}
+            style={{
+              display: 'block',
+              width: '100%',
+              marginTop: 4,
+              background: theme.inputBg,
+              color: theme.textPrimary,
+              border: `1px solid ${theme.inputBorder}`,
+              borderRadius: 4,
+              padding: '6px 8px',
+            }}
           />
         </label>
         {error && <p style={{ color: theme.error, margin: 0 }}>{error}</p>}

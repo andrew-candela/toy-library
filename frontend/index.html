@@ -6,17 +6,19 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Toy Library</title>
     <script>
-      (function () {
-        var stored = localStorage.getItem('theme');
-        var isDark = stored === 'dark' || (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches);
-        var bg = isDark ? '#0f0f10' : '#ffffff';
-        document.documentElement.style.background = bg;
-        document.documentElement.style.margin = '0';
-        document.documentElement.style.padding = '0';
-      })();
+      ;(function () {
+        var stored = localStorage.getItem('theme')
+        var isDark =
+          stored === 'dark' ||
+          (!stored && window.matchMedia('(prefers-color-scheme: dark)').matches)
+        var bg = isDark ? '#0f0f10' : '#ffffff'
+        document.documentElement.style.background = bg
+        document.documentElement.style.margin = '0'
+        document.documentElement.style.padding = '0'
+      })()
     </script>
   </head>
-  <body style="margin: 0; padding: 0;">
+  <body style="margin: 0; padding: 0">
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
   </body>

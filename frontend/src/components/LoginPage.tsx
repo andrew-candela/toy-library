@@ -67,15 +67,25 @@ export default function LoginPage({ onLogin }: Props) {
         <h1>Toy Library</h1>
         <h2>Check your email</h2>
         <p>
-          A verification link has been sent to <strong>{email}</strong>. Please
-          click the link to activate your account before signing in.
+          A verification link has been sent to <strong>{email}</strong>. Please click the link to
+          activate your account before signing in.
         </p>
-        <button type="button" onClick={toggleMode} style={{ background: 'none', border: 'none', color: theme.link, cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>
+        <button
+          type="button"
+          onClick={toggleMode}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: theme.link,
+            cursor: 'pointer',
+            padding: 0,
+            textDecoration: 'underline',
+          }}
+        >
           Back to sign in
         </button>
         <p style={{ marginTop: 12 }}>
-          Didn't receive it?{' '}
-          <Link to="/resend-verification">Resend verification email</Link>
+          Didn't receive it? <Link to="/resend-verification">Resend verification email</Link>
         </p>
       </main>
     )
@@ -94,7 +104,16 @@ export default function LoginPage({ onLogin }: Props) {
             onChange={(e) => setUsername(e.target.value)}
             required
             autoComplete="username"
-            style={{ display: 'block', width: '100%', marginTop: 4, background: theme.inputBg, color: theme.textPrimary, border: `1px solid ${theme.inputBorder}`, borderRadius: 4, padding: '6px 8px' }}
+            style={{
+              display: 'block',
+              width: '100%',
+              marginTop: 4,
+              background: theme.inputBg,
+              color: theme.textPrimary,
+              border: `1px solid ${theme.inputBorder}`,
+              borderRadius: 4,
+              padding: '6px 8px',
+            }}
           />
         </label>
         {mode === 'register' && (
@@ -106,7 +125,16 @@ export default function LoginPage({ onLogin }: Props) {
               onChange={(e) => setEmail(e.target.value)}
               required
               autoComplete="email"
-              style={{ display: 'block', width: '100%', marginTop: 4, background: theme.inputBg, color: theme.textPrimary, border: `1px solid ${theme.inputBorder}`, borderRadius: 4, padding: '6px 8px' }}
+              style={{
+                display: 'block',
+                width: '100%',
+                marginTop: 4,
+                background: theme.inputBg,
+                color: theme.textPrimary,
+                border: `1px solid ${theme.inputBorder}`,
+                borderRadius: 4,
+                padding: '6px 8px',
+              }}
             />
           </label>
         )}
@@ -118,7 +146,16 @@ export default function LoginPage({ onLogin }: Props) {
             onChange={(e) => setPassword(e.target.value)}
             required
             autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
-            style={{ display: 'block', width: '100%', marginTop: 4, background: theme.inputBg, color: theme.textPrimary, border: `1px solid ${theme.inputBorder}`, borderRadius: 4, padding: '6px 8px' }}
+            style={{
+              display: 'block',
+              width: '100%',
+              marginTop: 4,
+              background: theme.inputBg,
+              color: theme.textPrimary,
+              border: `1px solid ${theme.inputBorder}`,
+              borderRadius: 4,
+              padding: '6px 8px',
+            }}
           />
         </label>
         {error && (
@@ -137,7 +174,18 @@ export default function LoginPage({ onLogin }: Props) {
       </form>
       <p style={{ marginTop: 16 }}>
         {mode === 'login' ? "Don't have an account? " : 'Already have an account? '}
-        <button type="button" onClick={toggleMode} style={{ background: 'none', border: 'none', color: 'blue', cursor: 'pointer', padding: 0, textDecoration: 'underline' }}>
+        <button
+          type="button"
+          onClick={toggleMode}
+          style={{
+            background: 'none',
+            border: 'none',
+            color: 'blue',
+            cursor: 'pointer',
+            padding: 0,
+            textDecoration: 'underline',
+          }}
+        >
           {mode === 'login' ? 'Register' : 'Sign in'}
         </button>
       </p>
@@ -148,10 +196,10 @@ export default function LoginPage({ onLogin }: Props) {
       )}
       {mode === 'register' && (
         <p style={{ marginTop: 24, fontSize: '0.85rem', color: theme.textPrimary, opacity: 0.7 }}>
-          Welcome to the toy library. You will need to provide your email address
-          to the app in order to sign up. Any users of the app who you share toys with will be able
-          to see your email. You may also share your neighborhood (e.g. Rockaway)
-          once you have successfully registered.
+          Welcome to the toy library. You will need to provide your email address to the app in
+          order to sign up. Any users of the app who you share toys with will be able to see your
+          email. You may also share your neighborhood (e.g. Rockaway) once you have successfully
+          registered.
         </p>
       )}
     </main>

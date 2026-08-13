@@ -14,7 +14,7 @@ interface Props {
 export default function ToysPage({ token }: Props) {
   const { theme } = useTheme()
   const isCompactLayout = useIsCompactLayout()
-  
+
   // Custom hook injects everything we need
   const hook = useToysPage(token)
 
@@ -63,19 +63,61 @@ export default function ToysPage({ token }: Props) {
 
   return (
     <main style={{ padding: isCompactLayout ? '24px 16px' : '40px 32px' }}>
-      <div style={{ display: 'flex', alignItems: isCompactLayout ? 'stretch' : 'center', justifyContent: 'space-between', flexDirection: isCompactLayout ? 'column' : 'row', gap: isCompactLayout ? 12 : 0, marginBottom: 24 }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: isCompactLayout ? 'stretch' : 'center',
+          justifyContent: 'space-between',
+          flexDirection: isCompactLayout ? 'column' : 'row',
+          gap: isCompactLayout ? 12 : 0,
+          marginBottom: 24,
+        }}
+      >
         <h1 style={{ margin: 0 }}>Toys</h1>
         {!hook.ownerUsername && (
-          <button style={{ ...primaryBtnStyle, width: isCompactLayout ? '100%' : undefined }} onClick={hook.openCreate}>
+          <button
+            style={{ ...primaryBtnStyle, width: isCompactLayout ? '100%' : undefined }}
+            onClick={hook.openCreate}
+          >
             + Add Toy
           </button>
         )}
       </div>
-      
+
       {hook.ownerUsername && (
-        <div style={{ marginBottom: 16, padding: '12px 14px', borderRadius: 8, border: `1px solid ${theme.border}`, background: theme.surfaceAlt, fontSize: 14, color: theme.textSecondary, display: 'flex', flexDirection: isCompactLayout ? 'column' : 'row', alignItems: isCompactLayout ? 'flex-start' : 'center', justifyContent: 'space-between', gap: 8 }}>
-          <span>Showing toys owned by <strong>{hook.ownerUsername}</strong></span>
-          <button onClick={() => hook.setOwnerUsername('')} style={{ background: 'none', border: 'none', color: theme.link, textDecoration: 'none', fontWeight: 500, fontSize: 13, cursor: 'pointer' }}>Clear filter →</button>
+        <div
+          style={{
+            marginBottom: 16,
+            padding: '12px 14px',
+            borderRadius: 8,
+            border: `1px solid ${theme.border}`,
+            background: theme.surfaceAlt,
+            fontSize: 14,
+            color: theme.textSecondary,
+            display: 'flex',
+            flexDirection: isCompactLayout ? 'column' : 'row',
+            alignItems: isCompactLayout ? 'flex-start' : 'center',
+            justifyContent: 'space-between',
+            gap: 8,
+          }}
+        >
+          <span>
+            Showing toys owned by <strong>{hook.ownerUsername}</strong>
+          </span>
+          <button
+            onClick={() => hook.setOwnerUsername('')}
+            style={{
+              background: 'none',
+              border: 'none',
+              color: theme.link,
+              textDecoration: 'none',
+              fontWeight: 500,
+              fontSize: 13,
+              cursor: 'pointer',
+            }}
+          >
+            Clear filter →
+          </button>
         </div>
       )}
 
@@ -289,9 +331,21 @@ export default function ToysPage({ token }: Props) {
 
           {/* Pagination Controls */}
           {hook.totalPages > 1 && (
-            <div style={{ display: 'flex', alignItems: isCompactLayout ? 'stretch' : 'center', flexDirection: isCompactLayout ? 'column' : 'row', gap: 12, marginTop: 16 }}>
+            <div
+              style={{
+                display: 'flex',
+                alignItems: isCompactLayout ? 'stretch' : 'center',
+                flexDirection: isCompactLayout ? 'column' : 'row',
+                gap: 12,
+                marginTop: 16,
+              }}
+            >
               <button
-                style={{ ...btnStyle, opacity: hook.currentPage === 1 ? 0.5 : 1, width: isCompactLayout ? '100%' : undefined }}
+                style={{
+                  ...btnStyle,
+                  opacity: hook.currentPage === 1 ? 0.5 : 1,
+                  width: isCompactLayout ? '100%' : undefined,
+                }}
                 disabled={hook.currentPage === 1}
                 onClick={() => hook.setCurrentPage((p) => p - 1)}
               >
@@ -301,7 +355,11 @@ export default function ToysPage({ token }: Props) {
                 Page {hook.currentPage} of {hook.totalPages}
               </span>
               <button
-                style={{ ...btnStyle, opacity: hook.currentPage === hook.totalPages ? 0.5 : 1, width: isCompactLayout ? '100%' : undefined }}
+                style={{
+                  ...btnStyle,
+                  opacity: hook.currentPage === hook.totalPages ? 0.5 : 1,
+                  width: isCompactLayout ? '100%' : undefined,
+                }}
                 disabled={hook.currentPage === hook.totalPages}
                 onClick={() => hook.setCurrentPage((p) => p + 1)}
               >

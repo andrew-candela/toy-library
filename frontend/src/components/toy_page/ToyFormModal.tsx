@@ -14,7 +14,10 @@ interface ToyFormModalProps {
   formLoading: boolean
   imageCompressing: boolean
   onClose: () => void
-  handleFormChange: (field: keyof Omit<ToyFormData, 'tags' | 'image_file' | 'image_preview_url'>, value: string) => void
+  handleFormChange: (
+    field: keyof Omit<ToyFormData, 'tags' | 'image_file' | 'image_preview_url'>,
+    value: string,
+  ) => void
   handleImageFileChange: (file: File | null) => void
   handleFormSubmit: () => Promise<void>
 }
@@ -77,7 +80,7 @@ export function ToyFormModal({
     <form
       onSubmit={(e) => {
         e.preventDefault()
-        handleFormSubmit()
+        void handleFormSubmit()
       }}
       style={{
         background: theme.surfaceAlt,
@@ -154,10 +157,10 @@ export function ToyFormModal({
             src={previewSrc}
             alt="Preview"
             onError={(e) => {
-              ;(e.currentTarget as HTMLImageElement).style.display = 'none'
+              e.currentTarget.style.display = 'none'
             }}
             onLoad={(e) => {
-              ;(e.currentTarget as HTMLImageElement).style.display = 'block'
+              e.currentTarget.style.display = 'block'
             }}
             style={{
               display: 'block',
@@ -177,7 +180,14 @@ export function ToyFormModal({
         </p>
       )}
 
-      <div style={{ display: 'flex', gap: 8, gridColumn: '1 / -1', flexDirection: isCompactLayout ? 'column' : 'row' }}>
+      <div
+        style={{
+          display: 'flex',
+          gap: 8,
+          gridColumn: '1 / -1',
+          flexDirection: isCompactLayout ? 'column' : 'row',
+        }}
+      >
         <button type="submit" disabled={formLoading} style={primaryBtnStyle}>
           {formLoading ? 'Saving…' : 'Save'}
         </button>

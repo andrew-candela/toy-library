@@ -12,7 +12,6 @@ export default function VerifyEmailPage() {
   const hasFetched = useRef(false)
   const { theme } = useTheme()
 
-
   // Resend form state
   const [resendEmail, setResendEmail] = useState('')
   const [resendLoading, setResendLoading] = useState(false)
@@ -25,10 +24,10 @@ export default function VerifyEmailPage() {
       setMessage('No verification token was provided.')
       return
     }
-    
-    if (hasFetched.current) return   // <-- guard
+
+    if (hasFetched.current) return // <-- guard
     hasFetched.current = true
-    
+
     verifyEmail(token)
       .then((res) => {
         setStatus('success')
@@ -72,7 +71,10 @@ export default function VerifyEmailPage() {
           {resendMessage ? (
             <p>{resendMessage}</p>
           ) : (
-            <form onSubmit={handleResend} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+            <form
+              onSubmit={handleResend}
+              style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
+            >
               <label>
                 Email
                 <input
@@ -81,7 +83,16 @@ export default function VerifyEmailPage() {
                   onChange={(e) => setResendEmail(e.target.value)}
                   required
                   autoComplete="email"
-                  style={{ display: 'block', width: '100%', marginTop: 4, background: theme.inputBg, color: theme.textPrimary, border: `1px solid ${theme.inputBorder}`, borderRadius: 4, padding: '6px 8px' }}
+                  style={{
+                    display: 'block',
+                    width: '100%',
+                    marginTop: 4,
+                    background: theme.inputBg,
+                    color: theme.textPrimary,
+                    border: `1px solid ${theme.inputBorder}`,
+                    borderRadius: 4,
+                    padding: '6px 8px',
+                  }}
                 />
               </label>
               <button type="submit" disabled={resendLoading}>

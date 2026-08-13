@@ -106,7 +106,7 @@ export default function ToyDetailPage({ token }: Props) {
   }, [token, id])
 
   useEffect(() => {
-    refreshAll()
+    void refreshAll()
   }, [refreshAll])
 
   function openTransferModal(username: string) {
@@ -192,9 +192,7 @@ export default function ToyDetailPage({ token }: Props) {
       await cancelTransfer(token, toy.id)
       setPendingTransferTo(null)
     } catch (err: unknown) {
-      setPendingTransferError(
-        err instanceof Error ? err.message : 'Failed to cancel transfer',
-      )
+      setPendingTransferError(err instanceof Error ? err.message : 'Failed to cancel transfer')
     } finally {
       setCancelTransferLoading(false)
     }
@@ -388,7 +386,13 @@ export default function ToyDetailPage({ token }: Props) {
     <main style={{ padding: isCompactLayout ? '24px 16px' : '40px 32px', maxWidth: 720 }}>
       <Link
         to="/toys"
-        style={{ fontSize: 14, color: theme.link, textDecoration: 'none', display: 'inline-block', marginBottom: 24 }}
+        style={{
+          fontSize: 14,
+          color: theme.link,
+          textDecoration: 'none',
+          display: 'inline-block',
+          marginBottom: 24,
+        }}
       >
         ← Back to Toys
       </Link>
@@ -436,12 +440,29 @@ export default function ToyDetailPage({ token }: Props) {
             </div>
           )}
 
-          <div style={{ display: 'flex', flexDirection: isCompactLayout ? 'column' : 'row', gap: isCompactLayout ? 20 : 32, alignItems: 'flex-start', marginBottom: 32 }}>
+          <div
+            style={{
+              display: 'flex',
+              flexDirection: isCompactLayout ? 'column' : 'row',
+              gap: isCompactLayout ? 20 : 32,
+              alignItems: 'flex-start',
+              marginBottom: 32,
+            }}
+          >
             {imageSrc && (
               <img
                 src={imageSrc}
                 alt={toy.title}
-                style={{ width: isCompactLayout ? '100%' : 180, maxWidth: isCompactLayout ? 320 : undefined, height: isCompactLayout ? 'auto' : 180, aspectRatio: isCompactLayout ? '1 / 1' : undefined, objectFit: 'cover', borderRadius: 10, border: `1px solid ${theme.border}`, flexShrink: 0 }}
+                style={{
+                  width: isCompactLayout ? '100%' : 180,
+                  maxWidth: isCompactLayout ? 320 : undefined,
+                  height: isCompactLayout ? 'auto' : 180,
+                  aspectRatio: isCompactLayout ? '1 / 1' : undefined,
+                  objectFit: 'cover',
+                  borderRadius: 10,
+                  border: `1px solid ${theme.border}`,
+                  flexShrink: 0,
+                }}
               />
             )}
             <div style={{ flex: 1 }}>
@@ -525,7 +546,11 @@ export default function ToyDetailPage({ token }: Props) {
               {toy.description && (
                 <div style={{ marginBottom: 12 }}>
                   <div style={labelStyle}>Description</div>
-                  <p style={{ margin: 0, fontSize: 15, lineHeight: 1.6, color: theme.textSecondary }}>{toy.description}</p>
+                  <p
+                    style={{ margin: 0, fontSize: 15, lineHeight: 1.6, color: theme.textSecondary }}
+                  >
+                    {toy.description}
+                  </p>
                 </div>
               )}
 
@@ -570,8 +595,8 @@ export default function ToyDetailPage({ token }: Props) {
                     {interestDetail.interested_count} interested
                   </div>
 
-                  {interestDetail.can_view_usernames && (
-                    interestDetail.interested_usernames.length > 0 ? (
+                  {interestDetail.can_view_usernames &&
+                    (interestDetail.interested_usernames.length > 0 ? (
                       <>
                         <p style={{ margin: '0 0 8px 0', color: theme.textMuted, fontSize: 14 }}>
                           {pendingTransferTo
@@ -610,11 +635,9 @@ export default function ToyDetailPage({ token }: Props) {
                       <p style={{ margin: 0, color: theme.textMuted, fontSize: 14 }}>
                         No users have expressed interest yet.
                       </p>
-                    )
-                  )}
+                    ))}
                 </div>
               )}
-
             </div>
           </div>
 

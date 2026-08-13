@@ -143,7 +143,11 @@ export function UserTable({
             <button
               onClick={() => onPageChange(currentPage - 1)}
               disabled={currentPage === 1}
-              style={{ ...paginationButtonStyle, opacity: currentPage === 1 ? 0.5 : 1, width: '100%' }}
+              style={{
+                ...paginationButtonStyle,
+                opacity: currentPage === 1 ? 0.5 : 1,
+                width: '100%',
+              }}
             >
               Previous
             </button>
@@ -153,7 +157,11 @@ export function UserTable({
             <button
               onClick={() => onPageChange(currentPage + 1)}
               disabled={currentPage === totalPages}
-              style={{ ...paginationButtonStyle, opacity: currentPage === totalPages ? 0.5 : 1, width: '100%' }}
+              style={{
+                ...paginationButtonStyle,
+                opacity: currentPage === totalPages ? 0.5 : 1,
+                width: '100%',
+              }}
             >
               Next
             </button>

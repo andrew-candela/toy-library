@@ -1,5 +1,11 @@
 import { useEffect, useState } from 'react'
-import { getProfile, setStoredToken, updateEmail, updateNeighborhood, updateUsername } from '../api/client'
+import {
+  getProfile,
+  setStoredToken,
+  updateEmail,
+  updateNeighborhood,
+  updateUsername,
+} from '../api/client'
 import { useTheme } from '../theme/ThemeContext'
 import { useIsCompactLayout } from '../theme/useIsCompactLayout'
 
@@ -133,7 +139,11 @@ export default function ProfilePage({ token, onTokenUpdate }: Props) {
   }
 
   if (loading) {
-    return <div style={{ padding: isCompactLayout ? 16 : 40, color: theme.textPrimary }}>Loading profile…</div>
+    return (
+      <div style={{ padding: isCompactLayout ? 16 : 40, color: theme.textPrimary }}>
+        Loading profile…
+      </div>
+    )
   }
 
   if (loadError) {
@@ -147,11 +157,20 @@ export default function ProfilePage({ token, onTokenUpdate }: Props) {
       {/* Username */}
       <div style={sectionStyle}>
         <label style={labelStyle}>Username</label>
-        <div style={{ display: 'flex', gap: 10, alignItems: isCompactLayout ? 'stretch' : 'center', flexDirection: isCompactLayout ? 'column' : 'row' }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: 10,
+            alignItems: isCompactLayout ? 'stretch' : 'center',
+            flexDirection: isCompactLayout ? 'column' : 'row',
+          }}
+        >
           <input
             style={inputStyle}
             value={username.value}
-            onChange={(e) => setUsername((s) => ({ ...s, value: e.target.value, success: null, error: null }))}
+            onChange={(e) =>
+              setUsername((s) => ({ ...s, value: e.target.value, success: null, error: null }))
+            }
             disabled={username.saving}
           />
           <button
@@ -162,8 +181,12 @@ export default function ProfilePage({ token, onTokenUpdate }: Props) {
             {username.saving ? 'Saving…' : 'Save'}
           </button>
         </div>
-        {username.success && <p style={{ color: theme.success, fontSize: 13, marginTop: 6 }}>{username.success}</p>}
-        {username.error && <p style={{ color: theme.error, fontSize: 13, marginTop: 6 }}>{username.error}</p>}
+        {username.success && (
+          <p style={{ color: theme.success, fontSize: 13, marginTop: 6 }}>{username.success}</p>
+        )}
+        {username.error && (
+          <p style={{ color: theme.error, fontSize: 13, marginTop: 6 }}>{username.error}</p>
+        )}
       </div>
 
       {/* Email */}
@@ -173,15 +196,26 @@ export default function ProfilePage({ token, onTokenUpdate }: Props) {
           {isEmailVerified ? (
             <span style={{ color: theme.success, fontWeight: 400, fontSize: 12 }}>✓ verified</span>
           ) : (
-            <span style={{ color: theme.warning, fontWeight: 400, fontSize: 12 }}>⚠ unverified — check your inbox</span>
+            <span style={{ color: theme.warning, fontWeight: 400, fontSize: 12 }}>
+              ⚠ unverified — check your inbox
+            </span>
           )}
         </label>
-        <div style={{ display: 'flex', gap: 10, alignItems: isCompactLayout ? 'stretch' : 'center', flexDirection: isCompactLayout ? 'column' : 'row' }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: 10,
+            alignItems: isCompactLayout ? 'stretch' : 'center',
+            flexDirection: isCompactLayout ? 'column' : 'row',
+          }}
+        >
           <input
             style={inputStyle}
             type="email"
             value={email.value}
-            onChange={(e) => setEmail((s) => ({ ...s, value: e.target.value, success: null, error: null }))}
+            onChange={(e) =>
+              setEmail((s) => ({ ...s, value: e.target.value, success: null, error: null }))
+            }
             disabled={email.saving}
           />
           <button
@@ -195,13 +229,22 @@ export default function ProfilePage({ token, onTokenUpdate }: Props) {
         {email.success && (
           <p style={{ color: theme.info, fontSize: 13, marginTop: 6 }}>{email.success}</p>
         )}
-        {email.error && <p style={{ color: theme.error, fontSize: 13, marginTop: 6 }}>{email.error}</p>}
+        {email.error && (
+          <p style={{ color: theme.error, fontSize: 13, marginTop: 6 }}>{email.error}</p>
+        )}
       </div>
 
       {/* Neighborhood */}
       <div style={{ ...sectionStyle, borderBottom: 'none', marginBottom: 0, paddingBottom: 0 }}>
         <label style={labelStyle}>Neighborhood</label>
-        <div style={{ display: 'flex', gap: 10, alignItems: isCompactLayout ? 'stretch' : 'center', flexDirection: isCompactLayout ? 'column' : 'row' }}>
+        <div
+          style={{
+            display: 'flex',
+            gap: 10,
+            alignItems: isCompactLayout ? 'stretch' : 'center',
+            flexDirection: isCompactLayout ? 'column' : 'row',
+          }}
+        >
           <input
             style={inputStyle}
             value={neighborhood.value}
@@ -230,7 +273,14 @@ export default function ProfilePage({ token, onTokenUpdate }: Props) {
       {/* Appearance */}
       <div style={{ marginTop: 32, paddingTop: 28, borderTop: `1px solid ${theme.border}` }}>
         <label style={labelStyle}>Appearance</label>
-        <div style={{ display: 'flex', alignItems: isCompactLayout ? 'flex-start' : 'center', gap: 12, flexDirection: isCompactLayout ? 'column' : 'row' }}>
+        <div
+          style={{
+            display: 'flex',
+            alignItems: isCompactLayout ? 'flex-start' : 'center',
+            gap: 12,
+            flexDirection: isCompactLayout ? 'column' : 'row',
+          }}
+        >
           <button
             type="button"
             onClick={toggleTheme}
