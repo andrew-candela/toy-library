@@ -58,13 +58,15 @@ export function UserDetailPage({ token }: Props) {
       }
     }
 
-    fetchData()
+    void fetchData()
   }, [username, token])
 
   if (loading) {
     return (
       <div className={styles.page}>
-        <div className={styles.loading} style={{ color: theme.textSecondary }}>Loading user details...</div>
+        <div className={styles.loading} style={{ color: theme.textSecondary }}>
+          Loading user details...
+        </div>
       </div>
     )
   }
@@ -152,7 +154,11 @@ export function UserDetailPage({ token }: Props) {
             </button>
           )}
         </div>
-        {emailSuccess && <p className={styles.successMessage} style={{ color: theme.success }}>{emailSuccess}</p>}
+        {emailSuccess && (
+          <p className={styles.successMessage} style={{ color: theme.success }}>
+            {emailSuccess}
+          </p>
+        )}
       </div>
 
       <div
@@ -160,12 +166,18 @@ export function UserDetailPage({ token }: Props) {
         style={{ background: theme.surface, border: `1px solid ${theme.border}` }}
       >
         <div className={styles.detailItem} style={{ borderBottom: `1px solid ${theme.border}` }}>
-          <span className={styles.label} style={{ color: theme.textSecondary }}>Neighborhood</span>
-          <span className={styles.value} style={{ color: theme.textPrimary }}>{user.neighborhood || '—'}</span>
+          <span className={styles.label} style={{ color: theme.textSecondary }}>
+            Neighborhood
+          </span>
+          <span className={styles.value} style={{ color: theme.textPrimary }}>
+            {user.neighborhood || '—'}
+          </span>
         </div>
 
         <div className={styles.detailItem}>
-          <span className={styles.label} style={{ color: theme.textSecondary }}>Toys Owned</span>
+          <span className={styles.label} style={{ color: theme.textSecondary }}>
+            Toys Owned
+          </span>
           <Link
             to={`/toys?owner=${encodeURIComponent(user.username)}`}
             className={styles.link}
@@ -188,8 +200,9 @@ export function UserDetailPage({ token }: Props) {
           >
             <h2 style={{ margin: 0, color: theme.textPrimary }}>Email {user.username}</h2>
             <p className={styles.helperText} style={{ color: theme.textSecondary }}>
-              You can use this message to start contact, then continue coordinating outside this app.
-              We do not explicitly share contact details unless you include them in your message.
+              You can use this message to start contact, then continue coordinating outside this
+              app. We do not explicitly share contact details unless you include them in your
+              message.
             </p>
             <label className={styles.messageLabel} style={{ color: theme.textPrimary }}>
               Message
@@ -197,18 +210,31 @@ export function UserDetailPage({ token }: Props) {
                 value={emailMessage}
                 onChange={(e) => setEmailMessage(e.target.value)}
                 className={styles.messageInput}
-                style={{ background: theme.inputBg, color: theme.textPrimary, borderColor: theme.border }}
+                style={{
+                  background: theme.inputBg,
+                  color: theme.textPrimary,
+                  borderColor: theme.border,
+                }}
                 placeholder="Write your message here..."
                 maxLength={2000}
                 autoFocus
               />
             </label>
-            {emailError && <p className={styles.modalError} style={{ color: theme.error }}>{emailError}</p>}
+            {emailError && (
+              <p className={styles.modalError} style={{ color: theme.error }}>
+                {emailError}
+              </p>
+            )}
             <div className={styles.modalActions}>
               <button type="submit" disabled={emailLoading} style={primaryButtonStyle}>
                 {emailLoading ? 'Sending…' : 'Send'}
               </button>
-              <button type="button" onClick={closeEmailModal} disabled={emailLoading} style={secondaryButtonStyle}>
+              <button
+                type="button"
+                onClick={closeEmailModal}
+                disabled={emailLoading}
+                style={secondaryButtonStyle}
+              >
                 Cancel
               </button>
             </div>

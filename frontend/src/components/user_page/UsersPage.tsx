@@ -28,7 +28,14 @@ export function UsersPage({ token }: Props) {
 
   return (
     <main style={{ padding: isCompactLayout ? '24px 16px' : '40px 32px' }}>
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 24 }}>
+      <div
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          marginBottom: 24,
+        }}
+      >
         <h1 style={{ margin: 0, color: theme.textPrimary }}>Users</h1>
       </div>
 

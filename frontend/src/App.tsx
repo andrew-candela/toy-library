@@ -84,9 +84,7 @@ function ProtectedLayout({
 
 function App() {
   // token state drives re-renders after login/logout
-  const [token, setToken] = useState<string | null>(() =>
-    getStoredToken(),
-  )
+  const [token, setToken] = useState<string | null>(() => getStoredToken())
   const { theme } = useTheme()
 
   useEffect(() => {
@@ -116,70 +114,70 @@ function App() {
   return (
     <div style={{ background: theme.bg, color: theme.textPrimary, minHeight: '100vh' }}>
       <Routes>
-      <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
-      <Route
-        path="/home"
-        element={
-          <ProtectedLayout onLogout={handleLogout}>
-            <HomePage />
-          </ProtectedLayout>
-        }
-      />
-      <Route
-        path="/toys"
-        element={
-          <ProtectedLayout onLogout={handleLogout}>
-            <ToysPage token={token!} />
-          </ProtectedLayout>
-        }
-      />
-      <Route
-        path="/toys/:id"
-        element={
-          <ProtectedLayout onLogout={handleLogout}>
-            <ToyDetailPage token={token!} />
-          </ProtectedLayout>
-        }
-      />
-      <Route
-        path="/profile"
-        element={
-          <ProtectedLayout onLogout={handleLogout}>
-            <ProfilePage token={token!} onTokenUpdate={handleTokenUpdate} />
-          </ProtectedLayout>
-        }
-      />
-      <Route
-        path="/users"
-        element={
-          <ProtectedLayout onLogout={handleLogout}>
-            <UsersPage token={token!} />
-          </ProtectedLayout>
-        }
-      />
-      <Route
-        path="/users/:username"
-        element={
-          <ProtectedLayout onLogout={handleLogout}>
-            <UserDetailPage token={token!} />
-          </ProtectedLayout>
-        }
-      />
-      <Route
-        path="/admin"
-        element={
-          <ProtectedLayout onLogout={handleLogout} adminOnly>
-            <AdminPage token={token!} />
-          </ProtectedLayout>
-        }
-      />
-      <Route path="/verify-email" element={<VerifyEmailPage />} />
-      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-      <Route path="/reset-password" element={<ResetPasswordPage />} />
-      <Route path="/resend-verification" element={<ResendVerificationPage />} />
-      <Route path="/" element={<Navigate to="/home" replace />} />
-      <Route path="*" element={<Navigate to="/home" replace />} />
-    </Routes>
+        <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
+        <Route
+          path="/home"
+          element={
+            <ProtectedLayout onLogout={handleLogout}>
+              <HomePage />
+            </ProtectedLayout>
+          }
+        />
+        <Route
+          path="/toys"
+          element={
+            <ProtectedLayout onLogout={handleLogout}>
+              <ToysPage token={token!} />
+            </ProtectedLayout>
+          }
+        />
+        <Route
+          path="/toys/:id"
+          element={
+            <ProtectedLayout onLogout={handleLogout}>
+              <ToyDetailPage token={token!} />
+            </ProtectedLayout>
+          }
+        />
+        <Route
+          path="/profile"
+          element={
+            <ProtectedLayout onLogout={handleLogout}>
+              <ProfilePage token={token!} onTokenUpdate={handleTokenUpdate} />
+            </ProtectedLayout>
+          }
+        />
+        <Route
+          path="/users"
+          element={
+            <ProtectedLayout onLogout={handleLogout}>
+              <UsersPage token={token!} />
+            </ProtectedLayout>
+          }
+        />
+        <Route
+          path="/users/:username"
+          element={
+            <ProtectedLayout onLogout={handleLogout}>
+              <UserDetailPage token={token!} />
+            </ProtectedLayout>
+          }
+        />
+        <Route
+          path="/admin"
+          element={
+            <ProtectedLayout onLogout={handleLogout} adminOnly>
+              <AdminPage token={token!} />
+            </ProtectedLayout>
+          }
+        />
+        <Route path="/verify-email" element={<VerifyEmailPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route path="/resend-verification" element={<ResendVerificationPage />} />
+        <Route path="/" element={<Navigate to="/home" replace />} />
+        <Route path="*" element={<Navigate to="/home" replace />} />
+      </Routes>
     </div>
   )
 }

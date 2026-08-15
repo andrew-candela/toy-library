@@ -35,8 +35,14 @@ export default function ForgotPasswordPage() {
         </>
       ) : (
         <>
-          <p>Enter your email address and we'll send you a link to reset your password. The email will also include your username.</p>
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+          <p>
+            Enter your email address and we'll send you a link to reset your password. The email
+            will also include your username.
+          </p>
+          <form
+            onSubmit={handleSubmit}
+            style={{ display: 'flex', flexDirection: 'column', gap: 12 }}
+          >
             <label>
               Email
               <input
@@ -45,7 +51,16 @@ export default function ForgotPasswordPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 autoComplete="email"
-                style={{ display: 'block', width: '100%', marginTop: 4, background: theme.inputBg, color: theme.textPrimary, border: `1px solid ${theme.inputBorder}`, borderRadius: 4, padding: '6px 8px' }}
+                style={{
+                  display: 'block',
+                  width: '100%',
+                  marginTop: 4,
+                  background: theme.inputBg,
+                  color: theme.textPrimary,
+                  border: `1px solid ${theme.inputBorder}`,
+                  borderRadius: 4,
+                  padding: '6px 8px',
+                }}
               />
             </label>
             {error && <p style={{ color: theme.error, margin: 0 }}>{error}</p>}

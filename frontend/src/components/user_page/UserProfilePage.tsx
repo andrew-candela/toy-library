@@ -74,11 +74,27 @@ export default function UserProfilePage({ token }: Props) {
         <span style={labelStyle}>
           Email{' '}
           {profile.is_email_verified ? (
-            <span style={{ color: theme.success, fontWeight: 400, fontSize: 12, textTransform: 'none', letterSpacing: 0 }}>
+            <span
+              style={{
+                color: theme.success,
+                fontWeight: 400,
+                fontSize: 12,
+                textTransform: 'none',
+                letterSpacing: 0,
+              }}
+            >
               ✓ verified
             </span>
           ) : (
-            <span style={{ color: theme.warning, fontWeight: 400, fontSize: 12, textTransform: 'none', letterSpacing: 0 }}>
+            <span
+              style={{
+                color: theme.warning,
+                fontWeight: 400,
+                fontSize: 12,
+                textTransform: 'none',
+                letterSpacing: 0,
+              }}
+            >
               ⚠ unverified
             </span>
           )}
@@ -88,7 +104,12 @@ export default function UserProfilePage({ token }: Props) {
 
       <div style={{ ...sectionStyle, borderBottom: 'none', marginBottom: 0, paddingBottom: 0 }}>
         <span style={labelStyle}>Neighborhood</span>
-        <p style={{ ...valueStyle, color: profile.neighborhood ? theme.textPrimary : theme.textMuted }}>
+        <p
+          style={{
+            ...valueStyle,
+            color: profile.neighborhood ? theme.textPrimary : theme.textMuted,
+          }}
+        >
           {profile.neighborhood ?? 'Not set'}
         </p>
       </div>

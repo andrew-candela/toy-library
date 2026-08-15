@@ -99,13 +99,17 @@ export function useToyImage(
       return
     }
 
+    // Captured after the guard above so the async closure keeps the narrowed,
+    // non-null value rather than re-reading the nullable prop.
+    const resolvedImagePath = imagePath
+
     setLoading(true)
     setError(null)
     setImageSrc(null)
 
     async function loadImage() {
       try {
-        const resolvedImageUrl = await resolveCachedImageUrl(token, imagePath)
+        const resolvedImageUrl = await resolveCachedImageUrl(token, resolvedImagePath)
         if (cancelled) return
 
         setImageSrc(resolvedImageUrl)
@@ -120,7 +124,7 @@ export function useToyImage(
       }
     }
 
-    loadImage()
+    void loadImage()
 
     return () => {
       cancelled = true

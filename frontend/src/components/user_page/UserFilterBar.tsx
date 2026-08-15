@@ -123,7 +123,10 @@ export function UserFilterBar({
       </div>
 
       {hasActiveFilters && (
-        <button onClick={handleClearFilters} style={{ ...clearButtonStyle, width: isCompactLayout ? '100%' : undefined }}>
+        <button
+          onClick={handleClearFilters}
+          style={{ ...clearButtonStyle, width: isCompactLayout ? '100%' : undefined }}
+        >
           Clear filters
         </button>
       )}

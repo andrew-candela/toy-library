@@ -31,11 +31,9 @@ export function useUsersPage(token: string): UseUsersPageReturn {
   const [filterNeighborhood, setFilterNeighborhood] = useState<string | null>(
     () => searchParams.get('neighborhood') || null,
   )
-  const [searchInput, setSearchInput] = useState<string>(
-    () => searchParams.get('search') || '',
-  )
-  const [currentPage, setCurrentPage] = useState<number>(
-    () => parseInt(searchParams.get('page') || '1', 10),
+  const [searchInput, setSearchInput] = useState<string>(() => searchParams.get('search') || '')
+  const [currentPage, setCurrentPage] = useState<number>(() =>
+    parseInt(searchParams.get('page') || '1', 10),
   )
 
   // Sync all filter/page state to the URL in a single effect so simultaneous
@@ -74,9 +72,7 @@ export function useUsersPage(token: string): UseUsersPageReturn {
         if (currentPage === 1) {
           const uniqueNeighborhoods = Array.from(
             new Set(
-              response.items
-                .map((u) => u.neighborhood)
-                .filter((n): n is string => n !== null),
+              response.items.map((u) => u.neighborhood).filter((n): n is string => n !== null),
             ),
           ).sort()
           setNeighborhoods(uniqueNeighborhoods)
@@ -88,7 +84,7 @@ export function useUsersPage(token: string): UseUsersPageReturn {
       }
     }
 
-    fetchData()
+    void fetchData()
   }, [token, filterNeighborhood, searchInput, currentPage])
 
   const handleFilterNeighborhood = (neighborhood: string | null) => {

@@ -1,8 +1,21 @@
 services:
+  backend:
+    environment:
+      # Turns on uvicorn --reload (paired with the ./backend/app bind mount in
+      # compose.yml) and access logs. start.sh defaults this to prod.
+      ENVIRONMENT: dev
+      # No nginx in front of the backend locally (Vite's dev server proxies /api
+      # straight through), so nothing can act on X-Accel-Redirect. Serve the
+      # image bytes from the backend instead.
+      TOY_IMAGE_USE_ACCEL_REDIRECT: "false"
+
   frontend:
-    build: 
-      target: prod
-    ports: 
-      - "81:80"
+    build:
+      target: dev
+    ports:
+      - "5173:5173"
     volumes:
-      - toy-images-data:/data/images:ro
+      - ./frontend:/app
+      - /app/node_modules   # anonymous volume so the container's own node_modules aren't shadowed
+    environment:
+      VITE_IMAGE_PROXY_TARGET: http://backend:8000

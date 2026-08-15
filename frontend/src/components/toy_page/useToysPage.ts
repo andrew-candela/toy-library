@@ -65,7 +65,7 @@ export function useToysPage(token: string) {
   const [error, setError] = useState<string | null>(null)
 
   // --- 2. Filter Bar State ---
-  const [filterTags, _] = useState<string[]>(() => {
+  const [filterTags] = useState<string[]>(() => {
     const seen = new Set<string>()
     const initialTags: string[] = []
     for (const rawTag of searchParams.getAll('tags')) {
@@ -78,19 +78,13 @@ export function useToysPage(token: string) {
     return initialTags
   })
   const [showOnlyMyToys, setShowOnlyMyToys] = useState<boolean>(
-    () => searchParams.get('my') === '1'
+    () => searchParams.get('my') === '1',
   )
-  const [ownerUsername, setOwnerUsername] = useState<string>(
-    () => searchParams.get('owner') ?? ''
-  )
-  const [filterAge, setFilterAge] = useState<string>(
-    () => searchParams.get('age') ?? ''
-  )
-  const [searchQuery, setSearchQuery] = useState<string>(
-    () => searchParams.get('q') ?? ''
-  )
+  const [ownerUsername, setOwnerUsername] = useState<string>(() => searchParams.get('owner') ?? '')
+  const [filterAge, setFilterAge] = useState<string>(() => searchParams.get('age') ?? '')
+  const [searchQuery, setSearchQuery] = useState<string>(() => searchParams.get('q') ?? '')
   const [filterNeighborhood, setFilterNeighborhood] = useState<string>(
-    () => searchParams.get('neighborhood') ?? ''
+    () => searchParams.get('neighborhood') ?? '',
   )
   const [neighborhoods, setNeighborhoods] = useState<string[]>([])
 
@@ -228,7 +222,16 @@ export function useToysPage(token: string) {
       next.set('page', String(currentPage))
     }
     setSearchParams(next, { replace: true })
-  }, [filterTags, showOnlyMyToys, ownerUsername, filterAge, searchQuery, filterNeighborhood, currentPage, setSearchParams])
+  }, [
+    filterTags,
+    showOnlyMyToys,
+    ownerUsername,
+    filterAge,
+    searchQuery,
+    filterNeighborhood,
+    currentPage,
+    setSearchParams,
+  ])
 
   useEffect(() => {
     setLoading(true)
@@ -252,19 +255,23 @@ export function useToysPage(token: string) {
         // present among toys matching the other active filters, mirroring
         // the convention used on the Users page.
         const uniqueNeighborhoods = Array.from(
-          new Set(
-            data.items
-              .map((toy) => toy.neighborhood)
-              .filter((n): n is string => Boolean(n)),
-          ),
+          new Set(data.items.map((toy) => toy.neighborhood).filter((n): n is string => Boolean(n))),
         ).sort()
         setNeighborhoods(uniqueNeighborhoods)
       })
-      .catch((err: unknown) =>
-        setError(err instanceof Error ? err.message : 'Failed to load toys'),
-      )
+      .catch((err: unknown) => setError(err instanceof Error ? err.message : 'Failed to load toys'))
       .finally(() => setLoading(false))
-  }, [token, filterTags, currentPage, refreshKey, showOnlyMyToys, ownerUsername, filterAge, searchQuery, filterNeighborhood])
+  }, [
+    token,
+    filterTags,
+    currentPage,
+    refreshKey,
+    showOnlyMyToys,
+    ownerUsername,
+    filterAge,
+    searchQuery,
+    filterNeighborhood,
+  ])
 
   useEffect(() => {
     refreshMetadata().catch((err: unknown) => {
@@ -471,7 +478,7 @@ export function useToysPage(token: string) {
     currentPage,
     totalPages,
     setCurrentPage,
-    
+
     showOnlyMyToys,
     setShowOnlyMyToys,
     ownerUsername,
@@ -483,7 +490,7 @@ export function useToysPage(token: string) {
     filterNeighborhood,
     setFilterNeighborhood,
     neighborhoods,
-    
+
     // Ownership metadata context
     ownedToyIds,
     myInterestedToyIds,

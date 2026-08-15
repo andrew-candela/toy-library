@@ -188,7 +188,9 @@ export default function AdminPage({ token }: Props) {
             ))}
           </ul>
         )}
-        {removeError && <p style={{ color: theme.error, fontSize: 13, marginBottom: 12 }}>{removeError}</p>}
+        {removeError && (
+          <p style={{ color: theme.error, fontSize: 13, marginBottom: 12 }}>{removeError}</p>
+        )}
 
         <div style={rowStyle}>
           <input
@@ -202,7 +204,11 @@ export default function AdminPage({ token }: Props) {
             }}
             disabled={adding}
           />
-          <button style={{ ...buttonStyle, opacity: adding ? 0.6 : 1 }} onClick={handleAddEmail} disabled={adding}>
+          <button
+            style={{ ...buttonStyle, opacity: adding ? 0.6 : 1 }}
+            onClick={handleAddEmail}
+            disabled={adding}
+          >
             {adding ? 'Adding…' : 'Add email'}
           </button>
         </div>
@@ -233,8 +239,12 @@ export default function AdminPage({ token }: Props) {
             {triggering ? 'Triggering…' : 'Trigger'}
           </button>
         </div>
-        {triggerSuccess && <p style={{ color: theme.success, fontSize: 13, marginTop: 6 }}>{triggerSuccess}</p>}
-        {triggerError && <p style={{ color: theme.error, fontSize: 13, marginTop: 6 }}>{triggerError}</p>}
+        {triggerSuccess && (
+          <p style={{ color: theme.success, fontSize: 13, marginTop: 6 }}>{triggerSuccess}</p>
+        )}
+        {triggerError && (
+          <p style={{ color: theme.error, fontSize: 13, marginTop: 6 }}>{triggerError}</p>
+        )}
       </div>
     </div>
   )

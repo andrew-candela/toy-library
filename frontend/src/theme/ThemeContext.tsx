@@ -36,12 +36,16 @@ export function ThemeProvider({ children }: { children: React.ReactNode }) {
   }, [isDark])
 
   return (
-    <ThemeContext.Provider value={{ isDark, toggleTheme, theme: isDark ? darkTokens : lightTokens }}>
+    <ThemeContext.Provider
+      value={{ isDark, toggleTheme, theme: isDark ? darkTokens : lightTokens }}
+    >
       {children}
     </ThemeContext.Provider>
   )
 }
 
+// Colocated with the provider by design; costs this file fast-refresh only.
+// eslint-disable-next-line react-refresh/only-export-components
 export function useTheme(): ThemeContextValue {
   const ctx = useContext(ThemeContext)
   if (!ctx) throw new Error('useTheme must be used within ThemeProvider')

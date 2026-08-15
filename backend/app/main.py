@@ -3,7 +3,6 @@ from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, Response
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.staticfiles import StaticFiles
 from prometheus_client import (
     CONTENT_TYPE_LATEST,
     REGISTRY,
@@ -54,14 +53,6 @@ async def lifespan(app: FastAPI):
 
 
 app = FastAPI(title="Toy Library API", lifespan=lifespan)
-
-toy_image_storage_dir = get_toy_image_storage_dir()
-toy_image_storage_dir.mkdir(parents=True, exist_ok=True)
-app.mount(
-    get_toy_image_public_path(),
-    StaticFiles(directory=str(toy_image_storage_dir)),
-    name="toy-images",
-)
 
 Instrumentator().instrument(app)
 

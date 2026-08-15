@@ -199,22 +199,33 @@ export function ToyTable({
                 <div style={{ minWidth: 0, flex: 1 }}>
                   <Link
                     to={`/toys/${toy.id}`}
-                    style={{ color: theme.link, textDecoration: 'none', fontWeight: 600, fontSize: 16 }}
+                    style={{
+                      color: theme.link,
+                      textDecoration: 'none',
+                      fontWeight: 600,
+                      fontSize: 16,
+                    }}
                   >
                     {toy.title}
                   </Link>
                   <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <div>
                       <div style={labelStyle}>Min Age</div>
-                      <div style={{ color: theme.textPrimary, fontSize: 14 }}>{toy.min_age ?? '—'}</div>
+                      <div style={{ color: theme.textPrimary, fontSize: 14 }}>
+                        {toy.min_age ?? '—'}
+                      </div>
                     </div>
                     <div>
                       <div style={labelStyle}>Max Age</div>
-                      <div style={{ color: theme.textPrimary, fontSize: 14 }}>{toy.max_age ?? '—'}</div>
+                      <div style={{ color: theme.textPrimary, fontSize: 14 }}>
+                        {toy.max_age ?? '—'}
+                      </div>
                     </div>
                     <div>
                       <div style={labelStyle}>Neighborhood</div>
-                      <div style={{ color: theme.textPrimary, fontSize: 14 }}>{toy.neighborhood ?? '—'}</div>
+                      <div style={{ color: theme.textPrimary, fontSize: 14 }}>
+                        {toy.neighborhood ?? '—'}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -319,7 +330,7 @@ export function ToyTable({
             </td>
           </tr>
         )}
-        
+
         {toys.map((toy) => {
           const isOwner = ownedToyIds.has(toy.id)
           const isPendingRecipient = pendingIncomingToyIds.has(toy.id)

@@ -11,7 +11,7 @@ const quotes = [
     attribution: 'Charles Eames',
   },
   {
-    text: "PICK UP YOUR DAMN LEGOS!!!",
+    text: 'PICK UP YOUR DAMN LEGOS!',
     attribution: 'You, probably. Definitely me sometimes',
   },
 ]
@@ -36,7 +36,9 @@ export default function HomePage() {
             }}
           >
             <p style={{ margin: '0 0 8px' }}>{q.text}</p>
-            <footer style={{ fontStyle: 'normal', fontSize: '0.875rem', color: theme.textSecondary }}>
+            <footer
+              style={{ fontStyle: 'normal', fontSize: '0.875rem', color: theme.textSecondary }}
+            >
               — <cite>{q.attribution}</cite>
             </footer>
           </blockquote>
