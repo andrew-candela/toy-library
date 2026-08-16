@@ -1,0 +1,45 @@
+name: Implement labeled issue
+
+# Fires the "Implement labeled issues" Claude Code routine when an issue is
+# labeled `claude`. The routine clones this repo in Anthropic's cloud, implements
+# the request, and opens a PR. This workflow is only the event bridge.
+
+on:
+  issues:
+    types: [labeled]
+
+jobs:
+  fire-routine:
+    if: github.event.label.name == 'claude'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fire routine
+        env:
+          # Issue text goes through the environment, never interpolated into the
+          # shell, so a crafted title or body cannot execute here.
+          ROUTINE_TOKEN: ${{ secrets.CLAUDE_ROUTINE_TOKEN }}
+          ISSUE_NUMBER: ${{ github.event.issue.number }}
+          ISSUE_TITLE: ${{ github.event.issue.title }}
+          ISSUE_BODY: ${{ github.event.issue.body }}
+          ISSUE_URL: ${{ github.event.issue.html_url }}
+        run: |
+          set -euo pipefail
+
+          jq -n \
+            --arg num "$ISSUE_NUMBER" \
+            --arg title "$ISSUE_TITLE" \
+            --arg body "$ISSUE_BODY" \
+            --arg url "$ISSUE_URL" \
+            '{text: "Issue #\($num): \($title)\nURL: \($url)\n\nBody:\n\($body)"}' \
+            > payload.json
+
+          curl --fail-with-body -sS -X POST \
+            "https://api.anthropic.com/v1/claude_code/routines/trig_01R9u3ujdMvt6GTwqUvgUm9z/fire" \
+            -H "Authorization: Bearer $ROUTINE_TOKEN" \
+            -H "anthropic-beta: experimental-cc-routine-2026-04-01" \
+            -H "anthropic-version: 2023-06-01" \
+            -H "Content-Type: application/json" \
+            -d @payload.json \
+            -o response.json
+
+          echo "Session: $(jq -r '.claude_code_session_url // "no session URL returned"' response.json)"
