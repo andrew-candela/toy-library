@@ -66,22 +66,25 @@ export default function ToysPage({ token }: Props) {
       <div
         style={{
           display: 'flex',
-          alignItems: isCompactLayout ? 'stretch' : 'center',
-          justifyContent: 'space-between',
-          flexDirection: isCompactLayout ? 'column' : 'row',
-          gap: isCompactLayout ? 12 : 0,
+          alignItems: 'stretch',
+          flexDirection: 'column',
+          gap: 16,
           marginBottom: 24,
         }}
       >
         <h1 style={{ margin: 0 }}>Toys</h1>
-        {!hook.ownerUsername && (
-          <button
-            style={{ ...primaryBtnStyle, width: isCompactLayout ? '100%' : undefined }}
-            onClick={hook.openCreate}
-          >
-            + Add Toy
-          </button>
-        )}
+        <button
+          style={{
+            ...primaryBtnStyle,
+            alignSelf: isCompactLayout ? 'stretch' : 'flex-start',
+            padding: '12px 24px',
+            fontSize: 16,
+            fontWeight: 600,
+          }}
+          onClick={hook.openCreate}
+        >
+          + Add Toy
+        </button>
       </div>
 
       {hook.ownerUsername && (

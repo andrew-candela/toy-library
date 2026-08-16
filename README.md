@@ -7,7 +7,6 @@ and to express interest in toys the'd like to borrow.
 
 ## ToDo
 
-- add toy button is not obvious
 - need to expire toys that have been sitting around for a while
   - notify owners
 - there is a bug in the neighborhood dropdown. 
