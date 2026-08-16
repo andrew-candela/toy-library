@@ -1,6 +1,5 @@
 """Ownership listings and the toy transfer handshake."""
 
-import pytest
 from sqlalchemy import select
 
 from app.models.models import ToyInterest, UserToy
@@ -179,19 +178,6 @@ async def test_owner_can_cancel_a_pending_transfer(
     assert user_toy.pending_user_id is None
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "The transfer endpoints return a stale pending_user. Same root cause as "
-        "test_update_toy_response_reflects_the_new_tags in test_toys.py: the "
-        "session is created with expire_on_commit=False, so committing does not "
-        "invalidate the already-loaded relationship, and re-selecting the row "
-        "returns the same instance out of the identity map — the selectinload() "
-        "options never re-run. The writes themselves are correct. Fixing it "
-        "needs populate_existing=True on the re-select, or an explicit refresh. "
-        "Remove this marker once that lands."
-    ),
-)
 async def test_transfer_responses_reflect_the_new_pending_user(
     auth_client, db_session, user, other_user
 ):

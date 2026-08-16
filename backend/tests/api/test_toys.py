@@ -1,6 +1,5 @@
 """Toy listing, filtering, pagination, and CRUD."""
 
-import pytest
 from sqlalchemy import select
 
 from app.models.models import Toy, ToyTag, UserToy
@@ -307,19 +306,6 @@ async def test_update_toy_replaces_the_tag_set(auth_client, db_session, user):
     assert stored == ["fresh"]
 
 
-@pytest.mark.xfail(
-    strict=True,
-    reason=(
-        "update_toy returns stale tags. It deletes the ToyTag rows with a bulk "
-        "delete() — which does not update Toy.tags on the already-loaded "
-        "instance — and the session is created with expire_on_commit=False, so "
-        "the commit does not invalidate the collection either. Re-selecting the "
-        "toy then returns that same instance from the identity map. Fixing it "
-        "needs `await db.refresh(toy, ['tags'])` after the commit, or "
-        "`.execution_options(populate_existing=True)` on the final select. "
-        "Remove this marker once that lands."
-    ),
-)
 async def test_update_toy_response_reflects_the_new_tags(auth_client, db_session, user):
     toy = await make_toy(db_session, owner=user, tags=["old", "stale"])
 

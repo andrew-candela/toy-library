@@ -397,7 +397,13 @@ async def update_toy(
     if old_image_path and old_image_path != toy.image_path:
         delete_toy_image(old_image_path)
 
-    return (await db.execute(select(Toy).where(Toy.id == toy_id))).scalar_one()
+    return (
+        await db.execute(
+            select(Toy)
+            .where(Toy.id == toy_id)
+            .execution_options(populate_existing=True)
+        )
+    ).scalar_one()
 
 
 @router.delete("/{toy_id}", status_code=204)

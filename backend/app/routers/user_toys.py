@@ -100,7 +100,10 @@ async def initiate_transfer(
     await db.commit()
 
     result = await db.execute(
-        select(UserToy).options(*_user_toy_options()).where(UserToy.id == user_toy.id)
+        select(UserToy)
+        .options(*_user_toy_options())
+        .where(UserToy.id == user_toy.id)
+        .execution_options(populate_existing=True)
     )
     user_toy = result.scalar_one()
     log_activity(
@@ -165,7 +168,10 @@ async def accept_transfer(
         original_user_id=original_user_id,
     )
     result = await db.execute(
-        select(UserToy).options(*_user_toy_options()).where(UserToy.id == user_toy.id)
+        select(UserToy)
+        .options(*_user_toy_options())
+        .where(UserToy.id == user_toy.id)
+        .execution_options(populate_existing=True)
     )
     user_toy = result.scalar_one()
 
@@ -213,7 +219,10 @@ async def cancel_transfer(
     )
 
     result = await db.execute(
-        select(UserToy).options(*_user_toy_options()).where(UserToy.id == user_toy.id)
+        select(UserToy)
+        .options(*_user_toy_options())
+        .where(UserToy.id == user_toy.id)
+        .execution_options(populate_existing=True)
     )
     user_toy = result.scalar_one()
 
