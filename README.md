@@ -5,6 +5,30 @@ A way for folks to advertise toys they'd like to give away,
 and to express interest in toys the'd like to borrow.
 
 
+## Backend tests
+
+The suite is split in two tiers. `tests/unit` is pure functions and needs
+nothing running. `tests/api` drives the ASGI app against a real Postgres and
+Redis, so start those first:
+
+```sh
+docker compose up -d postgres redis
+cd backend
+uv sync --group dev
+uv run pytest              # everything
+uv run pytest tests/unit   # no services needed
+```
+
+The first API run creates a `toy_library_test` database and builds its schema by
+running the alembic migrations. Every test then runs inside a transaction that
+is rolled back, so the database stays empty between runs and tests do not depend
+on execution order. Point the suite elsewhere with `TEST_DATABASE_URL` and
+`TEST_REDIS_URL`; Redis defaults to db 15 so it never touches the dev stack's
+keys.
+
+`.github/workflows/backend-tests.yml` runs both tiers on any PR touching
+`backend/`, using the same pgvector and Redis images as compose.
+
 ## ToDo
 
 - need to expire toys that have been sitting around for a while

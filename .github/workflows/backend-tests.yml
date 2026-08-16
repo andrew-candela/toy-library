@@ -1,0 +1,93 @@
+name: Backend tests
+
+on:
+  pull_request:
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-tests.yml"
+  push:
+    branches: [main]
+    paths:
+      - "backend/**"
+      - ".github/workflows/backend-tests.yml"
+
+# A new push to a PR makes the in-flight run irrelevant, so cancel it rather
+# than paying for both.
+concurrency:
+  group: backend-tests-${{ github.ref }}
+  cancel-in-progress: true
+
+defaults:
+  run:
+    working-directory: backend
+
+jobs:
+  unit:
+    name: Unit tests
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+
+      # Pinned exactly: setup-uv publishes no floating v10 tag.
+      - uses: astral-sh/setup-uv@v10.0.1
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - run: uv sync --frozen --group dev
+
+      # No database, no Redis — these run against pure functions only, so they
+      # report a failure in seconds rather than after the service containers
+      # have finished starting.
+      - run: uv run pytest tests/unit
+
+  api:
+    name: API tests
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+        # Same image as compose.yml. Plain postgres is not enough: the toys
+        # table has a pgvector column, and migration p2q3r4s5t6u7 runs
+        # CREATE EXTENSION vector.
+        image: pgvector/pgvector:0.8.4-pg18-trixie
+        env:
+          POSTGRES_USER: toy_library
+          POSTGRES_PASSWORD: toy_library
+          POSTGRES_DB: toy_library_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U toy_library -d toy_library_test"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+      redis:
+        image: redis:8
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 10
+
+    env:
+      # tests/conftest.py reads these two and derives everything else. The
+      # schema is built by running the real alembic migrations at session start.
+      TEST_DATABASE_URL: postgresql://toy_library:toy_library@localhost:5432/toy_library_test
+      TEST_REDIS_URL: redis://localhost:6379/15
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # Pinned exactly: setup-uv publishes no floating v10 tag.
+      - uses: astral-sh/setup-uv@v10.0.1
+        with:
+          enable-cache: true
+          cache-dependency-glob: backend/uv.lock
+
+      - run: uv sync --frozen --group dev
+
+      - run: uv run pytest tests/api
