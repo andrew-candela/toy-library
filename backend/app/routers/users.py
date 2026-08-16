@@ -80,6 +80,25 @@ async def list_users(
     )
 
 
+@router.get("/neighborhoods", response_model=list[str])
+async def list_neighborhoods(
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Every neighborhood in use, regardless of any active filters.
+
+    Filter dropdowns need the full set of options, so this must not be
+    derived from a filtered/paginated listing.
+    """
+    result = await db.execute(
+        select(Address.neighborhood)
+        .where(Address.neighborhood.isnot(None))
+        .distinct()
+        .order_by(Address.neighborhood)
+    )
+    return result.scalars().all()
+
+
 @router.get("/username-suggestions", response_model=list[str])
 async def suggest_usernames(
     q: str = Query(default=""),

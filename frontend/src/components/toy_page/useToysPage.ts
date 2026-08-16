@@ -11,6 +11,7 @@ import {
   expressInterest,
   fetchAllInterests,
   fetchMyToys,
+  fetchNeighborhoods,
   fetchPendingIncoming,
   fetchToys,
   initiateTransfer,
@@ -250,14 +251,6 @@ export function useToysPage(token: string) {
       .then((data) => {
         setToys(data.items)
         setTotalPages(data.total_pages)
-
-        // Populate the neighborhood dropdown from the neighborhoods actually
-        // present among toys matching the other active filters, mirroring
-        // the convention used on the Users page.
-        const uniqueNeighborhoods = Array.from(
-          new Set(data.items.map((toy) => toy.neighborhood).filter((n): n is string => Boolean(n))),
-        ).sort()
-        setNeighborhoods(uniqueNeighborhoods)
       })
       .catch((err: unknown) => setError(err instanceof Error ? err.message : 'Failed to load toys'))
       .finally(() => setLoading(false))
@@ -272,6 +265,16 @@ export function useToysPage(token: string) {
     searchQuery,
     filterNeighborhood,
   ])
+
+  // The neighborhood dropdown lists every neighborhood, not just the ones
+  // present in the current results, so it is loaded independently of filters.
+  useEffect(() => {
+    fetchNeighborhoods(token)
+      .then(setNeighborhoods)
+      .catch((err: unknown) => {
+        setError(err instanceof Error ? err.message : 'Failed to load neighborhoods')
+      })
+  }, [token])
 
   useEffect(() => {
     refreshMetadata().catch((err: unknown) => {

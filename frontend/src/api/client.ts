@@ -602,6 +602,14 @@ export async function fetchUsers(
   return response.json() as Promise<PaginatedResponse<UserListItem>>
 }
 
+export async function fetchNeighborhoods(token: string): Promise<string[]> {
+  const response = await authedFetch(token, `/api/users/neighborhoods`)
+  if (!response.ok) {
+    throw new Error(`Failed to fetch neighborhoods: ${response.statusText}`)
+  }
+  return response.json() as Promise<string[]>
+}
+
 export async function fetchUserDetail(token: string, username: string): Promise<UserDetail> {
   const response = await authedFetch(token, `/api/users/${encodeURIComponent(username)}`)
   if (!response.ok) {

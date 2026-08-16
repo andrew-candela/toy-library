@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
-import { fetchUsers, UserListItem } from '../../api/client'
+import { fetchNeighborhoods, fetchUsers, UserListItem } from '../../api/client'
 
 interface UseUsersPageReturn {
   users: UserListItem[]
@@ -67,16 +67,6 @@ export function useUsersPage(token: string): UseUsersPageReturn {
         )
         setUsers(response.items)
         setTotalPages(response.total_pages)
-
-        // Extract unique neighborhoods from first page
-        if (currentPage === 1) {
-          const uniqueNeighborhoods = Array.from(
-            new Set(
-              response.items.map((u) => u.neighborhood).filter((n): n is string => n !== null),
-            ),
-          ).sort()
-          setNeighborhoods(uniqueNeighborhoods)
-        }
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to fetch users')
       } finally {
@@ -86,6 +76,16 @@ export function useUsersPage(token: string): UseUsersPageReturn {
 
     void fetchData()
   }, [token, filterNeighborhood, searchInput, currentPage])
+
+  // The neighborhood dropdown lists every neighborhood, not just the ones
+  // present in the current results, so it is loaded independently of filters.
+  useEffect(() => {
+    fetchNeighborhoods(token)
+      .then(setNeighborhoods)
+      .catch((err) => {
+        setError(err instanceof Error ? err.message : 'Failed to fetch neighborhoods')
+      })
+  }, [token])
 
   const handleFilterNeighborhood = (neighborhood: string | null) => {
     setFilterNeighborhood(neighborhood)

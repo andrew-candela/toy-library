@@ -9,8 +9,6 @@ and to express interest in toys the'd like to borrow.
 
 - need to expire toys that have been sitting around for a while
   - notify owners
-- there is a bug in the neighborhood dropdown. 
-It only shows neighborhoods that are on the current page, not all neighborhoods
 - add the date added to the toys list page
 - add a guidelines page
 - add more UI docs
