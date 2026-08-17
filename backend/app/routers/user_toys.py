@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -11,7 +13,7 @@ from app.lib.email_tools import (
     send_transfer_canceled_email,
     send_transfer_initiated_email,
 )
-from app.models.models import ToyInterest, User, UserToy
+from app.models.models import ToyInterest, User, UserToy, UserToySource
 from app.schemas.schemas import TransferInitiateRequest, UserToyOut
 
 router = APIRouter()
@@ -25,6 +27,21 @@ def _user_toy_options():
     ]
 
 
+async def _open_user_toy(db: AsyncSession, toy_id: int) -> UserToy | None:
+    """The row for whoever currently holds the toy.
+
+    user_toys keeps every past holder, so the released rows have to be excluded
+    or these lookups raise MultipleResultsFound the first time a toy changes
+    hands.
+    """
+    result = await db.execute(
+        select(UserToy)
+        .options(*_user_toy_options())
+        .where(UserToy.toy_id == toy_id, UserToy.released_at.is_(None))
+    )
+    return result.scalar_one_or_none()
+
+
 @router.get("", response_model=list[UserToyOut])
 async def list_my_toys(
     db: AsyncSession = Depends(get_db),
@@ -35,7 +52,10 @@ async def list_my_toys(
             await db.execute(
                 select(UserToy)
                 .options(*_user_toy_options())
-                .where(UserToy.user_id == current_user.id)
+                .where(
+                    UserToy.user_id == current_user.id,
+                    UserToy.released_at.is_(None),
+                )
             )
         )
         .scalars()
@@ -53,7 +73,10 @@ async def list_pending_incoming(
             await db.execute(
                 select(UserToy)
                 .options(*_user_toy_options())
-                .where(UserToy.pending_user_id == current_user.id)
+                .where(
+                    UserToy.pending_user_id == current_user.id,
+                    UserToy.released_at.is_(None),
+                )
             )
         )
         .scalars()
@@ -68,10 +91,7 @@ async def initiate_transfer(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    result = await db.execute(
-        select(UserToy).options(*_user_toy_options()).where(UserToy.toy_id == toy_id)
-    )
-    user_toy = result.scalar_one_or_none()
+    user_toy = await _open_user_toy(db, toy_id)
     if user_toy is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Toy not found"
@@ -126,10 +146,7 @@ async def accept_transfer(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    result = await db.execute(
-        select(UserToy).options(*_user_toy_options()).where(UserToy.toy_id == toy_id)
-    )
-    user_toy = result.scalar_one_or_none()
+    user_toy = await _open_user_toy(db, toy_id)
     if user_toy is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Toy not found"
@@ -157,9 +174,26 @@ async def accept_transfer(
     existing_interest = interest_result.scalar_one_or_none()
     if existing_interest is not None:
         await db.delete(existing_interest)
+
+    # Close the outgoing stint and open a new one rather than moving user_id, so
+    # the handoff is retained. The partial unique index on the open row is
+    # checked per statement, so the close has to reach the database before the
+    # insert or the two open rows collide.
     original_user_id = user_toy.user_id
-    user_toy.user_id = current_user.id
+    handover_time = datetime.now(tz=timezone.utc)
+    user_toy.released_at = handover_time
     user_toy.pending_user_id = None
+    await db.flush()
+
+    new_user_toy = UserToy(
+        user_id=current_user.id,
+        toy_id=toy_id,
+        checked_out_at=handover_time,
+        source=UserToySource.transferred.value,
+    )
+    db.add(new_user_toy)
+    await db.flush()
+    new_user_toy_id = new_user_toy.id
     await db.commit()
     log_activity(
         type="ToyTransferAccepted",
@@ -170,7 +204,7 @@ async def accept_transfer(
     result = await db.execute(
         select(UserToy)
         .options(*_user_toy_options())
-        .where(UserToy.id == user_toy.id)
+        .where(UserToy.id == new_user_toy_id)
         .execution_options(populate_existing=True)
     )
     user_toy = result.scalar_one()
@@ -187,10 +221,7 @@ async def cancel_transfer(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    result = await db.execute(
-        select(UserToy).options(*_user_toy_options()).where(UserToy.toy_id == toy_id)
-    )
-    user_toy = result.scalar_one_or_none()
+    user_toy = await _open_user_toy(db, toy_id)
     if user_toy is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Toy not found"

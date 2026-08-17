@@ -5,7 +5,7 @@ actually asserting on, so a test reads as "a toy with these tags" rather than as
 a wall of unrelated field assignments.
 """
 
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -19,6 +19,7 @@ from app.models.models import (
     ToyTag,
     User,
     UserToy,
+    UserToySource,
 )
 
 DEFAULT_PASSWORD = "correct-horse-battery-staple"
@@ -88,6 +89,49 @@ async def make_toy(
                 user_id=owner.id,
                 toy_id=toy.id,
                 checked_out_at=datetime.now(tz=timezone.utc),
+                source=UserToySource.created.value,
+            )
+        )
+
+    await db.flush()
+    return toy
+
+
+async def make_toy_with_history(
+    db: AsyncSession,
+    *,
+    owner: User,
+    previous_owners: list[User],
+    **toy_kwargs,
+) -> Toy:
+    """A toy `owner` holds now, behind one closed user_toys row per past holder.
+
+    This is the shape every `released_at IS NULL` guard exists for: without one,
+    a lookup over user_toys sees a row per holder the toy has ever had, so it
+    either raises MultipleResultsFound or silently answers with an arbitrary
+    former owner. `previous_owners` is ordered oldest first.
+    """
+    toy = await make_toy(db, owner=None, **toy_kwargs)
+    now = datetime.now(tz=timezone.utc)
+    holders = [*previous_owners, owner]
+
+    for index, holder in enumerate(holders):
+        is_current = index == len(holders) - 1
+        db.add(
+            UserToy(
+                user_id=holder.id,
+                toy_id=toy.id,
+                checked_out_at=now - timedelta(days=len(holders) - index),
+                released_at=(
+                    None
+                    if is_current
+                    else now - timedelta(days=len(holders) - index - 1)
+                ),
+                source=(
+                    UserToySource.created.value
+                    if index == 0
+                    else UserToySource.transferred.value
+                ),
             )
         )
 

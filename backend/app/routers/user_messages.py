@@ -42,6 +42,8 @@ async def _users_have_transfer_or_interest_relationship(
     sender_id: int,
     recipient_id: int,
 ) -> bool:
+    # Every check below is scoped to open rows: a relationship that ended when
+    # the toy changed hands must not keep granting contact permission.
     transfer_exists = (
         await db.execute(
             select(UserToy.id)
@@ -49,6 +51,7 @@ async def _users_have_transfer_or_interest_relationship(
                 and_(
                     UserToy.user_id == sender_id,
                     UserToy.pending_user_id == recipient_id,
+                    UserToy.released_at.is_(None),
                 )
             )
             .limit(1)
@@ -64,6 +67,7 @@ async def _users_have_transfer_or_interest_relationship(
                 and_(
                     UserToy.user_id == recipient_id,
                     UserToy.pending_user_id == sender_id,
+                    UserToy.released_at.is_(None),
                 )
             )
             .limit(1)
@@ -80,6 +84,7 @@ async def _users_have_transfer_or_interest_relationship(
                 and_(
                     UserToy.user_id == sender_id,
                     ToyInterest.user_id == recipient_id,
+                    UserToy.released_at.is_(None),
                 )
             )
             .limit(1)
@@ -96,6 +101,7 @@ async def _users_have_transfer_or_interest_relationship(
                 and_(
                     UserToy.user_id == recipient_id,
                     ToyInterest.user_id == sender_id,
+                    UserToy.released_at.is_(None),
                 )
             )
             .limit(1)

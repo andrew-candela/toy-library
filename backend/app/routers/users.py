@@ -19,10 +19,12 @@ async def list_users(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    # Build query to select users with their neighborhood and toy count
+    # Build query to select users with their neighborhood and toy count. Toys
+    # the user has since handed on are still in user_toys, so the count has to
+    # be restricted to the rows they still hold.
     toy_count_subquery = (
         select(func.count(UserToy.id))
-        .where(UserToy.user_id == User.id)
+        .where(UserToy.user_id == User.id, UserToy.released_at.is_(None))
         .scalar_subquery()
     )
 
@@ -142,7 +144,9 @@ async def get_user_detail(
     # Count toys owned by this user
     toy_count = (
         await db.execute(
-            select(func.count(UserToy.id)).where(UserToy.user_id == user.id)
+            select(func.count(UserToy.id)).where(
+                UserToy.user_id == user.id, UserToy.released_at.is_(None)
+            )
         )
     ).scalar_one()
 

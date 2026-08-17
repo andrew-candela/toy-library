@@ -7,9 +7,12 @@ from sqlalchemy import (
     DateTime,
     Enum,
     ForeignKey,
+    Index,
     Integer,
     String,
     UniqueConstraint,
+    and_,
+    text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from pgvector.sqlalchemy import Vector
@@ -72,8 +75,16 @@ class Toy(Base):
         cascade="all, delete-orphan",
         lazy="selectin",
     )
+    # user_toys is a custody ledger, so a toy that has changed hands has one row
+    # per holder. The primaryjoin keeps this single-object shape honest by
+    # restricting it to the row nobody has released yet.
     user_toy: Mapped[Optional["UserToy"]] = relationship(
-        "UserToy", back_populates="toy", uselist=False
+        "UserToy",
+        back_populates="toy",
+        uselist=False,
+        primaryjoin=lambda: and_(
+            Toy.id == UserToy.toy_id, UserToy.released_at.is_(None)
+        ),
     )
     embedding: Mapped[Optional[Vector]] = mapped_column(Vector(768), nullable=True)
 
@@ -90,17 +101,62 @@ class ToyTag(Base):
     toy: Mapped["Toy"] = relationship("Toy", back_populates="tags")
 
 
-class UserToy(Base):
-    __tablename__ = "user_toys"
-    __table_args__ = (UniqueConstraint("toy_id", name="uq_user_toys_toy_id"),)
+class UserToySource(str, enum.Enum):
+    """How a holder came by the toy. Stored as plain text, not a PG enum."""
 
-    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    created = "created"
+    transferred = "transferred"
+
+
+class UserToy(Base):
+    """Append-only custody ledger: one row per stint of ownership.
+
+    A row with ``released_at IS NULL`` is the toy's current holder; closed rows
+    are history. Every query answering "who has this toy" has to say so — the
+    partial indexes below only cover open rows, so those queries also stay fast
+    no matter how much history accumulates.
+    """
+
+    __tablename__ = "user_toys"
+    __table_args__ = (
+        # Replaces the old unique constraint on toy_id: one holder at a time,
+        # but any number of closed rows behind them.
+        Index(
+            "uq_user_toys_active",
+            "toy_id",
+            unique=True,
+            postgresql_where=text("released_at IS NULL"),
+        ),
+        Index(
+            "ix_user_toys_active_user",
+            "user_id",
+            postgresql_where=text("released_at IS NULL"),
+        ),
+        Index(
+            "ix_user_toys_active_pending",
+            "pending_user_id",
+            postgresql_where=text(
+                "released_at IS NULL AND pending_user_id IS NOT NULL"
+            ),
+        ),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
     user_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("users.id"), nullable=False
     )
     toy_id: Mapped[int] = mapped_column(Integer, ForeignKey("toys.id"), nullable=False)
     checked_out_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
+    )
+    released_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    source: Mapped[str] = mapped_column(
+        String,
+        nullable=False,
+        default=UserToySource.created.value,
+        server_default=UserToySource.created.value,
     )
     pending_user_id: Mapped[Optional[int]] = mapped_column(
         Integer, ForeignKey("users.id"), nullable=True
