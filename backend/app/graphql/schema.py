@@ -67,7 +67,10 @@ class Query:
 
         result = await db.execute(
             select(UserToyModel)
-            .where(UserToyModel.user_id == current_user.id)
+            .where(
+                UserToyModel.user_id == current_user.id,
+                UserToyModel.released_at.is_(None),
+            )
             .options(selectinload(UserToyModel.toy).selectinload(ToyModel.tags))
         )
         user_toys = result.scalars().all()

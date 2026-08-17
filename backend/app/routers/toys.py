@@ -31,6 +31,7 @@ from app.models.models import (
     ToyTag,
     User,
     UserToy,
+    UserToySource,
 )
 from app.schemas.schemas import PaginatedResponse, ToyOut
 
@@ -72,14 +73,22 @@ async def list_toys(
     query = select(Toy)
     if owned_by_current_user:
         query = query.where(
-            Toy.id.in_(select(UserToy.toy_id).where(UserToy.user_id == current_user.id))
+            Toy.id.in_(
+                select(UserToy.toy_id).where(
+                    UserToy.user_id == current_user.id,
+                    UserToy.released_at.is_(None),
+                )
+            )
         )
     if owner_username:
         query = query.where(
             Toy.id.in_(
                 select(UserToy.toy_id)
                 .join(User, UserToy.user_id == User.id)
-                .where(User.username == owner_username)
+                .where(
+                    User.username == owner_username,
+                    UserToy.released_at.is_(None),
+                )
             )
         )
     if neighborhood:
@@ -88,7 +97,10 @@ async def list_toys(
                 select(UserToy.toy_id)
                 .join(User, UserToy.user_id == User.id)
                 .join(Address, Address.user_id == User.id)
-                .where(Address.neighborhood == neighborhood)
+                .where(
+                    Address.neighborhood == neighborhood,
+                    UserToy.released_at.is_(None),
+                )
             )
         )
     if age is not None:
@@ -184,7 +196,10 @@ async def list_toys(
                 select(UserToy.toy_id, Address.neighborhood)
                 .join(User, UserToy.user_id == User.id)
                 .join(Address, Address.user_id == User.id)
-                .where(UserToy.toy_id.in_(toy_ids))
+                .where(
+                    UserToy.toy_id.in_(toy_ids),
+                    UserToy.released_at.is_(None),
+                )
             )
         ).all()
         neighborhood_by_toy_id = {
@@ -239,7 +254,7 @@ async def get_toy(
         await db.execute(
             select(User.username)
             .join(UserToy, UserToy.user_id == User.id)
-            .where(UserToy.toy_id == toy_id)
+            .where(UserToy.toy_id == toy_id, UserToy.released_at.is_(None))
         )
     ).scalar_one_or_none()
 
@@ -312,6 +327,7 @@ async def create_toy(
         user_id=current_user.id,
         toy_id=toy.id,
         checked_out_at=datetime.now(tz=timezone.utc),
+        source=UserToySource.created.value,
     )
     db.add(user_toy)
     for raw_tag in tags:
@@ -416,7 +432,11 @@ async def delete_toy(
     if not toy:
         raise HTTPException(status_code=404, detail="Toy not found")
     user_toy = (
-        await db.execute(select(UserToy).where(UserToy.toy_id == toy_id))
+        await db.execute(
+            select(UserToy).where(
+                UserToy.toy_id == toy_id, UserToy.released_at.is_(None)
+            )
+        )
     ).scalar_one_or_none()
     if not user_toy:
         raise HTTPException(
@@ -435,7 +455,9 @@ async def delete_toy(
 
     delete_toy_image(toy.image_path)
     await db.execute(delete(ToyInterest).where(ToyInterest.toy_id == toy_id))
-    await db.delete(user_toy)
+    # The custody history goes with the toy: released rows still reference
+    # toys.id, so deleting only the open one would fail the delete below.
+    await db.execute(delete(UserToy).where(UserToy.toy_id == toy_id))
     await db.delete(toy)
     await db.commit()
     log_activity(

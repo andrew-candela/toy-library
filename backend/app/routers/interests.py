@@ -63,9 +63,12 @@ async def list_interests(
     interested_count = count_result.scalar_one()
 
     owner_result = await db.execute(
+        # Only the toy's current holder may see who is interested — giving a toy
+        # away ends that.
         select(UserToy.id).where(
             UserToy.toy_id == toy_id,
             UserToy.user_id == current_user.id,
+            UserToy.released_at.is_(None),
         )
     )
     can_view_usernames = owner_result.scalar_one_or_none() is not None
