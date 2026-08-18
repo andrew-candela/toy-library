@@ -13,7 +13,7 @@ from app.lib.email_tools import (
     send_transfer_canceled_email,
     send_transfer_initiated_email,
 )
-from app.models.models import ToyInterest, User, UserToy, UserToySource
+from app.models.models import Toy, ToyInterest, User, UserToy, UserToySource
 from app.schemas.schemas import TransferInitiateRequest, UserToyOut
 
 router = APIRouter()
@@ -52,9 +52,14 @@ async def list_my_toys(
             await db.execute(
                 select(UserToy)
                 .options(*_user_toy_options())
+                # Joining toys rather than leaning on selectinload(UserToy.toy):
+                # loading through the relationship fetches the row whatever its
+                # deleted_at says, so a delisted toy would keep showing up here.
+                .join(Toy, Toy.id == UserToy.toy_id)
                 .where(
                     UserToy.user_id == current_user.id,
                     UserToy.released_at.is_(None),
+                    Toy.deleted_at.is_(None),
                 )
             )
         )

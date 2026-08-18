@@ -67,7 +67,12 @@ async def make_toy(
     condition: ToyCondition | None = None,
     image_path: str | None = None,
     date_added: datetime | None = None,
+    embedding: list[float] | None = None,
+    deleted_at: datetime | None = None,
 ) -> Toy:
+    # Toys are created without an embedding in production too — it is filled in
+    # by a background task. Pass one when the test drives the semantic search
+    # path, which orders by cosine distance and gets NULL back without it.
     toy = Toy(
         title=title,
         description=description,
@@ -76,6 +81,12 @@ async def make_toy(
         condition=condition,
         image_path=image_path,
         date_added=date_added,
+        embedding=embedding,
+        # Set this to build the state DELETE /toys/{id} never leaves behind: a
+        # delisted toy whose user_toys row is still open. It is what the
+        # relationship-loading read paths have to be filtered against, since
+        # `released_at IS NULL` cannot cover them.
+        deleted_at=deleted_at,
     )
     db.add(toy)
     await db.flush()

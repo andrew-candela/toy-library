@@ -96,9 +96,10 @@ async def test_neighborhood_filter_ignores_a_former_owners_neighborhood(
     assert body["items"] == []
 
 
-async def test_deleting_a_toy_takes_its_whole_history_with_it(
+async def test_deleting_a_toy_leaves_its_whole_history_intact(
     login_as, db_session, user, other_user
 ):
+    """The reason delete is soft: a hard delete cascaded the ledger away."""
     toy = await make_toy_with_history(
         db_session, owner=user, previous_owners=[other_user]
     )
@@ -107,11 +108,20 @@ async def test_deleting_a_toy_takes_its_whole_history_with_it(
 
     assert response.status_code == 204
     remaining = (
-        (await db_session.execute(select(UserToy).where(UserToy.toy_id == toy.id)))
+        (
+            await db_session.execute(
+                select(UserToy)
+                .where(UserToy.toy_id == toy.id)
+                .order_by(UserToy.checked_out_at)
+                .execution_options(populate_existing=True)
+            )
+        )
         .scalars()
         .all()
     )
-    assert remaining == []
+    assert [row.user_id for row in remaining] == [other_user.id, user.id]
+    # Every stint is closed now, the current holder's included.
+    assert all(row.released_at is not None for row in remaining)
 
 
 async def test_user_list_toy_count_excludes_released_toys(

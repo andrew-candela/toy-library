@@ -19,6 +19,19 @@ from app.schemas.schemas import (
 router = APIRouter()
 
 
+async def _live_toy(db: AsyncSession, toy_id: int) -> Toy | None:
+    """The toy, unless it has been delisted.
+
+    A `db.get(Toy, toy_id)` here would look harmless and be wrong: a primary-key
+    get goes straight to the identity map or a bare SELECT, so it hands back
+    soft-deleted rows that every other read path filters out.
+    """
+    result = await db.execute(
+        select(Toy).where(Toy.id == toy_id, Toy.deleted_at.is_(None))
+    )
+    return result.scalar_one_or_none()
+
+
 @router.get("", response_model=list[InterestSummaryOut])
 async def list_all_interests(
     db: AsyncSession = Depends(get_db),
@@ -51,7 +64,7 @@ async def list_interests(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    toy = await db.get(Toy, toy_id)
+    toy = await _live_toy(db, toy_id)
     if toy is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Toy not found"
@@ -104,7 +117,7 @@ async def express_interest(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    toy = await db.get(Toy, toy_id)
+    toy = await _live_toy(db, toy_id)
     if toy is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Toy not found"

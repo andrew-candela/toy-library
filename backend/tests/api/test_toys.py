@@ -363,19 +363,30 @@ async def test_update_missing_toy_returns_404(auth_client):
     ).status_code == 404
 
 
-async def test_delete_toy_removes_the_row_and_its_ownership(
+async def test_delete_toy_delists_it_and_closes_its_ownership(
     auth_client, db_session, user
 ):
+    """Delete is a soft delete: the rows stay, they just stop being current."""
     toy = await make_toy(db_session, owner=user)
 
     assert (await auth_client.delete(f"/api/toys/{toy.id}")).status_code == 204
 
-    assert (
-        await db_session.execute(select(Toy).where(Toy.id == toy.id))
-    ).scalar_one_or_none() is None
-    assert (
-        await db_session.execute(select(UserToy).where(UserToy.toy_id == toy.id))
-    ).scalar_one_or_none() is None
+    stored = (
+        await db_session.execute(
+            select(Toy)
+            .where(Toy.id == toy.id)
+            .execution_options(populate_existing=True)
+        )
+    ).scalar_one()
+    assert stored.deleted_at is not None
+    user_toy = (
+        await db_session.execute(
+            select(UserToy)
+            .where(UserToy.toy_id == toy.id)
+            .execution_options(populate_existing=True)
+        )
+    ).scalar_one()
+    assert user_toy.released_at is not None
 
 
 async def test_delete_toy_removes_its_image_file(
