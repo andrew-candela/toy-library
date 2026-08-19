@@ -318,6 +318,10 @@ async def create_toy(
 ):
     _validate_age_range(min_age, max_age)
     image_path = await save_toy_image(image_file) if image_file is not None else None
+    # A brand-new listing counts as both fresh owner activity and — for the
+    # purposes of the staleness clock — a fresh start, so neither column starts
+    # out null and looking like a toy nobody has touched in years.
+    now = datetime.now(tz=timezone.utc)
     toy = Toy(
         title=title,
         description=description,
@@ -326,6 +330,8 @@ async def create_toy(
         image_path=image_path,
         condition=condition,
         date_added=date_added,
+        last_interest_at=now,
+        last_owner_activity_at=now,
     )
     db.add(toy)
     await db.flush()
@@ -402,6 +408,10 @@ async def update_toy(
             normalized = _normalize_tag(raw_tag)
             if normalized:
                 db.add(ToyTag(toy_id=toy.id, tag=normalized))
+
+        # Editing the listing is owner activity, not outside interest, so this
+        # deliberately leaves last_interest_at alone.
+        toy.last_owner_activity_at = datetime.now(tz=timezone.utc)
 
         await db.commit()
         log_activity(

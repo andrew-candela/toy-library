@@ -69,6 +69,8 @@ async def make_toy(
     date_added: datetime | None = None,
     embedding: list[float] | None = None,
     deleted_at: datetime | None = None,
+    last_interest_at: datetime | None = None,
+    last_owner_activity_at: datetime | None = None,
 ) -> Toy:
     # Toys are created without an embedding in production too — it is filled in
     # by a background task. Pass one when the test drives the semantic search
@@ -87,6 +89,12 @@ async def make_toy(
         # relationship-loading read paths have to be filtered against, since
         # `released_at IS NULL` cannot cover them.
         deleted_at=deleted_at,
+        # Default to null rather than "now": a test asserting that an endpoint
+        # bumps one of these needs a starting value it chose itself, and one
+        # that never touches them should not be handed a plausible-looking
+        # timestamp it did not ask for.
+        last_interest_at=last_interest_at,
+        last_owner_activity_at=last_owner_activity_at,
     )
     db.add(toy)
     await db.flush()
