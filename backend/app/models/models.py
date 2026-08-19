@@ -54,6 +54,15 @@ class ToyCondition(str, enum.Enum):
 
 class Toy(Base):
     __tablename__ = "toys"
+    __table_args__ = (
+        # Only live rows: the index stays the size of the catalog no matter how
+        # much has been delisted.
+        Index(
+            "ix_toys_not_deleted",
+            "id",
+            postgresql_where=text("deleted_at IS NULL"),
+        ),
+    )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     title: Mapped[str] = mapped_column(String, nullable=False)
@@ -66,6 +75,11 @@ class Toy(Base):
         Enum(ToyCondition), nullable=True
     )
     date_added: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    # Delisting is a soft delete: the row stays so the custody ledger below keeps
+    # something to point at. Every read path has to say `deleted_at IS NULL`.
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
 

@@ -67,9 +67,13 @@ class Query:
 
         result = await db.execute(
             select(UserToyModel)
+            # selectinload fetches the toy row whatever its deleted_at says, so
+            # the join is what keeps delisted toys out of this list.
+            .join(ToyModel, ToyModel.id == UserToyModel.toy_id)
             .where(
                 UserToyModel.user_id == current_user.id,
                 UserToyModel.released_at.is_(None),
+                ToyModel.deleted_at.is_(None),
             )
             .options(selectinload(UserToyModel.toy).selectinload(ToyModel.tags))
         )

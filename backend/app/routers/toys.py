@@ -70,7 +70,10 @@ async def list_toys(
 ):
     if age is not None and age < 0:
         raise HTTPException(status_code=400, detail="Age must be 0 or greater")
-    query = select(Toy)
+    # Filtering here rather than after the fact matters for the semantic path
+    # below: it takes the top 100 by distance, so delisted toys left in the query
+    # would eat candidate slots before the relevance cutoff ever runs.
+    query = select(Toy).where(Toy.deleted_at.is_(None))
     if owned_by_current_user:
         query = query.where(
             Toy.id.in_(
@@ -246,7 +249,9 @@ async def get_toy(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    toy = (await db.execute(select(Toy).where(Toy.id == toy_id))).scalar_one_or_none()
+    toy = (
+        await db.execute(select(Toy).where(Toy.id == toy_id, Toy.deleted_at.is_(None)))
+    ).scalar_one_or_none()
     if not toy:
         raise HTTPException(status_code=404, detail="Toy not found")
 
@@ -275,6 +280,7 @@ async def semantic_toy_search_debug(
     result = await db.execute(
         select(Toy, distance.label("score"))
         # .where(distance < max_distance)
+        .where(Toy.deleted_at.is_(None))
         .order_by(distance)
     )
     rows = result.all()
@@ -356,7 +362,9 @@ async def update_toy(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    toy = (await db.execute(select(Toy).where(Toy.id == toy_id))).scalar_one_or_none()
+    toy = (
+        await db.execute(select(Toy).where(Toy.id == toy_id, Toy.deleted_at.is_(None)))
+    ).scalar_one_or_none()
     if not toy:
         raise HTTPException(status_code=404, detail="Toy not found")
     old = ToyOut.model_validate(toy).model_dump(mode="json")
@@ -428,7 +436,13 @@ async def delete_toy(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    toy = (await db.execute(select(Toy).where(Toy.id == toy_id))).scalar_one_or_none()
+    # Delisting is a soft delete, so an already-deleted toy is simply gone as far
+    # as this endpoint is concerned — the filter here is what makes a second
+    # DELETE a 404 rather than the "ownership record is missing" 409 below, which
+    # would otherwise fire on the closed user_toys row the first delete left.
+    toy = (
+        await db.execute(select(Toy).where(Toy.id == toy_id, Toy.deleted_at.is_(None)))
+    ).scalar_one_or_none()
     if not toy:
         raise HTTPException(status_code=404, detail="Toy not found")
     user_toy = (
@@ -453,16 +467,30 @@ async def delete_toy(
             detail="Cancel the pending transfer before deleting this toy.",
         )
 
-    delete_toy_image(toy.image_path)
+    # Snapshotted before the writes below, so the log line records the toy as it
+    # was rather than the delisted shell it becomes.
+    old = ToyOut.model_validate(toy).model_dump(mode="json")
+
+    # The ledger is about custody, not the photo: keeping image files for toys
+    # nobody can see costs storage and buys nothing.
+    image_path = toy.image_path
+    toy.image_path = None
+
+    deleted_at = datetime.now(tz=timezone.utc)
+    toy.deleted_at = deleted_at
+    # Closing the holder's stint rather than deleting it is the whole point: the
+    # row is the record of who had this toy, and it also drops the toy out of
+    # every `released_at IS NULL` query for free — "my toys", toy_count, and the
+    # owner filters all compose from that one write.
+    user_toy.released_at = deleted_at
+    # Interests are hard-deleted by policy everywhere else, and a delisted toy
+    # should not keep live interest records against it.
     await db.execute(delete(ToyInterest).where(ToyInterest.toy_id == toy_id))
-    # The custody history goes with the toy: released rows still reference
-    # toys.id, so deleting only the open one would fail the delete below.
-    await db.execute(delete(UserToy).where(UserToy.toy_id == toy_id))
-    await db.delete(toy)
     await db.commit()
+    delete_toy_image(image_path)
     log_activity(
         type="ToyDeleted",
         user_id=current_user.id,
         toy_id=toy.id,
-        old=ToyOut.model_validate(toy).model_dump(mode="json"),
+        old=old,
     )
