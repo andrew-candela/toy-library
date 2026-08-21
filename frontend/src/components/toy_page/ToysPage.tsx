@@ -68,11 +68,9 @@ export default function ToysPage({ token }: Props) {
           display: 'flex',
           alignItems: 'stretch',
           flexDirection: 'column',
-          gap: 16,
           marginBottom: 24,
         }}
       >
-        <h1 style={{ margin: 0 }}>Toys</h1>
         <button
           style={{
             ...primaryBtnStyle,

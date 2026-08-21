@@ -152,8 +152,6 @@ export default function ProfilePage({ token, onTokenUpdate }: Props) {
 
   return (
     <div style={{ padding: isCompactLayout ? 16 : 40, maxWidth: 520 }}>
-      <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 32 }}>Profile</h1>
-
       {/* Username */}
       <div style={sectionStyle}>
         <label style={labelStyle}>Username</label>

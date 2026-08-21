@@ -21,8 +21,7 @@ export default function HomePage() {
   const isCompactLayout = useIsCompactLayout()
   return (
     <main style={{ padding: isCompactLayout ? '24px 16px' : '40px 32px' }}>
-      <h1>Toy Library Home</h1>
-      <section style={{ marginTop: '32px', display: 'flex', flexDirection: 'column', gap: '24px' }}>
+      <section style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
         {quotes.map((q, i) => (
           <blockquote
             key={i}
