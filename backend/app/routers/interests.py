@@ -141,6 +141,10 @@ async def express_interest(
         created_at=datetime.now(timezone.utc),
     )
     db.add(interest)
+    # Denormalized onto the toy because this row may not survive: interests are
+    # hard-deleted below, and a `max(created_at)` over what is left would forget
+    # that anyone had ever asked.
+    toy.last_interest_at = interest.created_at
     await db.flush()
 
     result = await db.execute(
@@ -176,6 +180,10 @@ async def delete_interest(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="No interest found for this toy",
         )
+    # `toys.last_interest_at` is deliberately left alone. Interest really was
+    # shown at that moment, and withdrawing it does not retroactively unshow it
+    # — recomputing or clearing the column here would hand the staleness clock
+    # back the lossiness it exists to avoid.
     await db.delete(interest)
     await db.commit()
     log_activity(

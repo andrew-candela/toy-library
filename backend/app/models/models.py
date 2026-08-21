@@ -82,6 +82,19 @@ class Toy(Base):
     deleted_at: Mapped[Optional[datetime]] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
+    # Denormalized rather than derived from `max(toy_interests.created_at)`:
+    # interests are hard-deleted, so that maximum drops the moment anyone
+    # withdraws and the signal is gone. Withdrawing does not clear this — the
+    # interest was genuinely shown at the time.
+    last_interest_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
+    # Kept apart from last_interest_at because "the owner is still tending this
+    # listing" and "somebody else still wants it" are different signals, and
+    # which of them should keep a listing alive is not settled yet.
+    last_owner_activity_at: Mapped[Optional[datetime]] = mapped_column(
+        DateTime(timezone=True), nullable=True
+    )
 
     tags: Mapped[list["ToyTag"]] = relationship(
         "ToyTag",
