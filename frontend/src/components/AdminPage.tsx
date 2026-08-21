@@ -140,8 +140,6 @@ export default function AdminPage({ token }: Props) {
 
   return (
     <div style={{ padding: isCompactLayout ? 16 : 40, maxWidth: 640 }}>
-      <h1 style={{ fontSize: 22, fontWeight: 700, marginBottom: 32 }}>Admin</h1>
-
       {/* Allowlist */}
       <div style={sectionStyle}>
         <label style={labelStyle}>Allowlisted emails</label>
