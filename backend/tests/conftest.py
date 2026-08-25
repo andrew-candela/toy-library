@@ -62,7 +62,7 @@ os.environ.update(
 # needs a writable multiprocess dir. Single-process tests want the default one.
 os.environ.pop("PROMETHEUS_MULTIPROC_DIR", None)
 
-import pytest  # noqa: E402
+import pytest
 
 
 @pytest.fixture(autouse=True)

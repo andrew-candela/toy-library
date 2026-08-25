@@ -7,15 +7,15 @@ Create Date: 2026-06-02 00:00:00.000000
 """
 
 import os
-from typing import Sequence, Union
+from collections.abc import Sequence
 
 import sqlalchemy as sa
 from alembic import op
 
 revision: str = "m4n5o6p7q8r9"
-down_revision: Union[str, None] = "l3m4n5o6p7q8"
-branch_labels: Union[str, Sequence[str], None] = None
-depends_on: Union[str, Sequence[str], None] = None
+down_revision: str | None = "l3m4n5o6p7q8"
+branch_labels: str | Sequence[str] | None = None
+depends_on: str | Sequence[str] | None = None
 
 
 def _get_admin_user_emails() -> list[str]:

@@ -9,7 +9,6 @@ import sqlalchemy as sa
 from alembic import op
 from pgvector.sqlalchemy import Vector
 
-
 # revision identifiers, used by Alembic.
 revision = "p2q3r4s5t6u7"
 down_revision = "o1p2q3r4s5t6"

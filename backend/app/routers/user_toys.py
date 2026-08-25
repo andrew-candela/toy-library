@@ -1,12 +1,12 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
-from app.lib.auth import get_current_user
 from app.lib.app_logging import log_activity
+from app.lib.auth import get_current_user
 from app.lib.database import get_db
 from app.lib.email_tools import (
     send_transfer_accepted_email,
@@ -185,7 +185,7 @@ async def accept_transfer(
     # checked per statement, so the close has to reach the database before the
     # insert or the two open rows collide.
     original_user_id = user_toy.user_id
-    handover_time = datetime.now(tz=timezone.utc)
+    handover_time = datetime.now(tz=UTC)
     user_toy.released_at = handover_time
     user_toy.pending_user_id = None
     await db.flush()

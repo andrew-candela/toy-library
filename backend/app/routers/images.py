@@ -1,9 +1,11 @@
-import os
 import mimetypes
+import os
 from pathlib import Path
+
 from fastapi import APIRouter, Depends, Response
 from fastapi.responses import FileResponse
 from starlette import status
+
 from app.lib.auth import get_current_user
 from app.lib.toy_images import resolve_toy_image_storage_path
 from app.models.models import User

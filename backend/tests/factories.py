@@ -5,7 +5,7 @@ actually asserting on, so a test reads as "a toy with these tags" rather than as
 a wall of unrelated field assignments.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -107,7 +107,7 @@ async def make_toy(
             UserToy(
                 user_id=owner.id,
                 toy_id=toy.id,
-                checked_out_at=datetime.now(tz=timezone.utc),
+                checked_out_at=datetime.now(tz=UTC),
                 source=UserToySource.created.value,
             )
         )
@@ -131,7 +131,7 @@ async def make_toy_with_history(
     former owner. `previous_owners` is ordered oldest first.
     """
     toy = await make_toy(db, owner=None, **toy_kwargs)
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(tz=UTC)
     holders = [*previous_owners, owner]
 
     for index, holder in enumerate(holders):
@@ -160,7 +160,7 @@ async def make_toy_with_history(
 
 async def make_interest(db: AsyncSession, *, user: User, toy: Toy) -> ToyInterest:
     interest = ToyInterest(
-        user_id=user.id, toy_id=toy.id, created_at=datetime.now(tz=timezone.utc)
+        user_id=user.id, toy_id=toy.id, created_at=datetime.now(tz=UTC)
     )
     db.add(interest)
     await db.flush()

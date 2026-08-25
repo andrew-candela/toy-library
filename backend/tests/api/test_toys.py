@@ -63,7 +63,9 @@ async def test_page_size_is_capped(auth_client):
     ).status_code == 422
 
 
-async def test_filter_by_owned_by_current_user(auth_client, db_session, user, other_user):
+async def test_filter_by_owned_by_current_user(
+    auth_client, db_session, user, other_user
+):
     await make_toy(db_session, owner=user, title="Mine")
     await make_toy(db_session, owner=other_user, title="Theirs")
 
@@ -88,12 +90,8 @@ async def test_filter_by_owner_username(auth_client, db_session, user, other_use
 
 
 async def test_filter_by_neighborhood(auth_client, db_session, user):
-    northside = await make_user(
-        db_session, username="north", neighborhood="Northside"
-    )
-    southside = await make_user(
-        db_session, username="south", neighborhood="Southside"
-    )
+    northside = await make_user(db_session, username="north", neighborhood="Northside")
+    southside = await make_user(db_session, username="south", neighborhood="Southside")
     await make_toy(db_session, owner=northside, title="North Toy")
     await make_toy(db_session, owner=southside, title="South Toy")
 
@@ -122,7 +120,9 @@ async def test_filter_by_age_uses_an_inclusive_range(auth_client, db_session, us
     assert [item["title"] for item in body["items"]] == ["Toddler"]
 
 
-async def test_age_filter_excludes_toys_with_no_age_range(auth_client, db_session, user):
+async def test_age_filter_excludes_toys_with_no_age_range(
+    auth_client, db_session, user
+):
     await make_toy(db_session, owner=user, title="Unspecified")
 
     body = (await auth_client.get("/api/toys/", params={"age": 5})).json()
@@ -190,7 +190,9 @@ async def test_get_missing_toy_returns_404(auth_client):
     assert (await auth_client.get("/api/toys/999999")).status_code == 404
 
 
-async def test_create_toy_assigns_ownership_to_the_caller(auth_client, db_session, user):
+async def test_create_toy_assigns_ownership_to_the_caller(
+    auth_client, db_session, user
+):
     response = await auth_client.post(
         "/api/toys", data={"title": "New Blocks", "tags": ["#Wood", "Puzzle"]}
     )
@@ -295,11 +297,7 @@ async def test_update_toy_replaces_the_tag_set(auth_client, db_session, user):
 
     assert response.status_code == 200
     stored = (
-        (
-            await db_session.execute(
-                select(ToyTag.tag).where(ToyTag.toy_id == toy.id)
-            )
-        )
+        (await db_session.execute(select(ToyTag.tag).where(ToyTag.toy_id == toy.id)))
         .scalars()
         .all()
     )

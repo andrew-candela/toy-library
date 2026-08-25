@@ -6,7 +6,7 @@ somebody who gave the toy away years ago. These tests pin the endpoints that
 were audited when the ledger landed — one per way that used to go wrong.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 import pytest
 from sqlalchemy import select
@@ -278,7 +278,7 @@ async def test_a_second_open_row_for_one_toy_is_rejected(db_session, user, other
         UserToy(
             user_id=other_user.id,
             toy_id=toy.id,
-            checked_out_at=datetime.now(tz=timezone.utc),
+            checked_out_at=datetime.now(tz=UTC),
         )
     )
 

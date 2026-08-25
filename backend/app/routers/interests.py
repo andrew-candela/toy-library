@@ -1,13 +1,13 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlalchemy.orm import selectinload
 
+from app.lib.app_logging import log_activity
 from app.lib.auth import get_current_user
 from app.lib.database import get_db
-from app.lib.app_logging import log_activity
 from app.models.models import Toy, ToyInterest, User, UserToy
 from app.schemas.schemas import (
     InterestDetailOut,
@@ -138,7 +138,7 @@ async def express_interest(
     interest = ToyInterest(
         user_id=current_user.id,
         toy_id=toy_id,
-        created_at=datetime.now(timezone.utc),
+        created_at=datetime.now(UTC),
     )
     db.add(interest)
     # Denormalized onto the toy because this row may not survive: interests are

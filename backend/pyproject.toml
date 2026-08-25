@@ -29,6 +29,7 @@ dev = [
     "pytest>=8.3",
     "pytest-asyncio>=1.0",
     "httpx>=0.27",
+    "ruff>=0.16.4",
 ]
 
 [build-system]
@@ -52,3 +53,6 @@ markers = [
     "unit: no I/O — pure functions, safe to run anywhere",
     "api: drives the ASGI app against a real Postgres and Redis",
 ]
+
+[tool.ruff]
+ignore = ["B008"]

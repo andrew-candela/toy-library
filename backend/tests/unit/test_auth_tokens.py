@@ -1,6 +1,6 @@
 """Token minting and password hashing — no database, no Redis."""
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 from jose import jwt
@@ -34,10 +34,8 @@ def test_access_token_expires_within_the_configured_window():
     token = auth.create_access_token("alice")
 
     payload = jwt.decode(token, auth.SECRET_KEY, algorithms=[auth.ALGORITHM])
-    expires_at = datetime.fromtimestamp(payload["exp"], tz=timezone.utc)
-    expected = datetime.now(timezone.utc) + timedelta(
-        minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES
-    )
+    expires_at = datetime.fromtimestamp(payload["exp"], tz=UTC)
+    expected = datetime.now(UTC) + timedelta(minutes=auth.ACCESS_TOKEN_EXPIRE_MINUTES)
 
     assert abs((expires_at - expected).total_seconds()) < 60
 
@@ -47,7 +45,7 @@ def test_token_signed_with_a_different_secret_is_rejected():
         {"sub": "alice", "jti": "x"}, "some-other-secret", algorithm=auth.ALGORITHM
     )
 
-    with pytest.raises(Exception):
+    with pytest.raises(Exception):  # noqa: B017
         jwt.decode(forged, auth.SECRET_KEY, algorithms=[auth.ALGORITHM])
 
 

@@ -12,14 +12,14 @@ recomputing `last_interest_at` on withdrawal — would reintroduce exactly the
 lossiness the denormalized column exists to avoid.
 """
 
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 from sqlalchemy import select
 
 from app.models.models import Toy
 from tests.factories import make_interest, make_toy
 
-_LONG_AGO = datetime(2020, 1, 1, tzinfo=timezone.utc)
+_LONG_AGO = datetime(2020, 1, 1, tzinfo=UTC)
 
 
 async def _reload(db_session, toy_id: int) -> Toy:
@@ -39,7 +39,7 @@ async def _reload(db_session, toy_id: int) -> Toy:
 
 
 async def test_create_toy_starts_both_clocks(auth_client, db_session):
-    before = datetime.now(tz=timezone.utc)
+    before = datetime.now(tz=UTC)
 
     response = await auth_client.post("/api/toys", data={"title": "New Blocks"})
 
@@ -106,7 +106,7 @@ async def test_withdrawing_interest_does_not_rewind_the_interest_clock(
     """
     toy = await make_toy(db_session, owner=user)
     await make_interest(db_session, user=other_user, toy=toy)
-    interest_shown_at = datetime.now(tz=timezone.utc) - timedelta(days=1)
+    interest_shown_at = datetime.now(tz=UTC) - timedelta(days=1)
     toy.last_interest_at = interest_shown_at
     await db_session.flush()
 

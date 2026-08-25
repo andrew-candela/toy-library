@@ -1,14 +1,12 @@
 from datetime import datetime
-from typing import Any, Generic, TypeVar
+from typing import Any
 
 from pydantic import BaseModel, EmailStr, Field, field_validator, model_validator
 
 from app.models.models import ToyCondition
 
-T = TypeVar("T")
 
-
-class PaginatedResponse(BaseModel, Generic[T]):
+class PaginatedResponse[T](BaseModel):
     items: list[T]
     total: int
     page: int

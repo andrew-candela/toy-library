@@ -1,27 +1,28 @@
-from datetime import datetime, timezone
+from collections.abc import Sequence
+from datetime import UTC, datetime
+
+import structlog
 from fastapi import (
     APIRouter,
+    BackgroundTasks,
     Depends,
     File,
     Form,
     HTTPException,
     Query,
     UploadFile,
-    BackgroundTasks,
 )
-import structlog
-from typing import Sequence
 from sqlalchemy import delete, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.lib.auth import get_current_user, get_admin_user
 from app.lib.app_logging import log_activity
+from app.lib.auth import get_current_user
 from app.lib.database import get_db
 from app.lib.toy_images import (
     delete_toy_image,
+    embed_description,
     save_toy_image,
     toy_embedding,
-    embed_description,
 )
 from app.models.models import (
     Address,
@@ -321,7 +322,7 @@ async def create_toy(
     # A brand-new listing counts as both fresh owner activity and — for the
     # purposes of the staleness clock — a fresh start, so neither column starts
     # out null and looking like a toy nobody has touched in years.
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(tz=UTC)
     toy = Toy(
         title=title,
         description=description,
@@ -338,7 +339,7 @@ async def create_toy(
     user_toy = UserToy(
         user_id=current_user.id,
         toy_id=toy.id,
-        checked_out_at=datetime.now(tz=timezone.utc),
+        checked_out_at=datetime.now(tz=UTC),
         source=UserToySource.created.value,
     )
     db.add(user_toy)
@@ -411,7 +412,7 @@ async def update_toy(
 
         # Editing the listing is owner activity, not outside interest, so this
         # deliberately leaves last_interest_at alone.
-        toy.last_owner_activity_at = datetime.now(tz=timezone.utc)
+        toy.last_owner_activity_at = datetime.now(tz=UTC)
 
         await db.commit()
         log_activity(
@@ -486,7 +487,7 @@ async def delete_toy(
     image_path = toy.image_path
     toy.image_path = None
 
-    deleted_at = datetime.now(tz=timezone.utc)
+    deleted_at = datetime.now(tz=UTC)
     toy.deleted_at = deleted_at
     # Closing the holder's stint rather than deleting it is the whole point: the
     # row is the record of who had this toy, and it also drops the toy out of

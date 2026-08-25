@@ -1,10 +1,11 @@
 import os
 import time
 from typing import Annotated
-from fastapi import HTTPException, status, Request, Depends
-from app.lib.redis import get_redis_client
+
+from fastapi import Depends, HTTPException, Request, status
 from redis.asyncio import Redis
 
+from app.lib.redis import get_redis_client
 
 _RATE_LIMIT_WINDOW = int(os.getenv("RATE_LIMIT_WINDOW", "60"))
 _RATE_LIMIT_MAX_REQUESTS = int(os.getenv("RATE_LIMIT_MAX_REQUESTS", "10"))

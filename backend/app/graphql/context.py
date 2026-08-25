@@ -1,4 +1,3 @@
-from typing import Optional
 
 from fastapi import Depends, Request
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -10,7 +9,7 @@ from app.models.models import User
 
 
 class GraphQLContext(BaseContext):
-    def __init__(self, db: AsyncSession, current_user: Optional[User]):
+    def __init__(self, db: AsyncSession, current_user: User | None):
         super().__init__()
         self.db = db
         self.current_user = current_user

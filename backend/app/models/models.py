@@ -2,6 +2,7 @@ import enum
 from datetime import datetime
 from typing import Optional
 
+from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     Boolean,
     DateTime,
@@ -15,7 +16,7 @@ from sqlalchemy import (
     text,
 )
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from pgvector.sqlalchemy import Vector
+
 from app.lib.database import Base
 
 
@@ -66,33 +67,33 @@ class Toy(Base):
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
     title: Mapped[str] = mapped_column(String, nullable=False)
-    description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    min_age: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    max_age: Mapped[Optional[int]] = mapped_column(Integer, nullable=True)
-    image_path: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    ai_description: Mapped[Optional[str]] = mapped_column(String, nullable=True)
-    condition: Mapped[Optional[ToyCondition]] = mapped_column(
+    description: Mapped[str | None] = mapped_column(String, nullable=True)
+    min_age: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    max_age: Mapped[int | None] = mapped_column(Integer, nullable=True)
+    image_path: Mapped[str | None] = mapped_column(String, nullable=True)
+    ai_description: Mapped[str | None] = mapped_column(String, nullable=True)
+    condition: Mapped[ToyCondition | None] = mapped_column(
         Enum(ToyCondition), nullable=True
     )
-    date_added: Mapped[Optional[datetime]] = mapped_column(
+    date_added: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
     # Delisting is a soft delete: the row stays so the custody ledger below keeps
     # something to point at. Every read path has to say `deleted_at IS NULL`.
-    deleted_at: Mapped[Optional[datetime]] = mapped_column(
+    deleted_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
     # Denormalized rather than derived from `max(toy_interests.created_at)`:
     # interests are hard-deleted, so that maximum drops the moment anyone
     # withdraws and the signal is gone. Withdrawing does not clear this — the
     # interest was genuinely shown at the time.
-    last_interest_at: Mapped[Optional[datetime]] = mapped_column(
+    last_interest_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
     # Kept apart from last_interest_at because "the owner is still tending this
     # listing" and "somebody else still wants it" are different signals, and
     # which of them should keep a listing alive is not settled yet.
-    last_owner_activity_at: Mapped[Optional[datetime]] = mapped_column(
+    last_owner_activity_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
 
@@ -113,7 +114,7 @@ class Toy(Base):
             Toy.id == UserToy.toy_id, UserToy.released_at.is_(None)
         ),
     )
-    embedding: Mapped[Optional[Vector]] = mapped_column(Vector(768), nullable=True)
+    embedding: Mapped[Vector | None] = mapped_column(Vector(768), nullable=True)
 
 
 class ToyTag(Base):
@@ -176,7 +177,7 @@ class UserToy(Base):
     checked_out_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), nullable=False
     )
-    released_at: Mapped[Optional[datetime]] = mapped_column(
+    released_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )
     source: Mapped[str] = mapped_column(
@@ -185,7 +186,7 @@ class UserToy(Base):
         default=UserToySource.created.value,
         server_default=UserToySource.created.value,
     )
-    pending_user_id: Mapped[Optional[int]] = mapped_column(
+    pending_user_id: Mapped[int | None] = mapped_column(
         Integer, ForeignKey("users.id"), nullable=True
     )
 
@@ -203,7 +204,7 @@ class Address(Base):
     user_id: Mapped[int] = mapped_column(
         Integer, ForeignKey("users.id", ondelete="CASCADE"), nullable=False, unique=True
     )
-    neighborhood: Mapped[Optional[str]] = mapped_column(String, nullable=True)
+    neighborhood: Mapped[str | None] = mapped_column(String, nullable=True)
 
     user: Mapped["User"] = relationship("User", back_populates="address")
 

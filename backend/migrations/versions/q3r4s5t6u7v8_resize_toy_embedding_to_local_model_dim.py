@@ -5,10 +5,8 @@ Revises: p2q3r4s5t6u7
 Create Date: 2026-07-20 00:00:00.000000
 """
 
-import sqlalchemy as sa
 from alembic import op
 from pgvector.sqlalchemy import Vector
-
 
 # revision identifiers, used by Alembic.
 revision = "q3r4s5t6u7v8"
