@@ -18,6 +18,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.lib.app_logging import log_activity
 from app.lib.auth import get_current_user
 from app.lib.database import get_db
+from app.lib.toy_expiration import (
+    discoverable_clause,
+    expires_at,
+    is_expired,
+)
 from app.lib.toy_images import (
     delete_toy_image,
     embed_description,
@@ -42,6 +47,45 @@ router = APIRouter()
 
 def _normalize_tag(raw: str) -> str:
     return raw.lstrip("#").strip().lower()
+
+
+async def _toy_ids_with_interest(db: AsyncSession, toy_ids: Sequence[int]) -> set[int]:
+    """Which of these toys somebody currently wants.
+
+    Fetched in one statement for the whole page rather than per toy, since every
+    serialized toy needs the answer to report its expiry state.
+    """
+    if not toy_ids:
+        return set()
+    result = await db.execute(
+        select(ToyInterest.toy_id).where(ToyInterest.toy_id.in_(toy_ids)).distinct()
+    )
+    return set(result.scalars().all())
+
+
+# Derived per request, so they are not part of the toy and would be logged at
+# their defaults — recording `is_expired: false` for a toy that was in fact
+# expired. Kept out of the before/after snapshots entirely.
+_DERIVED_FIELDS = {"is_expired", "expires_at", "neighborhood", "owner_username"}
+
+
+def _loggable(toy: Toy) -> dict:
+    """The toy's own fields, for the before/after pair in an activity log line."""
+    return ToyOut.model_validate(toy).model_dump(mode="json", exclude=_DERIVED_FIELDS)
+
+
+async def _serialize_toy(db: AsyncSession, toy: Toy, now: datetime) -> ToyOut:
+    """A single toy with its expiry state filled in.
+
+    The list endpoint does not use this — it resolves interest for the whole
+    page in one query instead — but every endpoint returning one toy does, so
+    they cannot drift from each other on what expired means.
+    """
+    has_interest = bool(await _toy_ids_with_interest(db, [toy.id]))
+    toy_out = ToyOut.model_validate(toy)
+    toy_out.is_expired = is_expired(toy, has_live_interest=has_interest, now=now)
+    toy_out.expires_at = expires_at(toy, has_live_interest=has_interest)
+    return toy_out
 
 
 def _validate_age_range(min_age: int | None, max_age: int | None) -> None:
@@ -72,9 +116,14 @@ async def list_toys(
     if age is not None and age < 0:
         raise HTTPException(status_code=400, detail="Age must be 0 or greater")
     # Filtering here rather than after the fact matters for the semantic path
-    # below: it takes the top 100 by distance, so delisted toys left in the query
-    # would eat candidate slots before the relevance cutoff ever runs.
-    query = select(Toy).where(Toy.deleted_at.is_(None))
+    # below: it takes the top 100 by distance, so delisted and expired toys left
+    # in the query would eat candidate slots before the relevance cutoff ever
+    # runs.
+    now = datetime.now(tz=UTC)
+    query = select(Toy).where(
+        Toy.deleted_at.is_(None),
+        discoverable_clause(current_user.id, now),
+    )
     if owned_by_current_user:
         query = query.where(
             Toy.id.in_(
@@ -210,10 +259,18 @@ async def list_toys(
             row.toy_id: row.neighborhood for row in neighborhood_rows
         }
 
+    interested_toy_ids = await _toy_ids_with_interest(db, toy_ids)
+
     items = []
     for toy in rows:
         toy_out = ToyOut.model_validate(toy)
         toy_out.neighborhood = neighborhood_by_toy_id.get(toy.id)
+        has_interest = toy.id in interested_toy_ids
+        # Only ever true for the viewer's own toys — everyone else's expired
+        # listings were filtered out above — so the table can render the badge
+        # off this flag without rechecking ownership.
+        toy_out.is_expired = is_expired(toy, has_live_interest=has_interest, now=now)
+        toy_out.expires_at = expires_at(toy, has_live_interest=has_interest)
         items.append(toy_out)
 
     return PaginatedResponse(
@@ -250,8 +307,18 @@ async def get_toy(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    now = datetime.now(tz=UTC)
+    # An expired toy is a 404 to everyone but its owner, matching what the
+    # catalog shows. Deliberately the same status as a toy that never existed:
+    # distinguishing them would let anyone probe for listings they cannot see.
     toy = (
-        await db.execute(select(Toy).where(Toy.id == toy_id, Toy.deleted_at.is_(None)))
+        await db.execute(
+            select(Toy).where(
+                Toy.id == toy_id,
+                Toy.deleted_at.is_(None),
+                discoverable_clause(current_user.id, now),
+            )
+        )
     ).scalar_one_or_none()
     if not toy:
         raise HTTPException(status_code=404, detail="Toy not found")
@@ -264,9 +331,49 @@ async def get_toy(
         )
     ).scalar_one_or_none()
 
-    toy_out = ToyOut.model_validate(toy)
+    toy_out = await _serialize_toy(db, toy, now)
     toy_out.owner_username = owner_username
     return toy_out
+
+
+@router.post("/{toy_id}/refresh", response_model=ToyOut)
+async def refresh_toy(
+    toy_id: int,
+    db: AsyncSession = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    """Restart the staleness clock on a toy you still have.
+
+    This is the owner's escape hatch from expiry, so it deliberately does not
+    filter on `discoverable_clause` — a toy that has already expired is the main
+    thing anyone would call this on.
+    """
+    toy = (
+        await db.execute(select(Toy).where(Toy.id == toy_id, Toy.deleted_at.is_(None)))
+    ).scalar_one_or_none()
+    if not toy:
+        raise HTTPException(status_code=404, detail="Toy not found")
+
+    owns_toy = (
+        await db.execute(
+            select(UserToy.id).where(
+                UserToy.toy_id == toy_id,
+                UserToy.user_id == current_user.id,
+                UserToy.released_at.is_(None),
+            )
+        )
+    ).scalar_one_or_none() is not None
+    if not owns_toy:
+        raise HTTPException(status_code=403, detail="You do not own this toy")
+
+    now = datetime.now(tz=UTC)
+    # Same column an edit moves: confirming the listing is still current is the
+    # same signal as changing it, just without a change. `last_interest_at` is
+    # left alone — the owner is not an interested party in their own toy.
+    toy.last_owner_activity_at = now
+    await db.commit()
+    log_activity(type="ToyRefreshed", user_id=current_user.id, toy_id=toy.id)
+    return await _serialize_toy(db, toy, now)
 
 
 @router.post("/semantic_search", response_model=Sequence[ToyOut])
@@ -281,7 +388,12 @@ async def semantic_toy_search_debug(
     result = await db.execute(
         select(Toy, distance.label("score"))
         # .where(distance < max_distance)
-        .where(Toy.deleted_at.is_(None))
+        .where(
+            Toy.deleted_at.is_(None),
+            # Debug endpoint, but still an endpoint: without this it returns
+            # every expired listing in the catalog to anyone who calls it.
+            discoverable_clause(current_user.id, datetime.now(tz=UTC)),
+        )
         .order_by(distance)
     )
     rows = result.all()
@@ -350,7 +462,8 @@ async def create_toy(
     await db.commit()
     log_activity(type="ToyCreated", user_id=current_user.id, toy_id=toy.id)
     background_tasks.add_task(toy_embedding, toy.id)
-    return (await db.execute(select(Toy).where(Toy.id == toy.id))).scalar_one()
+    created = (await db.execute(select(Toy).where(Toy.id == toy.id))).scalar_one()
+    return await _serialize_toy(db, created, now)
 
 
 @router.put("/{toy_id}", response_model=ToyOut)
@@ -369,12 +482,21 @@ async def update_toy(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
+    # Editing bumps `last_owner_activity_at`, which un-expires the listing, so
+    # this has to be reachable only by someone who can see the toy in the first
+    # place — otherwise expiry is undone by anyone who knows the id.
     toy = (
-        await db.execute(select(Toy).where(Toy.id == toy_id, Toy.deleted_at.is_(None)))
+        await db.execute(
+            select(Toy).where(
+                Toy.id == toy_id,
+                Toy.deleted_at.is_(None),
+                discoverable_clause(current_user.id, datetime.now(tz=UTC)),
+            )
+        )
     ).scalar_one_or_none()
     if not toy:
         raise HTTPException(status_code=404, detail="Toy not found")
-    old = ToyOut.model_validate(toy).model_dump(mode="json")
+    old = _loggable(toy)
     old_image_path = toy.image_path
     new_image_path: str | None = None
     rerun_embedding = False
@@ -419,7 +541,7 @@ async def update_toy(
             type="ToyUpdated",
             user_id=current_user.id,
             toy_id=toy.id,
-            new=ToyOut.model_validate(toy).model_dump(mode="json"),
+            new=_loggable(toy),
             old=old,
         )
         if rerun_embedding:
@@ -432,13 +554,14 @@ async def update_toy(
     if old_image_path and old_image_path != toy.image_path:
         delete_toy_image(old_image_path)
 
-    return (
+    updated = (
         await db.execute(
             select(Toy)
             .where(Toy.id == toy_id)
             .execution_options(populate_existing=True)
         )
     ).scalar_one()
+    return await _serialize_toy(db, updated, datetime.now(tz=UTC))
 
 
 @router.delete("/{toy_id}", status_code=204)
@@ -480,7 +603,7 @@ async def delete_toy(
 
     # Snapshotted before the writes below, so the log line records the toy as it
     # was rather than the delisted shell it becomes.
-    old = ToyOut.model_validate(toy).model_dump(mode="json")
+    old = _loggable(toy)
 
     # The ledger is about custody, not the photo: keeping image files for toys
     # nobody can see costs storage and buys nothing.

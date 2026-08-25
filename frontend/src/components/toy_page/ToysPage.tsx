@@ -327,6 +327,7 @@ export default function ToysPage({ token }: Props) {
             onCancelTransfer={hook.handleCancelTransfer}
             onOpenEdit={hook.openEdit}
             onDelete={hook.handleDelete}
+            onRefresh={hook.handleRefresh}
             onOpenTransferModal={hook.openTransferModal}
           />
 

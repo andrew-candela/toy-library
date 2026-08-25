@@ -8,6 +8,7 @@ from sqlalchemy.orm import selectinload
 from app.lib.app_logging import log_activity
 from app.lib.auth import get_current_user
 from app.lib.database import get_db
+from app.lib.toy_expiration import discoverable_clause
 from app.models.models import Toy, ToyInterest, User, UserToy
 from app.schemas.schemas import (
     InterestDetailOut,
@@ -19,15 +20,23 @@ from app.schemas.schemas import (
 router = APIRouter()
 
 
-async def _live_toy(db: AsyncSession, toy_id: int) -> Toy | None:
-    """The toy, unless it has been delisted.
+async def _live_toy(db: AsyncSession, toy_id: int, viewer_id: int) -> Toy | None:
+    """The toy, unless it has been delisted or has expired out of `viewer_id`'s view.
 
     A `db.get(Toy, toy_id)` here would look harmless and be wrong: a primary-key
     get goes straight to the identity map or a bare SELECT, so it hands back
     soft-deleted rows that every other read path filters out.
+
+    Expiry has to be checked here too, not just in the toys router: without it
+    the interest endpoints are a side door onto listings the catalog hides, and
+    POSTing interest through that door would resurrect the toy for everyone.
     """
     result = await db.execute(
-        select(Toy).where(Toy.id == toy_id, Toy.deleted_at.is_(None))
+        select(Toy).where(
+            Toy.id == toy_id,
+            Toy.deleted_at.is_(None),
+            discoverable_clause(viewer_id, datetime.now(UTC)),
+        )
     )
     return result.scalar_one_or_none()
 
@@ -64,7 +73,7 @@ async def list_interests(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    toy = await _live_toy(db, toy_id)
+    toy = await _live_toy(db, toy_id, current_user.id)
     if toy is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Toy not found"
@@ -117,7 +126,7 @@ async def express_interest(
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
-    toy = await _live_toy(db, toy_id)
+    toy = await _live_toy(db, toy_id, current_user.id)
     if toy is None:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail="Toy not found"

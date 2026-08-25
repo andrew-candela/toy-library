@@ -13,11 +13,13 @@ import {
   fetchPendingIncoming,
   fetchToy,
   initiateTransfer,
+  refreshToy,
   updateToy,
   type InterestDetail,
   type Toy,
 } from '../api/client'
 import { compressImage } from '../lib/imageCompression'
+import { expiryMessage, expiryState } from '../lib/toyExpiration'
 import { useTheme } from '../theme/ThemeContext'
 import { useIsCompactLayout } from '../theme/useIsCompactLayout'
 import { ToyFormModal } from './toy_page/ToyFormModal'
@@ -61,6 +63,7 @@ export default function ToyDetailPage({ token }: Props) {
   const [hasExpressedInterest, setHasExpressedInterest] = useState(false)
   const [interestActionLoading, setInterestActionLoading] = useState(false)
   const [acceptTransferLoading, setAcceptTransferLoading] = useState(false)
+  const [refreshLoading, setRefreshLoading] = useState(false)
   const [showTransferAcceptedMessage, setShowTransferAcceptedMessage] = useState(false)
 
   // Edit form modal state.
@@ -335,6 +338,21 @@ export default function ToyDetailPage({ token }: Props) {
     }
   }
 
+  async function handleRefreshToy() {
+    if (!toy) return
+    setRefreshLoading(true)
+    setError(null)
+    try {
+      // The response carries the recomputed expiry state, so the banner below
+      // disappears from this one write with no refetch.
+      setToy(await refreshToy(token, toy.id))
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to refresh toy')
+    } finally {
+      setRefreshLoading(false)
+    }
+  }
+
   async function handleDeleteToy() {
     if (!toy) return
     if (!window.confirm(`Delete "${toy.title}"?`)) return
@@ -439,6 +457,55 @@ export default function ToyDetailPage({ token }: Props) {
               </button>
             </div>
           )}
+
+          {/*
+            Only the owner ever sees this: an expired toy is a 404 to everyone
+            else, and nobody else could act on the deadline anyway.
+          */}
+          {isOwner &&
+            (() => {
+              const state = expiryState(toy)
+              const message = expiryMessage(state)
+              if (!message) return null
+              const isExpired = state.kind === 'expired'
+              return (
+                <div
+                  style={{
+                    marginBottom: 20,
+                    padding: '12px 14px',
+                    borderRadius: 8,
+                    border: `1px solid ${isExpired ? theme.danger : theme.border}`,
+                    background: theme.surfaceAlt,
+                    display: 'flex',
+                    flexDirection: isCompactLayout ? 'column' : 'row',
+                    alignItems: isCompactLayout ? 'flex-start' : 'center',
+                    justifyContent: 'space-between',
+                    gap: 10,
+                  }}
+                >
+                  <span
+                    style={{
+                      fontSize: 14,
+                      color: isExpired ? theme.danger : theme.textSecondary,
+                    }}
+                  >
+                    {message}
+                  </span>
+                  <button
+                    type="button"
+                    onClick={handleRefreshToy}
+                    disabled={refreshLoading}
+                    style={{
+                      ...primaryBtnStyle,
+                      width: isCompactLayout ? '100%' : undefined,
+                      flexShrink: 0,
+                    }}
+                  >
+                    {refreshLoading ? 'Refreshing…' : 'Refresh'}
+                  </button>
+                </div>
+              )
+            })()}
 
           <div
             style={{
