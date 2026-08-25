@@ -1,7 +1,7 @@
-from typing import Annotated
 import os
 import uuid
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
+from typing import Annotated
 
 from fastapi import Depends, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
@@ -19,8 +19,8 @@ from app.models.models import User
 SECRET_KEY = os.getenv("JWT_SECRET_KEY", "dev-secret-change-me")
 ALGORITHM = "HS256"
 ACCESS_TOKEN_EXPIRE_MINUTES = 300
-ADMIN_USER_EMAILS = set(
-    (email.lower().strip() for email in os.getenv("ADMIN_USER_EMAILS", "").split(","))
+ADMIN_USER_EMAILS = (
+    email.lower().strip() for email in os.getenv("ADMIN_USER_EMAILS", "").split(",")
 )
 
 
@@ -58,7 +58,7 @@ def hash_password(plain: str) -> str:
 
 
 def create_access_token(subject: str) -> str:
-    expire = datetime.now(timezone.utc) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
+    expire = datetime.now(UTC) + timedelta(minutes=ACCESS_TOKEN_EXPIRE_MINUTES)
     payload = {
         "sub": subject,
         "jti": str(uuid.uuid4()),

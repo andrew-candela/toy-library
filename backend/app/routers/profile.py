@@ -1,5 +1,5 @@
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, status
 from jose import jwt
@@ -82,7 +82,7 @@ async def update_username(
     payload = jwt.decode(token, SECRET_KEY, algorithms=[ALGORITHM])
     jti: str = payload["jti"]
     exp: int = payload["exp"]
-    ttl = max(exp - int(datetime.now(timezone.utc).timestamp()), 0)
+    ttl = max(exp - int(datetime.now(UTC).timestamp()), 0)
     await add_jti_to_blocklist(jti, ttl)
 
     current_user.username = body.username

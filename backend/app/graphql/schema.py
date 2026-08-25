@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import Optional
-
 import strawberry
 from sqlalchemy import select
 from sqlalchemy.orm import selectinload
@@ -37,10 +35,10 @@ class ToyTagType:
 class ToyType:
     id: int
     title: str
-    description: Optional[str]
-    min_age: Optional[int]
-    max_age: Optional[int]
-    image_path: Optional[str]
+    description: str | None
+    min_age: int | None
+    max_age: int | None
+    image_path: str | None
     tags: list[ToyTagType]
 
     @classmethod

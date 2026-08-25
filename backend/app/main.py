@@ -10,15 +10,14 @@ from prometheus_client import (
     generate_latest,
     multiprocess,
 )
-
 from prometheus_fastapi_instrumentator import Instrumentator
 from strawberry.fastapi import GraphQLRouter
 
 from app.graphql.context import get_graphql_context
 from app.graphql.schema import schema
 from app.lib.app_logging import configure_structlog
-from app.lib.toy_images import get_toy_image_public_path, get_toy_image_storage_dir
 from app.lib.redis import connect_redis, disconnect_redis
+from app.middleware.access_log_middleware import AccessLogMiddleware
 from app.routers import (
     admin,
     auth,
@@ -30,7 +29,6 @@ from app.routers import (
     user_toys,
     users,
 )
-from app.middleware.access_log_middleware import AccessLogMiddleware
 
 configure_structlog()
 
@@ -98,8 +96,3 @@ def metrics() -> Response:
 @app.get("/health")
 async def health():
     return "Hello World!"
-
-
-@app.get("/error")
-async def error():
-    raise Exception("This is supposed to happen! Or is it...")

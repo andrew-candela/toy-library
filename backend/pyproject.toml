@@ -53,3 +53,6 @@ markers = [
     "unit: no I/O — pure functions, safe to run anywhere",
     "api: drives the ASGI app against a real Postgres and Redis",
 ]
+
+[tool.ruff]
+ignore = ["B008"]

@@ -1,14 +1,13 @@
-from fastapi import APIRouter, Depends, HTTPException, BackgroundTasks
-from starlette.status import HTTP_200_OK, HTTP_404_NOT_FOUND
-from sqlalchemy.ext.asyncio import AsyncSession
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException
 from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession
+from starlette.status import HTTP_200_OK, HTTP_404_NOT_FOUND
 
-from app.schemas.schemas import AllowListResponse, AllowListDeleteResponse
-from app.lib.database import get_db
 from app.lib.auth import get_admin_user
-
-from app.models.models import User, AllowList
+from app.lib.database import get_db
 from app.lib.toy_images import toy_embedding
+from app.models.models import AllowList, User
+from app.schemas.schemas import AllowListDeleteResponse, AllowListResponse
 
 router = APIRouter()
 

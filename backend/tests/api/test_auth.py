@@ -255,7 +255,9 @@ async def test_logout_leaves_other_sessions_alone(client, user):
     revoked = create_access_token(user.username)
     still_valid = create_access_token(user.username)
 
-    await client.post("/api/auth/logout", headers={"Authorization": f"Bearer {revoked}"})
+    await client.post(
+        "/api/auth/logout", headers={"Authorization": f"Bearer {revoked}"}
+    )
 
     response = await client.get(
         "/api/user-toys", headers={"Authorization": f"Bearer {still_valid}"}

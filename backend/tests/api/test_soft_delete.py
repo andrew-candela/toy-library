@@ -8,14 +8,14 @@ entirely, and `selectinload(UserToy.toy)`, which loads through the relationship.
 Each test below pins one of those paths.
 """
 
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from sqlalchemy import select
 
 from app.models.models import Toy, ToyInterest, UserToy
 from tests.factories import make_interest, make_toy, make_toy_with_history, make_user
 
-_NOW = datetime(2026, 1, 1, tzinfo=timezone.utc)
+_NOW = datetime(2026, 1, 1, tzinfo=UTC)
 
 
 async def _delete(client, toy):
@@ -224,9 +224,7 @@ async def test_deleting_an_already_deleted_toy_returns_404(
     assert (await auth_client.delete(f"/api/toys/{toy.id}")).status_code == 404
 
 
-async def test_deleting_a_toy_drops_the_owners_toy_count(
-    auth_client, db_session, user
-):
+async def test_deleting_a_toy_drops_the_owners_toy_count(auth_client, db_session, user):
     toy = await make_toy(db_session, owner=user)
     before = (await auth_client.get(f"/api/users/{user.username}")).json()["toy_count"]
 

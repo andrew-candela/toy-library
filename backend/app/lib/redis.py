@@ -1,6 +1,7 @@
 import logging
 import os
-from typing import Awaitable, cast
+from collections.abc import Awaitable
+from typing import cast
 
 import redis.asyncio as aioredis
 

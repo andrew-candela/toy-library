@@ -1,42 +1,42 @@
 import secrets
 import uuid
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 
 from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Query, status
 from jose import JWTError, jwt
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.lib.app_logging import log_activity
 from app.lib.auth import (
-    SECRET_KEY,
     ALGORITHM,
+    SECRET_KEY,
     add_jti_to_blocklist,
     create_access_token,
     get_current_user,
     hash_password,
-    verify_password,
     oauth2_scheme,
     password_form_type,
+    verify_password,
 )
 from app.lib.database import get_db
+from app.lib.dependencies import rate_limit_request
 from app.lib.email_tools import (
     send_password_reset_email,
     send_verification_email,
 )
 from app.lib.redis import get_redis_client
-from app.lib.app_logging import log_activity
-from app.lib.dependencies import rate_limit_request
-from app.models.models import Address, User, AllowList
+from app.models.models import Address, AllowList, User
 from app.schemas.schemas import (
     ForgotPasswordRequest,
     ForgotPasswordResponse,
+    ResendVerificationRequest,
     ResetPasswordRequest,
     ResetPasswordResponse,
     Token,
     UserCreate,
     UserOut,
     VerifyEmailResponse,
-    ResendVerificationRequest,
 )
 
 router = APIRouter(dependencies=[Depends(rate_limit_request)])
@@ -228,7 +228,7 @@ async def logout(
         jti: str | None = payload.get("jti")
         exp: int | None = payload.get("exp")
         if jti and exp:
-            ttl = int(exp - datetime.now(timezone.utc).timestamp())
+            ttl = int(exp - datetime.now(UTC).timestamp())
             await add_jti_to_blocklist(jti, ttl)
     except JWTError:
         pass  # token already invalid; logout is idempotent
