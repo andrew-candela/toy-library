@@ -63,6 +63,14 @@ class Toy(Base):
             "id",
             postgresql_where=text("deleted_at IS NULL"),
         ),
+        # Serves the staleness half of the expiry predicate in
+        # app/lib/toy_expiration.py. Partial on the same condition as the index
+        # above, since expiry is only ever evaluated on live rows.
+        Index(
+            "ix_toys_active_owner_activity",
+            "last_owner_activity_at",
+            postgresql_where=text("deleted_at IS NULL"),
+        ),
     )
 
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
@@ -91,8 +99,9 @@ class Toy(Base):
         DateTime(timezone=True), nullable=True
     )
     # Kept apart from last_interest_at because "the owner is still tending this
-    # listing" and "somebody else still wants it" are different signals, and
-    # which of them should keep a listing alive is not settled yet.
+    # listing" and "somebody else still wants it" are different signals. This is
+    # the one the expiry clock in app/lib/toy_expiration.py runs on; interest is
+    # read live from toy_interests there rather than from last_interest_at.
     last_owner_activity_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), nullable=True
     )

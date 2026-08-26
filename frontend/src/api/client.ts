@@ -80,6 +80,18 @@ export interface Toy {
   date_added?: string
   neighborhood?: string | null
   owner_username?: string | null
+  /**
+   * A toy nobody wants and nobody has tended for a month drops out of the
+   * catalog. The API only ever sends an expired toy to its own owner, so this
+   * is true only on toys the viewer can act on.
+   */
+  is_expired: boolean
+  /**
+   * When the toy will expire, or null when no deadline applies — either
+   * somebody is interested (which stops the clock) or the toy has already
+   * expired. Read alongside `is_expired`, never on its own.
+   */
+  expires_at?: string | null
 }
 
 export interface ToyCreate {
@@ -413,6 +425,17 @@ export async function updateToy(token: string, id: number, data: FormData): Prom
   })
   if (!response.ok) {
     throw new Error(await extractErrorDetail(response, 'Failed to update toy'))
+  }
+  return response.json() as Promise<Toy>
+}
+
+/** Restart the expiry clock on a toy you own, without editing it. */
+export async function refreshToy(token: string, id: number): Promise<Toy> {
+  const response = await authedFetch(token, `/api/toys/${id}/refresh`, {
+    method: 'POST',
+  })
+  if (!response.ok) {
+    throw new Error(await extractErrorDetail(response, 'Failed to refresh toy'))
   }
   return response.json() as Promise<Toy>
 }

@@ -89,12 +89,14 @@ async def make_toy(
         # relationship-loading read paths have to be filtered against, since
         # `released_at IS NULL` cannot cover them.
         deleted_at=deleted_at,
-        # Default to null rather than "now": a test asserting that an endpoint
-        # bumps one of these needs a starting value it chose itself, and one
-        # that never touches them should not be handed a plausible-looking
-        # timestamp it did not ask for.
-        last_interest_at=last_interest_at,
-        last_owner_activity_at=last_owner_activity_at,
+        # Default to "now", matching what POST /toys writes, so a factory toy is
+        # a freshly created one and is therefore discoverable. Defaulting to
+        # null would instead make every toy expired — the expiry rule reads a
+        # null `last_owner_activity_at` as "no owner activity ever recorded" —
+        # and quietly hide it from every test that browses as a non-owner.
+        # Tests asserting on these clocks pass their own starting values.
+        last_interest_at=last_interest_at or datetime.now(tz=UTC),
+        last_owner_activity_at=last_owner_activity_at or datetime.now(tz=UTC),
     )
     db.add(toy)
     await db.flush()

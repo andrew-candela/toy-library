@@ -97,6 +97,13 @@ class ToyOut(BaseModel):
     date_added: datetime | None = None
     neighborhood: str | None = None
     owner_username: str | None = None
+    # Derived per request rather than mapped off the row: expiry depends on live
+    # interest as well as the toy's own columns, so `from_attributes` has nothing
+    # to read these from and the routers fill them in. The defaults keep
+    # `ToyOut.model_validate(toy)` working for the callers that only want the
+    # toy's own fields — activity logging, mostly.
+    is_expired: bool = False
+    expires_at: datetime | None = None
 
     model_config = {"from_attributes": True}
 

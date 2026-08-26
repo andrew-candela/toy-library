@@ -15,6 +15,7 @@ import {
   fetchPendingIncoming,
   fetchToys,
   initiateTransfer,
+  refreshToy,
   updateToy,
   type Toy,
 } from '../../api/client'
@@ -363,6 +364,24 @@ export function useToysPage(token: string) {
     }
   }
 
+  async function handleRefresh(toy: Toy) {
+    const key = `refresh-${toy.id}`
+    if (isActionLoading(key)) return
+    setActionLoading(key, true)
+    setError(null)
+    try {
+      const refreshed = await refreshToy(token, toy.id)
+      // Patch the row in place rather than refetching the page: the toy was
+      // already visible to this user (owners always see their own), so nothing
+      // about which toys belong in the list has changed.
+      setToys((prev) => prev.map((t) => (t.id === refreshed.id ? refreshed : t)))
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : 'Failed to refresh toy')
+    } finally {
+      setActionLoading(key, false)
+    }
+  }
+
   async function handleExpressInterest(toyId: number) {
     const key = `interest-${toyId}`
     if (isActionLoading(key)) return
@@ -519,6 +538,7 @@ export function useToysPage(token: string) {
     handleFormChange,
     handleFormSubmit,
     handleDelete,
+    handleRefresh,
 
     // Resource actions
     handleExpressInterest,

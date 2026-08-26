@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { type Toy } from '../../api/client'
+import { expiryBadgeLabel, expiryState } from '../../lib/toyExpiration'
 import { useToyImage } from '../useToyImage'
 import { useTheme } from '../../theme/ThemeContext'
 import { useIsCompactLayout } from '../../theme/useIsCompactLayout'
@@ -21,7 +22,41 @@ interface ToyTableProps {
   onCancelTransfer: (id: number) => Promise<void>
   onOpenEdit: (toy: Toy) => void
   onDelete: (toy: Toy) => void
+  onRefresh: (toy: Toy) => void
   onOpenTransferModal: (toy: Toy) => void
+}
+
+/**
+ * Flags an owner's listing that has expired or is about to.
+ *
+ * Renders nothing for anyone else's toys: expired ones never reach the client,
+ * and a stranger has no way to act on an approaching deadline anyway.
+ */
+function ExpiryBadge({ toy, isOwner }: { toy: Toy; isOwner: boolean }) {
+  const { theme } = useTheme()
+  const state = expiryState(toy)
+  const label = expiryBadgeLabel(state)
+  if (!isOwner || !label) return null
+
+  const isExpired = state.kind === 'expired'
+  return (
+    <span
+      style={{
+        display: 'inline-flex',
+        alignItems: 'center',
+        padding: '2px 8px',
+        borderRadius: 12,
+        fontSize: 12,
+        fontWeight: 600,
+        whiteSpace: 'nowrap',
+        background: 'transparent',
+        color: isExpired ? theme.danger : theme.textSecondary,
+        border: `1px solid ${isExpired ? theme.danger : theme.border}`,
+      }}
+    >
+      {label}
+    </span>
+  )
 }
 
 interface ToyThumbnailProps {
@@ -100,6 +135,7 @@ export function ToyTable({
   onCancelTransfer,
   onOpenEdit,
   onDelete,
+  onRefresh,
   onOpenTransferModal,
 }: ToyTableProps) {
   const { theme } = useTheme()
@@ -183,6 +219,10 @@ export function ToyTable({
           const pendingTransferTo = pendingTransferToByToy[toy.id]
           const interestKey = `interest-${toy.id}`
           const transferKey = `transfer-${toy.id}`
+          const refreshKey = `refresh-${toy.id}`
+          // Offered only once the deadline is close enough to matter, so the
+          // button is a prompt rather than permanent furniture on every row.
+          const needsRefresh = isOwner && expiryState(toy).kind !== 'ok'
 
           return (
             <article key={toy.id} style={cardStyle}>
@@ -197,17 +237,20 @@ export function ToyTable({
                   flexShrink={0}
                 />
                 <div style={{ minWidth: 0, flex: 1 }}>
-                  <Link
-                    to={`/toys/${toy.id}`}
-                    style={{
-                      color: theme.link,
-                      textDecoration: 'none',
-                      fontWeight: 600,
-                      fontSize: 16,
-                    }}
-                  >
-                    {toy.title}
-                  </Link>
+                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+                    <Link
+                      to={`/toys/${toy.id}`}
+                      style={{
+                        color: theme.link,
+                        textDecoration: 'none',
+                        fontWeight: 600,
+                        fontSize: 16,
+                      }}
+                    >
+                      {toy.title}
+                    </Link>
+                    <ExpiryBadge toy={toy} isOwner={isOwner} />
+                  </div>
                   <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 6 }}>
                     <div>
                       <div style={labelStyle}>Min Age</div>
@@ -274,6 +317,15 @@ export function ToyTable({
 
                 {isOwner && (
                   <>
+                    {needsRefresh && (
+                      <button
+                        style={primaryBtnStyle}
+                        onClick={() => onRefresh(toy)}
+                        disabled={isActionLoading(refreshKey)}
+                      >
+                        {isActionLoading(refreshKey) ? 'Refreshing…' : 'Refresh'}
+                      </button>
+                    )}
                     <button style={btnStyle} onClick={() => onOpenEdit(toy)}>
                       Edit
                     </button>
@@ -339,6 +391,10 @@ export function ToyTable({
           const pendingTransferTo = pendingTransferToByToy[toy.id]
           const interestKey = `interest-${toy.id}`
           const transferKey = `transfer-${toy.id}`
+          const refreshKey = `refresh-${toy.id}`
+          // Offered only once the deadline is close enough to matter, so the
+          // button is a prompt rather than permanent furniture on every row.
+          const needsRefresh = isOwner && expiryState(toy).kind !== 'ok'
 
           return (
             <tr key={toy.id}>
@@ -356,12 +412,15 @@ export function ToyTable({
 
               {/* Title Link Column */}
               <td style={tdStyle}>
-                <Link
-                  to={`/toys/${toy.id}`}
-                  style={{ color: theme.link, textDecoration: 'none', fontWeight: 500 }}
-                >
-                  {toy.title}
-                </Link>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 8, alignItems: 'center' }}>
+                  <Link
+                    to={`/toys/${toy.id}`}
+                    style={{ color: theme.link, textDecoration: 'none', fontWeight: 500 }}
+                  >
+                    {toy.title}
+                  </Link>
+                  <ExpiryBadge toy={toy} isOwner={isOwner} />
+                </div>
               </td>
 
               {/* Min Age Column */}
@@ -418,6 +477,15 @@ export function ToyTable({
 
                   {isOwner && (
                     <>
+                      {needsRefresh && (
+                        <button
+                          style={primaryBtnStyle}
+                          onClick={() => onRefresh(toy)}
+                          disabled={isActionLoading(refreshKey)}
+                        >
+                          {isActionLoading(refreshKey) ? 'Refreshing…' : 'Refresh'}
+                        </button>
+                      )}
                       <button style={btnStyle} onClick={() => onOpenEdit(toy)}>
                         Edit
                       </button>

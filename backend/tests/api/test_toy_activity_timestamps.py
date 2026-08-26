@@ -87,12 +87,16 @@ async def test_express_interest_leaves_owner_activity_alone(
     client, login_as, db_session, user, other_user
 ):
     """Somebody else asking is not the owner tending the listing."""
-    toy = await make_toy(db_session, owner=user, last_owner_activity_at=_LONG_AGO)
+    # Stale enough that a bump would be unmistakable, but inside the expiry
+    # window: `_LONG_AGO` would make the toy expired, and `other_user` would get
+    # a 404 from the interest endpoint before reaching the clock at all.
+    tended_at = datetime.now(tz=UTC) - timedelta(days=2)
+    toy = await make_toy(db_session, owner=user, last_owner_activity_at=tended_at)
 
     response = await login_as(other_user).post(f"/api/interests/{toy.id}")
 
     assert response.status_code == 201
-    assert (await _reload(db_session, toy.id)).last_owner_activity_at == _LONG_AGO
+    assert (await _reload(db_session, toy.id)).last_owner_activity_at == tended_at
 
 
 async def test_withdrawing_interest_does_not_rewind_the_interest_clock(

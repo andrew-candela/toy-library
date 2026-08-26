@@ -188,6 +188,10 @@ async def accept_transfer(
     handover_time = datetime.now(tz=UTC)
     user_toy.released_at = handover_time
     user_toy.pending_user_id = None
+    # Taking custody is owner activity, so the staleness clock restarts on the
+    # handover. Without this the new holder inherits however stale the listing
+    # already was, and could be handed a toy that expires days later.
+    user_toy.toy.last_owner_activity_at = handover_time
     await db.flush()
 
     new_user_toy = UserToy(
