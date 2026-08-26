@@ -96,6 +96,21 @@ function AdminIcon() {
   )
 }
 
+function HelpIcon() {
+  return (
+    <svg width="22" height="22" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <circle cx="12" cy="12" r="8" stroke="currentColor" strokeWidth="1.8" />
+      <path
+        d="M9.8 9.6c.2-1.2 1.1-2 2.3-2 1.3 0 2.3.9 2.3 2.1 0 1.5-1.6 1.8-2.2 2.8-.2.3-.2.6-.2 1"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+      />
+      <circle cx="12" cy="16.4" r="1" fill="currentColor" />
+    </svg>
+  )
+}
+
 type NavIconProps = { active: boolean }
 
 function NavItem({
@@ -234,6 +249,14 @@ export default function Sidebar({ onLogout, isCompact = false, isAdmin = false }
         />
       )}
       <div style={{ flex: 1 }} />
+      <NavItem
+        to="/help"
+        label="Help"
+        compact={isCompact}
+        active={location.pathname.startsWith('/help')}
+        style={{ ...linkStyle('/help'), marginBottom: 8 }}
+        icon={HelpIcon}
+      />
       <button
         type="button"
         onClick={handleLogout}

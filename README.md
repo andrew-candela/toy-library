@@ -35,7 +35,6 @@ keys.
   - notify owners
 - add the date added to the toys list page
 - add a guidelines page
-- add more UI docs
 - add a feedback form
 - change style of toys link on user list page
 - Create `ToyBox`s. Users can add toys they have into a ToyBox. Other users can request the box.

@@ -3,6 +3,7 @@ import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { TOKEN_KEY, getProfile, getStoredToken, setStoredToken } from './api/client'
 import AdminPage from './components/AdminPage'
 import ForgotPasswordPage from './components/ForgotPasswordPage'
+import HelpPage from './components/HelpPage'
 import HomePage from './components/HomePage'
 import ResendVerificationPage from './components/ResendVerificationPage'
 import LoginPage from './components/LoginPage'
@@ -175,6 +176,14 @@ function App() {
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />
         <Route path="/resend-verification" element={<ResendVerificationPage />} />
+        <Route
+          path="/help"
+          element={
+            <ProtectedLayout onLogout={handleLogout}>
+              <HelpPage />
+            </ProtectedLayout>
+          }
+        />
         <Route path="/" element={<Navigate to="/home" replace />} />
         <Route path="*" element={<Navigate to="/home" replace />} />
       </Routes>
