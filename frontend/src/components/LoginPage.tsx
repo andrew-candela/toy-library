@@ -196,10 +196,9 @@ export default function LoginPage({ onLogin }: Props) {
       )}
       {mode === 'register' && (
         <p style={{ marginTop: 24, fontSize: '0.85rem', color: theme.textPrimary, opacity: 0.7 }}>
-          Welcome to the toy library. You will need to provide your email address to the app in
-          order to sign up. Any users of the app who you share toys with will be able to see your
-          email. You may also share your neighborhood (e.g. Rockaway) once you have successfully
-          registered.
+          Welcome to the toy library! You will need to provide an email address to the app in
+          order to sign up. Your email is for registration purposes only, and is not visible
+          to other users.
         </p>
       )}
     </main>
