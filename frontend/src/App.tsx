@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { TOKEN_KEY, getProfile, getStoredToken, setStoredToken } from './api/client'
 import AdminPage from './components/AdminPage'
+import DemoPage from './components/DemoPage'
 import ForgotPasswordPage from './components/ForgotPasswordPage'
 import HelpPage from './components/HelpPage'
 import HomePage from './components/HomePage'
@@ -172,6 +173,7 @@ function App() {
             </ProtectedLayout>
           }
         />
+        <Route path="/demo" element={<DemoPage />} />
         <Route path="/verify-email" element={<VerifyEmailPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
         <Route path="/reset-password" element={<ResetPasswordPage />} />

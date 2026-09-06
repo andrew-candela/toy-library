@@ -87,6 +87,9 @@ export default function LoginPage({ onLogin }: Props) {
         <p style={{ marginTop: 12 }}>
           Didn't receive it? <Link to="/resend-verification">Resend verification email</Link>
         </p>
+        <p style={{ marginTop: 12 }}>
+          <Link to="/demo">Watch a short demo video</Link>
+        </p>
       </main>
     )
   }
@@ -180,7 +183,7 @@ export default function LoginPage({ onLogin }: Props) {
           style={{
             background: 'none',
             border: 'none',
-            color: 'blue',
+            color: theme.link,
             cursor: 'pointer',
             padding: 0,
             textDecoration: 'underline',
@@ -194,11 +197,14 @@ export default function LoginPage({ onLogin }: Props) {
           <Link to="/forgot-password">Forgot password?</Link>
         </p>
       )}
+      <p style={{ marginTop: 8 }}>
+        <Link to="/demo">New here? Watch a short demo video</Link>
+      </p>
       {mode === 'register' && (
         <p style={{ marginTop: 24, fontSize: '0.85rem', color: theme.textPrimary, opacity: 0.7 }}>
-          Welcome to the toy library! You will need to provide an email address to the app in
-          order to sign up. Your email is for registration purposes only, and is not visible
-          to other users.
+          Welcome to the toy library! You will need to provide an email address to the app in order
+          to sign up. Your email is for registration purposes only, and is not visible to other
+          users.
         </p>
       )}
     </main>
