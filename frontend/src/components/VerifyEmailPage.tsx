@@ -61,7 +61,9 @@ export default function VerifyEmailPage() {
       {status === 'success' && (
         <>
           <p style={{ color: theme.success }}>{message}</p>
-          <Link to="/login">Go to sign in</Link>
+          <Link to="/login" style={{ color: theme.link }}>
+            Go to sign in
+          </Link>
         </>
       )}
       {status === 'error' && (

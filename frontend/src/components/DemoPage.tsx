@@ -40,7 +40,9 @@ export default function DemoPage() {
         </p>
       </video>
       <p style={{ marginTop: 24 }}>
-        <Link to="/login">Back to sign in</Link>
+        <Link to="/login" style={{ color: theme.link }}>
+          Back to sign in
+        </Link>
       </p>
     </main>
   )

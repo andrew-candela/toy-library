@@ -42,7 +42,9 @@ export default function ResetPasswordPage() {
         <h1>Toy Library</h1>
         <h2>Password reset</h2>
         <p style={{ color: theme.success }}>{message}</p>
-        <Link to="/login">Go to sign in</Link>
+        <Link to="/login" style={{ color: theme.link }}>
+          Go to sign in
+        </Link>
       </main>
     )
   }

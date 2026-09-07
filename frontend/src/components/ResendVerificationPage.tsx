@@ -31,7 +31,9 @@ export default function ResendVerificationPage() {
       {message ? (
         <>
           <p>{message}</p>
-          <Link to="/login">Back to sign in</Link>
+          <Link to="/login" style={{ color: theme.link }}>
+            Back to sign in
+          </Link>
         </>
       ) : (
         <>
@@ -66,7 +68,9 @@ export default function ResendVerificationPage() {
             </button>
           </form>
           <p style={{ marginTop: 16 }}>
-            <Link to="/login">Back to sign in</Link>
+            <Link to="/login" style={{ color: theme.link }}>
+              Back to sign in
+            </Link>
           </p>
         </>
       )}

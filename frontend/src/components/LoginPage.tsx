@@ -85,10 +85,15 @@ export default function LoginPage({ onLogin }: Props) {
           Back to sign in
         </button>
         <p style={{ marginTop: 12 }}>
-          Didn't receive it? <Link to="/resend-verification">Resend verification email</Link>
+          Didn't receive it?{' '}
+          <Link to="/resend-verification" style={{ color: theme.link }}>
+            Resend verification email
+          </Link>
         </p>
         <p style={{ marginTop: 12 }}>
-          <Link to="/demo">Watch a short demo video</Link>
+          <Link to="/demo" style={{ color: theme.link }}>
+            Watch a short demo video
+          </Link>
         </p>
       </main>
     )
@@ -166,7 +171,9 @@ export default function LoginPage({ onLogin }: Props) {
             <p style={{ color: theme.error, margin: 0 }}>{error}</p>
             {error.toLowerCase().includes('not verified') && (
               <p style={{ margin: 0 }}>
-                <Link to="/resend-verification">Resend verification email</Link>
+                <Link to="/resend-verification" style={{ color: theme.link }}>
+                  Resend verification email
+                </Link>
               </p>
             )}
           </>
@@ -194,11 +201,15 @@ export default function LoginPage({ onLogin }: Props) {
       </p>
       {mode === 'login' && (
         <p style={{ marginTop: 8 }}>
-          <Link to="/forgot-password">Forgot password?</Link>
+          <Link to="/forgot-password" style={{ color: theme.link }}>
+            Forgot password?
+          </Link>
         </p>
       )}
       <p style={{ marginTop: 8 }}>
-        <Link to="/demo">New here? Watch a short demo video</Link>
+        <Link to="/demo" style={{ color: theme.link }}>
+          New here? Watch a short demo video
+        </Link>
       </p>
       {mode === 'register' && (
         <p style={{ marginTop: 24, fontSize: '0.85rem', color: theme.textPrimary, opacity: 0.7 }}>
