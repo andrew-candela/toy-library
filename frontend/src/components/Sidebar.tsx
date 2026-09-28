@@ -183,7 +183,6 @@ export default function Sidebar({ onLogout, isCompact = false, isAdmin = false }
       style={{
         width: navWidth,
         height: '100dvh',
-        minHeight: '100vh',
         background: theme.surface,
         borderRight: `1px solid ${theme.border}`,
         display: 'flex',

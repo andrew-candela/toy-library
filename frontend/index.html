@@ -5,6 +5,17 @@
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Toy Library</title>
+    <style>
+      /* iOS Safari zooms in when focusing a field under 16px and stays zoomed
+         after navigation. Inline styles set 14px, so override on small screens. */
+      @media (max-width: 767px) {
+        input,
+        select,
+        textarea {
+          font-size: 16px !important;
+        }
+      }
+    </style>
     <script>
       ;(function () {
         var stored = localStorage.getItem('theme')

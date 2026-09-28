@@ -66,7 +66,7 @@ function ProtectedLayout({
   const sidebarWidth = isCompactSidebar ? MOBILE_RAIL_WIDTH : DESKTOP_SIDEBAR_WIDTH
 
   return (
-    <div style={{ display: 'flex', height: '100dvh', minHeight: '100vh', overflow: 'hidden' }}>
+    <div style={{ display: 'flex', height: '100dvh', overflow: 'hidden' }}>
       <Sidebar onLogout={onLogout} isCompact={isCompactSidebar} isAdmin={isAdmin} />
       <div
         style={{
@@ -114,7 +114,7 @@ function App() {
   }
 
   return (
-    <div style={{ background: theme.bg, color: theme.textPrimary, minHeight: '100vh' }}>
+    <div style={{ background: theme.bg, color: theme.textPrimary, minHeight: '100dvh' }}>
       <Routes>
         <Route path="/login" element={<LoginPage onLogin={handleLogin} />} />
         <Route
