@@ -1,9 +1,27 @@
 """Toy listing, filtering, pagination, and CRUD."""
 
+import pytest
 from sqlalchemy import select
 
-from app.models.models import Toy, ToyTag, UserToy
+from app.models.models import Toy, ToyImage, ToyTag, UserToy
 from tests.factories import make_toy, make_user
+
+
+@pytest.fixture
+def embedding_calls(monkeypatch) -> list[int]:
+    """Records the toy ids queued for an AI description.
+
+    The root conftest already stubs `toy_embedding` out; this replaces the stub
+    with one that remembers, so a test can assert on when the background task is
+    queued rather than on what it would have done.
+    """
+    calls: list[int] = []
+
+    async def record(toy_id: int) -> None:
+        calls.append(toy_id)
+
+    monkeypatch.setattr("app.routers.toys.toy_embedding", record)
+    return calls
 
 
 async def test_listing_requires_authentication(client):
@@ -253,12 +271,112 @@ async def test_create_toy_stores_an_uploaded_image(
     response = await auth_client.post(
         "/api/toys",
         data={"title": "Blocks"},
-        files={"image_file": ("blocks.png", b"png-bytes", "image/png")},
+        files={"image_files": ("blocks.png", b"png-bytes", "image/png")},
     )
 
     assert response.status_code == 201
-    assert response.json()["image_path"].startswith("/images/")
+    images = response.json()["images"]
+    assert len(images) == 1
+    assert images[0]["src"].startswith("/images/")
+    assert images[0]["position"] == 0
+    assert images[0]["is_external"] is False
     assert len(list(image_storage_dir.iterdir())) == 1
+
+
+async def test_create_toy_stores_several_uploads_in_submission_order(
+    auth_client, image_storage_dir
+):
+    response = await auth_client.post(
+        "/api/toys",
+        data={"title": "Blocks"},
+        files=[
+            ("image_files", ("one.png", b"one", "image/png")),
+            ("image_files", ("two.png", b"two", "image/png")),
+            ("image_files", ("three.png", b"three", "image/png")),
+        ],
+    )
+
+    assert response.status_code == 201
+    images = response.json()["images"]
+    assert [image["position"] for image in images] == [0, 1, 2]
+    assert all(image["src"].startswith("/images/") for image in images)
+    assert len({image["src"] for image in images}) == 3
+    assert len(list(image_storage_dir.iterdir())) == 3
+
+
+async def test_create_toy_mixes_an_upload_and_an_external_link(
+    auth_client, image_storage_dir
+):
+    response = await auth_client.post(
+        "/api/toys",
+        data={"title": "Blocks", "image_urls": "https://cdn.example.com/blocks.jpg"},
+        files={"image_files": ("blocks.png", b"png-bytes", "image/png")},
+    )
+
+    assert response.status_code == 201
+    images = response.json()["images"]
+    assert [image["is_external"] for image in images] == [False, True]
+    assert images[1]["src"] == "https://cdn.example.com/blocks.jpg"
+    # Only the upload is ours to store: an external link is never fetched.
+    assert len(list(image_storage_dir.iterdir())) == 1
+
+
+async def test_create_toy_orders_images_by_the_submitted_order(
+    auth_client, image_storage_dir
+):
+    response = await auth_client.post(
+        "/api/toys",
+        data={
+            "title": "Blocks",
+            "image_urls": "https://cdn.example.com/cover.jpg",
+            "image_order": ["url:0", "file:0"],
+        },
+        files={"image_files": ("blocks.png", b"png-bytes", "image/png")},
+    )
+
+    assert response.status_code == 201
+    images = response.json()["images"]
+    assert images[0]["src"] == "https://cdn.example.com/cover.jpg"
+    assert images[1]["src"].startswith("/images/")
+
+
+async def test_create_toy_rejects_more_than_three_images(
+    auth_client, image_storage_dir
+):
+    response = await auth_client.post(
+        "/api/toys",
+        data={
+            "title": "Blocks",
+            "image_urls": [
+                "https://cdn.example.com/a.jpg",
+                "https://cdn.example.com/b.jpg",
+            ],
+        },
+        files=[
+            ("image_files", ("one.png", b"one", "image/png")),
+            ("image_files", ("two.png", b"two", "image/png")),
+        ],
+    )
+
+    assert response.status_code == 400
+    # Rejected before anything was written, so no orphaned uploads.
+    assert list(image_storage_dir.iterdir()) == []
+
+
+async def test_create_toy_rejects_an_incomplete_image_order(
+    auth_client, image_storage_dir
+):
+    response = await auth_client.post(
+        "/api/toys",
+        data={"title": "Blocks", "image_order": ["file:0"]},
+        files=[
+            ("image_files", ("one.png", b"one", "image/png")),
+            ("image_files", ("two.png", b"two", "image/png")),
+        ],
+    )
+
+    assert response.status_code == 400
+    assert list(image_storage_dir.iterdir()) == []
 
 
 async def test_create_toy_rejects_a_disallowed_image_type(
@@ -267,11 +385,65 @@ async def test_create_toy_rejects_a_disallowed_image_type(
     response = await auth_client.post(
         "/api/toys",
         data={"title": "Blocks"},
-        files={"image_file": ("payload.svg", b"<svg/>", "image/svg+xml")},
+        files={"image_files": ("payload.svg", b"<svg/>", "image/svg+xml")},
     )
 
     assert response.status_code == 400
     assert list(image_storage_dir.iterdir()) == []
+
+
+async def test_create_toy_cleans_up_uploads_when_a_later_file_is_rejected(
+    auth_client, image_storage_dir
+):
+    """The first file is written before the second one is found to be no good."""
+    response = await auth_client.post(
+        "/api/toys",
+        data={"title": "Blocks"},
+        files=[
+            ("image_files", ("fine.png", b"png-bytes", "image/png")),
+            ("image_files", ("payload.svg", b"<svg/>", "image/svg+xml")),
+        ],
+    )
+
+    assert response.status_code == 400
+    assert list(image_storage_dir.iterdir()) == []
+
+
+@pytest.mark.parametrize(
+    "bad_url",
+    [
+        "http://cdn.example.com/blocks.jpg",
+        "javascript:alert(1)",
+        "data:image/png;base64,AAAA",
+        "https://",
+        "https:///blocks.jpg",
+        "https://cdn.example.com/" + "a" * 2048,
+    ],
+)
+async def test_create_toy_rejects_an_unusable_image_link(
+    auth_client, image_storage_dir, bad_url
+):
+    response = await auth_client.post(
+        "/api/toys", data={"title": "Blocks", "image_urls": bad_url}
+    )
+
+    assert response.status_code == 400
+    assert list(image_storage_dir.iterdir()) == []
+
+
+async def test_create_toy_queues_an_embedding_only_when_it_has_an_image(
+    auth_client, image_storage_dir, embedding_calls
+):
+    without_image = await auth_client.post("/api/toys", data={"title": "Bare"})
+    with_image = await auth_client.post(
+        "/api/toys",
+        data={"title": "Blocks"},
+        files={"image_files": ("blocks.png", b"png-bytes", "image/png")},
+    )
+
+    assert without_image.status_code == 201
+    assert with_image.status_code == 201
+    assert embedding_calls == [with_image.json()["id"]]
 
 
 async def test_update_toy_changes_only_the_fields_supplied(
@@ -330,29 +502,168 @@ async def test_update_toy_removes_the_old_image_file(
 ):
     existing = image_storage_dir / "old.png"
     existing.write_bytes(b"old")
-    toy = await make_toy(db_session, owner=user, image_path="/images/old.png")
+    toy = await make_toy(db_session, owner=user, images=["/images/old.png"])
 
-    await auth_client.put(
+    response = await auth_client.put(
         f"/api/toys/{toy.id}",
-        files={"image_file": ("new.png", b"new-bytes", "image/png")},
+        data={"remove_image_ids": toy.images[0].id},
+        files={"image_files": ("new.png", b"new-bytes", "image/png")},
     )
 
+    assert response.status_code == 200
+    assert [image["position"] for image in response.json()["images"]] == [0]
     assert not existing.exists()
 
 
-async def test_update_toy_can_clear_the_image(
+async def test_update_toy_can_clear_every_image(
     auth_client, db_session, user, image_storage_dir
 ):
     existing = image_storage_dir / "old.png"
     existing.write_bytes(b"old")
-    toy = await make_toy(db_session, owner=user, image_path="/images/old.png")
+    toy = await make_toy(
+        db_session,
+        owner=user,
+        images=["/images/old.png", "https://cdn.example.com/old.jpg"],
+        embedding=[0.5] * 768,
+    )
 
     body = (
-        await auth_client.put(f"/api/toys/{toy.id}", data={"remove_image": "true"})
+        await auth_client.put(
+            f"/api/toys/{toy.id}",
+            data={"remove_image_ids": [image.id for image in toy.images]},
+        )
     ).json()
 
-    assert body["image_path"] is None
+    assert body["images"] == []
     assert not existing.exists()
+    reloaded = (
+        await db_session.execute(
+            select(Toy)
+            .where(Toy.id == toy.id)
+            .execution_options(populate_existing=True)
+        )
+    ).scalar_one()
+    # Both describe an image the toy no longer has.
+    assert reloaded.ai_description is None
+    assert reloaded.embedding is None
+
+
+async def test_update_toy_removing_an_external_image_touches_no_files(
+    auth_client, db_session, user, image_storage_dir
+):
+    bystander = image_storage_dir / "kept.png"
+    bystander.write_bytes(b"kept")
+    toy = await make_toy(
+        db_session,
+        owner=user,
+        images=["/images/kept.png", "https://cdn.example.com/link.jpg"],
+    )
+    external_id = toy.images[1].id
+
+    body = (
+        await auth_client.put(
+            f"/api/toys/{toy.id}", data={"remove_image_ids": external_id}
+        )
+    ).json()
+
+    assert [image["src"] for image in body["images"]] == ["/images/kept.png"]
+    assert bystander.exists()
+
+
+async def test_update_toy_rejects_removing_another_toys_image(
+    auth_client, db_session, user, image_storage_dir
+):
+    mine = await make_toy(db_session, owner=user, title="Mine")
+    theirs = await make_toy(
+        db_session, owner=user, title="Theirs", images=["/images/theirs.png"]
+    )
+
+    response = await auth_client.put(
+        f"/api/toys/{mine.id}", data={"remove_image_ids": theirs.images[0].id}
+    )
+
+    assert response.status_code == 400
+
+
+async def test_update_toy_rejects_going_over_three_images(
+    auth_client, db_session, user, image_storage_dir
+):
+    toy = await make_toy(
+        db_session,
+        owner=user,
+        images=["/images/a.png", "https://cdn.example.com/b.jpg"],
+    )
+
+    response = await auth_client.put(
+        f"/api/toys/{toy.id}",
+        files=[
+            ("image_files", ("one.png", b"one", "image/png")),
+            ("image_files", ("two.png", b"two", "image/png")),
+        ],
+    )
+
+    assert response.status_code == 400
+    assert list(image_storage_dir.iterdir()) == []
+
+
+async def test_update_toy_reorders_images_and_changes_the_cover(
+    auth_client, db_session, user, image_storage_dir
+):
+    toy = await make_toy(
+        db_session,
+        owner=user,
+        images=["/images/a.png", "/images/b.png", "https://cdn.example.com/c.jpg"],
+    )
+    first, second, third = (image.id for image in toy.images)
+
+    body = (
+        await auth_client.put(
+            f"/api/toys/{toy.id}",
+            data={"image_order": [f"id:{third}", f"id:{first}", f"id:{second}"]},
+        )
+    ).json()
+
+    assert [image["id"] for image in body["images"]] == [third, first, second]
+    assert [image["position"] for image in body["images"]] == [0, 1, 2]
+
+
+async def test_update_toy_rejects_an_image_order_that_is_not_a_permutation(
+    auth_client, db_session, user, image_storage_dir
+):
+    toy = await make_toy(
+        db_session, owner=user, images=["/images/a.png", "/images/b.png"]
+    )
+    first = toy.images[0].id
+
+    response = await auth_client.put(
+        f"/api/toys/{toy.id}", data={"image_order": [f"id:{first}", f"id:{first}"]}
+    )
+
+    assert response.status_code == 400
+
+
+async def test_update_toy_queues_an_embedding_only_when_the_cover_changes(
+    auth_client, db_session, user, image_storage_dir, embedding_calls
+):
+    toy = await make_toy(
+        db_session, owner=user, images=["/images/a.png", "/images/b.png"]
+    )
+    first, second = (image.id for image in toy.images)
+
+    title_only = await auth_client.put(f"/api/toys/{toy.id}", data={"title": "Renamed"})
+    reordered_below_the_cover = await auth_client.put(
+        f"/api/toys/{toy.id}",
+        data={"image_order": [f"id:{first}", f"id:{second}"]},
+    )
+    new_cover = await auth_client.put(
+        f"/api/toys/{toy.id}",
+        data={"image_order": [f"id:{second}", f"id:{first}"]},
+    )
+
+    assert title_only.status_code == 200
+    assert reordered_below_the_cover.status_code == 200
+    assert new_cover.status_code == 200
+    assert embedding_calls == [toy.id]
 
 
 async def test_update_missing_toy_returns_404(auth_client):
@@ -387,16 +698,33 @@ async def test_delete_toy_delists_it_and_closes_its_ownership(
     assert user_toy.released_at is not None
 
 
-async def test_delete_toy_removes_its_image_file(
+async def test_delete_toy_removes_every_image_file_and_row(
     auth_client, db_session, user, image_storage_dir
 ):
-    stored = image_storage_dir / "doomed.png"
-    stored.write_bytes(b"data")
-    toy = await make_toy(db_session, owner=user, image_path="/images/doomed.png")
+    first = image_storage_dir / "doomed.png"
+    first.write_bytes(b"data")
+    second = image_storage_dir / "also-doomed.png"
+    second.write_bytes(b"data")
+    toy = await make_toy(
+        db_session,
+        owner=user,
+        images=[
+            "/images/doomed.png",
+            "/images/also-doomed.png",
+            "https://cdn.example.com/link.jpg",
+        ],
+    )
 
     await auth_client.delete(f"/api/toys/{toy.id}")
 
-    assert not stored.exists()
+    assert not first.exists()
+    assert not second.exists()
+    remaining = (
+        (await db_session.execute(select(ToyImage.id).where(ToyImage.toy_id == toy.id)))
+        .scalars()
+        .all()
+    )
+    assert remaining == []
 
 
 async def test_cannot_delete_a_toy_owned_by_someone_else(

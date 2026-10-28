@@ -64,12 +64,27 @@ class ResetPasswordResponse(BaseModel):
     message: str
 
 
+class ToyImageOut(BaseModel):
+    """One of a toy's images, flattened to what the browser needs.
+
+    `src` hides which of the two sources the row uses; `is_external` is what
+    the client reads to decide whether to fetch it through the authenticated
+    image endpoint or hand the URL straight to an `<img>`.
+    """
+
+    id: int
+    position: int
+    src: str
+    is_external: bool
+
+    model_config = {"from_attributes": True}
+
+
 class ToyCreate(BaseModel):
     title: str
     description: str | None = None
     min_age: int | None = Field(default=None, ge=0)
     max_age: int | None = Field(default=None, ge=0)
-    image_path: str | None = None
     tags: list[str] = []
     condition: ToyCondition | None = None
     date_added: datetime | None = None
@@ -91,7 +106,9 @@ class ToyOut(BaseModel):
     description: str | None = None
     min_age: int | None = None
     max_age: int | None = None
-    image_path: str | None = None
+    # Ordered by position; the first one is the cover. Empty for a toy with no
+    # photos, which is a perfectly ordinary listing.
+    images: list[ToyImageOut] = []
     tags: list[str] = []
     condition: ToyCondition | None = None
     date_added: datetime | None = None
@@ -126,7 +143,6 @@ class ToyUpdate(BaseModel):
     description: str | None = None
     min_age: int | None = Field(default=None, ge=0)
     max_age: int | None = Field(default=None, ge=0)
-    image_path: str | None = None
     tags: list[str] | None = None
     condition: ToyCondition | None = None
     date_added: datetime | None = None

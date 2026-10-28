@@ -18,14 +18,14 @@ import {
   type InterestDetail,
   type Toy,
 } from '../api/client'
-import { compressImage } from '../lib/imageCompression'
 import { expiryMessage, expiryState } from '../lib/toyExpiration'
 import { useTheme } from '../theme/ThemeContext'
 import { useIsCompactLayout } from '../theme/useIsCompactLayout'
 import { ToyFormModal } from './toy_page/ToyFormModal'
 import { TransferModal } from './toy_page/TransferModal'
+import { useToyImagesForm } from './toy_page/useToyImagesForm'
 import type { ToyFormData } from './toy_page/useToysPage'
-import { useToyImage } from './useToyImage'
+import { ToyImageView } from './ToyImageView'
 
 interface Props {
   token: string
@@ -36,9 +36,6 @@ const emptyForm: ToyFormData = {
   description: '',
   min_age: '',
   max_age: '',
-  image_path: '',
-  image_file: null,
-  image_preview_url: null,
   tags: [],
 }
 
@@ -71,11 +68,16 @@ export default function ToyDetailPage({ token }: Props) {
   const [formData, setFormData] = useState<ToyFormData>(emptyForm)
   const [formError, setFormError] = useState<string | null>(null)
   const [formLoading, setFormLoading] = useState(false)
-  const [imageCompressing, setImageCompressing] = useState(false)
+  const images = useToyImagesForm()
+
+  // Which photo is shown large. Held by id rather than index so a save that
+  // reorders the images cannot leave it pointing at a different photo.
+  const [selectedImageId, setSelectedImageId] = useState<number | null>(null)
 
   const { theme } = useTheme()
   const isCompactLayout = useIsCompactLayout()
-  const { imageSrc } = useToyImage(token, toy?.image_path ?? null)
+  const mainImage =
+    toy?.images.find((image) => image.id === selectedImageId) ?? toy?.images[0] ?? null
 
   const refreshAll = useCallback(async () => {
     if (!id) return
@@ -257,11 +259,9 @@ export default function ToyDetailPage({ token }: Props) {
       description: toy.description ?? '',
       min_age: toy.min_age?.toString() ?? '',
       max_age: toy.max_age?.toString() ?? '',
-      image_path: toy.image_path ?? '',
-      image_file: null,
-      image_preview_url: null,
       tags: [...toy.tags],
     })
+    images.reset(toy.images)
     setFormError(null)
     setFormOpen(true)
   }
@@ -269,46 +269,13 @@ export default function ToyDetailPage({ token }: Props) {
   function closeForm() {
     setFormOpen(false)
     setFormError(null)
-    if (formData.image_preview_url?.startsWith('blob:')) {
-      URL.revokeObjectURL(formData.image_preview_url)
-    }
     setFormData(emptyForm)
+    // Revokes the blob previews of any files picked but never saved.
+    images.reset()
   }
 
-  function handleFormChange(
-    field: keyof Omit<ToyFormData, 'tags' | 'image_file' | 'image_preview_url'>,
-    value: string,
-  ) {
+  function handleFormChange(field: keyof Omit<ToyFormData, 'tags'>, value: string) {
     setFormData((prev) => ({ ...prev, [field]: value }))
-  }
-
-  async function handleImageFileChange(file: File | null) {
-    if (!file) {
-      setFormData((prev) => {
-        if (prev.image_preview_url?.startsWith('blob:')) {
-          URL.revokeObjectURL(prev.image_preview_url)
-        }
-        return { ...prev, image_file: null, image_preview_url: null }
-      })
-      return
-    }
-
-    setImageCompressing(true)
-    try {
-      const compressedFile = await compressImage(file)
-      setFormData((prev) => {
-        if (prev.image_preview_url?.startsWith('blob:')) {
-          URL.revokeObjectURL(prev.image_preview_url)
-        }
-        return {
-          ...prev,
-          image_file: compressedFile,
-          image_preview_url: URL.createObjectURL(compressedFile),
-        }
-      })
-    } finally {
-      setImageCompressing(false)
-    }
   }
 
   async function handleFormSubmit() {
@@ -324,12 +291,13 @@ export default function ToyDetailPage({ token }: Props) {
         max_age: formData.max_age !== '' ? Number(formData.max_age) : undefined,
         tags: formData.tags,
       })
-      if (formData.image_file) {
-        payload.append('image_file', formData.image_file)
-      }
+      images.appendToFormData(payload)
 
       const updated = await updateToy(token, toy.id, payload)
       setToy(updated)
+      // The edit may have just picked a new cover; show that rather than
+      // whatever was selected before.
+      setSelectedImageId(null)
       closeForm()
     } catch (err: unknown) {
       setFormError(err instanceof Error ? err.message : 'Save failed')
@@ -516,21 +484,70 @@ export default function ToyDetailPage({ token }: Props) {
               marginBottom: 32,
             }}
           >
-            {imageSrc && (
-              <img
-                src={imageSrc}
-                alt={toy.title}
+            {mainImage && (
+              <div
                 style={{
-                  width: isCompactLayout ? '100%' : 180,
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: 8,
+                  width: isCompactLayout ? '100%' : 240,
                   maxWidth: isCompactLayout ? 320 : undefined,
-                  height: isCompactLayout ? 'auto' : 180,
-                  aspectRatio: isCompactLayout ? '1 / 1' : undefined,
-                  objectFit: 'cover',
-                  borderRadius: 10,
-                  border: `1px solid ${theme.border}`,
                   flexShrink: 0,
                 }}
-              />
+              >
+                <ToyImageView
+                  token={token}
+                  image={mainImage}
+                  alt={toy.title}
+                  placeholderBg={theme.imagePlaceholderBg}
+                  style={{
+                    width: '100%',
+                    aspectRatio: '1 / 1',
+                    borderRadius: 10,
+                    border: `1px solid ${theme.border}`,
+                  }}
+                />
+                {toy.images.length > 1 && (
+                  <div style={{ display: 'flex', gap: 8 }}>
+                    {toy.images.map((image, index) => {
+                      const isSelected = image.id === mainImage.id
+                      return (
+                        <button
+                          key={image.id}
+                          type="button"
+                          onClick={() => setSelectedImageId(image.id)}
+                          aria-label={`Show photo ${index + 1}`}
+                          aria-pressed={isSelected}
+                          style={{
+                            padding: 0,
+                            border: 'none',
+                            background: 'none',
+                            cursor: 'pointer',
+                            flex: '0 1 64px',
+                            minWidth: 0,
+                          }}
+                        >
+                          <ToyImageView
+                            token={token}
+                            image={image}
+                            alt=""
+                            placeholderBg={theme.imagePlaceholderBg}
+                            style={{
+                              width: '100%',
+                              aspectRatio: '1 / 1',
+                              borderRadius: 6,
+                              border: `${isSelected ? 2 : 1}px solid ${
+                                isSelected ? theme.ctaBg : theme.border
+                              }`,
+                              opacity: isSelected ? 1 : 0.75,
+                            }}
+                          />
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
+              </div>
             )}
             <div style={{ flex: 1 }}>
               <h1 style={{ margin: '0 0 8px 0' }}>{toy.title}</h1>
@@ -727,10 +744,9 @@ export default function ToyDetailPage({ token }: Props) {
               formData={formData}
               formError={formError}
               formLoading={formLoading}
-              imageCompressing={imageCompressing}
+              images={images}
               onClose={closeForm}
               handleFormChange={handleFormChange}
-              handleImageFileChange={handleImageFileChange}
               handleFormSubmit={handleFormSubmit}
             />
           )}

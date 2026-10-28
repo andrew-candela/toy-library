@@ -68,13 +68,30 @@ async function extractErrorDetail(response: Response, fallback: string): Promise
 
 export type ToyCondition = 'new' | 'like_new' | 'good' | 'fair' | 'poor'
 
+/** At most three per toy, counting uploads and links together. */
+export const MAX_TOY_IMAGES = 3
+
+export interface ToyImage {
+  id: number
+  /** 0 is the cover: the only image list views show. */
+  position: number
+  /** An upload's public path, or the external link exactly as given. */
+  src: string
+  /**
+   * True for a link the browser loads directly. Uploads are false and have to
+   * go through the authenticated image endpoint instead.
+   */
+  is_external: boolean
+}
+
 export interface Toy {
   id: number
   title: string
   description?: string
   min_age?: number
   max_age?: number
-  image_path?: string
+  /** Ordered by position, cover first. Empty when the toy has no photos. */
+  images: ToyImage[]
   tags: string[]
   condition?: ToyCondition
   date_added?: string
@@ -99,7 +116,6 @@ export interface ToyCreate {
   description?: string
   min_age?: number
   max_age?: number
-  image_path?: string
   tags: string[]
   condition?: ToyCondition
   date_added?: string
@@ -110,7 +126,6 @@ export interface ToyUpdate {
   description?: string
   min_age?: number
   max_age?: number
-  image_path?: string
   tags?: string[]
   condition?: ToyCondition
   date_added?: string

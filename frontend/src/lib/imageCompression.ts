@@ -3,10 +3,13 @@
 // Client-side image compression for toy image uploads. Resizes and re-encodes
 // images as JPEG in the browser before they're sent to the backend, so large
 // mobile camera photos don't get rejected by nginx's request body size limit.
+// A toy can have up to three photos and they all go up in one request, so the
+// per-image target is about a third of nginx's 4 MB `client_max_body_size`,
+// leaving headroom for the other form fields and multipart framing.
 
 const MAX_DIMENSION = 1920
 const QUALITY_STEPS = [0.8, 0.6, 0.4]
-const TARGET_MAX_BYTES = 3.5 * 1024 * 1024
+const TARGET_MAX_BYTES = 1.2 * 1024 * 1024
 
 function replaceExtensionWithJpg(filename: string): string {
   const withoutExt = filename.replace(/\.[^./\\]+$/, '')

@@ -5,6 +5,7 @@ from typing import Optional
 from pgvector.sqlalchemy import Vector
 from sqlalchemy import (
     Boolean,
+    CheckConstraint,
     DateTime,
     Enum,
     ForeignKey,
@@ -78,7 +79,6 @@ class Toy(Base):
     description: Mapped[str | None] = mapped_column(String, nullable=True)
     min_age: Mapped[int | None] = mapped_column(Integer, nullable=True)
     max_age: Mapped[int | None] = mapped_column(Integer, nullable=True)
-    image_path: Mapped[str | None] = mapped_column(String, nullable=True)
     ai_description: Mapped[str | None] = mapped_column(String, nullable=True)
     condition: Mapped[ToyCondition | None] = mapped_column(
         Enum(ToyCondition), nullable=True
@@ -112,6 +112,15 @@ class Toy(Base):
         cascade="all, delete-orphan",
         lazy="selectin",
     )
+    # Ordered by position, so `images[0]` is the cover everywhere — the only one
+    # list views render and the only one the AI description is generated from.
+    images: Mapped[list["ToyImage"]] = relationship(
+        "ToyImage",
+        back_populates="toy",
+        cascade="all, delete-orphan",
+        lazy="selectin",
+        order_by=lambda: ToyImage.position,
+    )
     # user_toys is a custody ledger, so a toy that has changed hands has one row
     # per holder. The primaryjoin keeps this single-object shape honest by
     # restricting it to the row nobody has released yet.
@@ -136,6 +145,51 @@ class ToyTag(Base):
     tag: Mapped[str] = mapped_column(String, nullable=False, index=True)
 
     toy: Mapped["Toy"] = relationship("Toy", back_populates="tags")
+
+
+class ToyImage(Base):
+    """One photo on a toy: either an upload we store, or a link we only point at.
+
+    `path` and `external_url` are the two mutually exclusive sources, kept apart
+    rather than collapsed into one column because they are served completely
+    differently — an upload goes through the authenticated image endpoint, a link
+    is hotlinked by the browser and never fetched by us. The CHECK constraint is
+    what stops a row from claiming to be both or neither.
+    """
+
+    __tablename__ = "toy_images"
+    __table_args__ = (
+        CheckConstraint(
+            "(path IS NOT NULL AND external_url IS NULL)"
+            " OR (path IS NULL AND external_url IS NOT NULL)",
+            name="ck_toy_images_exactly_one_source",
+        ),
+        UniqueConstraint("toy_id", "position", name="uq_toy_images_toy_position"),
+    )
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
+    toy_id: Mapped[int] = mapped_column(
+        Integer, ForeignKey("toys.id", ondelete="CASCADE"), nullable=False, index=True
+    )
+    path: Mapped[str | None] = mapped_column(String, nullable=True)
+    external_url: Mapped[str | None] = mapped_column(String, nullable=True)
+    # 0 is the cover. Rewritten to be contiguous from 0 on every save, so the
+    # ordering never depends on the ids or on insertion order.
+    position: Mapped[int] = mapped_column(Integer, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), nullable=False
+    )
+
+    toy: Mapped["Toy"] = relationship("Toy", back_populates="images")
+
+    @property
+    def src(self) -> str:
+        """What the browser loads: our own path, or the link as given."""
+        return self.path or self.external_url or ""
+
+    @property
+    def is_external(self) -> bool:
+        return self.external_url is not None
 
 
 class UserToySource(str, enum.Enum):

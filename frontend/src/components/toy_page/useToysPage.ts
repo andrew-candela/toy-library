@@ -19,7 +19,7 @@ import {
   updateToy,
   type Toy,
 } from '../../api/client'
-import { compressImage } from '../../lib/imageCompression'
+import { useToyImagesForm } from './useToyImagesForm'
 
 const PAGE_SIZE = 20
 
@@ -38,9 +38,6 @@ export interface ToyFormData {
   description: string
   min_age: string
   max_age: string
-  image_path: string
-  image_file: File | null
-  image_preview_url: string | null
   tags: string[]
 }
 
@@ -49,9 +46,6 @@ const emptyForm: ToyFormData = {
   description: '',
   min_age: '',
   max_age: '',
-  image_path: '',
-  image_file: null,
-  image_preview_url: null,
   tags: [],
 }
 
@@ -96,7 +90,7 @@ export function useToysPage(token: string) {
   const [formData, setFormData] = useState<ToyFormData>(emptyForm)
   const [formError, setFormError] = useState<string | null>(null)
   const [formLoading, setFormLoading] = useState(false)
-  const [imageCompressing, setImageCompressing] = useState(false)
+  const images = useToyImagesForm()
 
   // --- 4. Relational / Metadata State ---
   const [myInterestedToyIds, setMyInterestedToyIds] = useState<Set<number>>(new Set())
@@ -119,48 +113,6 @@ export function useToysPage(token: string) {
   }
   function isActionLoading(key: string) {
     return Boolean(actionLoadingByKey[key])
-  }
-
-  function setFormDataWithPreview(nextFormData: ToyFormData) {
-    setFormData((prev) => {
-      if (prev.image_preview_url?.startsWith('blob:')) {
-        URL.revokeObjectURL(prev.image_preview_url)
-      }
-      return nextFormData
-    })
-  }
-
-  async function handleImageFileChange(file: File | null) {
-    if (!file) {
-      setFormData((prev) => {
-        if (prev.image_preview_url?.startsWith('blob:')) {
-          URL.revokeObjectURL(prev.image_preview_url)
-        }
-        return {
-          ...prev,
-          image_file: null,
-          image_preview_url: null,
-        }
-      })
-      return
-    }
-
-    setImageCompressing(true)
-    try {
-      const compressedFile = await compressImage(file)
-      setFormData((prev) => {
-        if (prev.image_preview_url?.startsWith('blob:')) {
-          URL.revokeObjectURL(prev.image_preview_url)
-        }
-        return {
-          ...prev,
-          image_file: compressedFile,
-          image_preview_url: URL.createObjectURL(compressedFile),
-        }
-      })
-    } finally {
-      setImageCompressing(false)
-    }
   }
 
   // --- 7. Data Sync Effects ---
@@ -286,23 +238,22 @@ export function useToysPage(token: string) {
   // --- 8. Form Management Actions ---
   function openCreate() {
     setEditToy(null)
-    setFormDataWithPreview(emptyForm)
+    setFormData(emptyForm)
+    images.reset()
     setFormError(null)
     setFormOpen(true)
   }
 
   function openEdit(toy: Toy) {
     setEditToy(toy)
-    setFormDataWithPreview({
+    setFormData({
       title: toy.title,
       description: toy.description ?? '',
       min_age: toy.min_age?.toString() ?? '',
       max_age: toy.max_age?.toString() ?? '',
-      image_path: toy.image_path ?? '',
-      image_file: null,
-      image_preview_url: null,
       tags: [...toy.tags],
     })
+    images.reset(toy.images)
     setFormError(null)
     setFormOpen(true)
   }
@@ -311,13 +262,12 @@ export function useToysPage(token: string) {
     setFormOpen(false)
     setEditToy(null)
     setFormError(null)
-    setFormDataWithPreview(emptyForm)
+    setFormData(emptyForm)
+    // Revokes the blob previews of any files picked but never saved.
+    images.reset()
   }
 
-  function handleFormChange(
-    field: keyof Omit<ToyFormData, 'tags' | 'image_file' | 'image_preview_url'>,
-    value: string,
-  ) {
+  function handleFormChange(field: keyof Omit<ToyFormData, 'tags'>, value: string) {
     setFormData((prev) => ({ ...prev, [field]: value }))
   }
 
@@ -333,9 +283,7 @@ export function useToysPage(token: string) {
         max_age: formData.max_age !== '' ? Number(formData.max_age) : undefined,
         tags: formData.tags,
       })
-      if (formData.image_file) {
-        payload.append('image_file', formData.image_file)
-      }
+      images.appendToFormData(payload)
 
       if (editToy) {
         const updated = await updateToy(token, editToy.id, payload)
@@ -530,8 +478,7 @@ export function useToysPage(token: string) {
     setFormData,
     formError,
     formLoading,
-    imageCompressing,
-    handleImageFileChange,
+    images,
     openCreate,
     openEdit,
     closeForm,

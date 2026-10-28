@@ -8,6 +8,7 @@ from strawberry.types import Info
 
 from app.graphql.context import GraphQLContext
 from app.models.models import Toy as ToyModel
+from app.models.models import ToyImage as ToyImageModel
 from app.models.models import ToyTag as ToyTagModel
 from app.models.models import UserToy as UserToyModel
 
@@ -32,13 +33,30 @@ class ToyTagType:
 
 
 @strawberry.type
+class ToyImageType:
+    id: int
+    position: int
+    src: str
+    is_external: bool
+
+    @classmethod
+    def from_model(cls, model: ToyImageModel) -> ToyImageType:
+        return cls(
+            id=model.id,
+            position=model.position,
+            src=model.src,
+            is_external=model.is_external,
+        )
+
+
+@strawberry.type
 class ToyType:
     id: int
     title: str
     description: str | None
     min_age: int | None
     max_age: int | None
-    image_path: str | None
+    images: list[ToyImageType]
     tags: list[ToyTagType]
 
     @classmethod
@@ -49,7 +67,7 @@ class ToyType:
             description=model.description,
             min_age=model.min_age,
             max_age=model.max_age,
-            image_path=model.image_path,
+            images=[ToyImageType.from_model(i) for i in model.images],
             tags=[ToyTagType.from_model(t) for t in model.tags],
         )
 
@@ -73,7 +91,10 @@ class Query:
                 UserToyModel.released_at.is_(None),
                 ToyModel.deleted_at.is_(None),
             )
-            .options(selectinload(UserToyModel.toy).selectinload(ToyModel.tags))
+            .options(
+                selectinload(UserToyModel.toy).selectinload(ToyModel.tags),
+                selectinload(UserToyModel.toy).selectinload(ToyModel.images),
+            )
         )
         user_toys = result.scalars().all()
         return [ToyType.from_model(ut.toy) for ut in user_toys]
