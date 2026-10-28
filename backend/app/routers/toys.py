@@ -1,4 +1,5 @@
 from collections.abc import Sequence
+from dataclasses import dataclass
 from datetime import UTC, datetime
 
 import structlog
@@ -24,15 +25,18 @@ from app.lib.toy_expiration import (
     is_expired,
 )
 from app.lib.toy_images import (
+    MAX_TOY_IMAGES,
     delete_toy_image,
     embed_description,
     save_toy_image,
     toy_embedding,
+    validate_external_image_url,
 )
 from app.models.models import (
     Address,
     Toy,
     ToyCondition,
+    ToyImage,
     ToyInterest,
     ToyTag,
     User,
@@ -86,6 +90,123 @@ async def _serialize_toy(db: AsyncSession, toy: Toy, now: datetime) -> ToyOut:
     toy_out.is_expired = is_expired(toy, has_live_interest=has_interest, now=now)
     toy_out.expires_at = expires_at(toy, has_live_interest=has_interest)
     return toy_out
+
+
+@dataclass
+class _PendingImage:
+    """One image in the list a toy is about to end up with.
+
+    Either an existing row being kept (`existing`) or something new — an upload
+    already written to disk (`path`) or an accepted link (`external_url`).
+    `token` is how `image_order` refers to it, which is also what makes the
+    ordering checkable: the submitted order has to be a permutation of these.
+    """
+
+    token: str
+    existing: ToyImage | None = None
+    path: str | None = None
+    external_url: str | None = None
+
+
+def _validate_image_count(count: int) -> None:
+    if count > MAX_TOY_IMAGES:
+        raise HTTPException(
+            status_code=400,
+            detail=f"A toy can have at most {MAX_TOY_IMAGES} images.",
+        )
+
+
+async def _save_new_images(
+    image_files: list[UploadFile],
+    image_urls: list[str],
+    saved_paths: list[str],
+) -> list[_PendingImage]:
+    """Accept the newly submitted images, newest-first in submission order.
+
+    `saved_paths` is appended to as files land on disk so the caller can undo
+    them if anything later in the request fails. Links are validated first
+    because they cost nothing to reject, which keeps the common typo from
+    writing files we would only have to delete again.
+    """
+    entries: list[_PendingImage] = []
+    validated_urls = [validate_external_image_url(url) for url in image_urls]
+
+    for index, upload in enumerate(image_files):
+        path = await save_toy_image(upload)
+        saved_paths.append(path)
+        entries.append(_PendingImage(token=f"file:{index}", path=path))
+
+    entries.extend(
+        _PendingImage(token=f"url:{index}", external_url=url)
+        for index, url in enumerate(validated_urls)
+    )
+    return entries
+
+
+def _order_images(
+    entries: list[_PendingImage], image_order: list[str]
+) -> list[_PendingImage]:
+    """Apply a submitted ordering, or fall back to kept-then-new.
+
+    An order that is not an exact permutation is rejected rather than patched
+    up: a client that miscounted would otherwise silently get a different cover
+    than the one the user picked.
+    """
+    if not image_order:
+        return entries
+
+    by_token = {entry.token: entry for entry in entries}
+    if len(image_order) != len(entries) or set(image_order) != set(by_token):
+        raise HTTPException(
+            status_code=400,
+            detail="image_order must list every image for this toy exactly once.",
+        )
+    return [by_token[token] for token in image_order]
+
+
+async def _apply_image_positions(
+    db: AsyncSession,
+    toy: Toy,
+    entries: list[_PendingImage],
+    removed_ids: set[int],
+    now: datetime,
+) -> None:
+    """Lay the toy's images out at positions 0..n-1, in `entries` order.
+
+    `(toy_id, position)` is unique and checked per statement, so the kept rows
+    are parked on negative positions first. Without that pass, swapping two
+    images collides on whichever position is written second.
+    """
+    for image in list(toy.images):
+        if image.id in removed_ids:
+            toy.images.remove(image)
+    await db.flush()
+
+    for offset, entry in enumerate(entries):
+        if entry.existing is not None:
+            entry.existing.position = -(offset + 1)
+    await db.flush()
+
+    for position, entry in enumerate(entries):
+        if entry.existing is not None:
+            entry.existing.position = position
+        else:
+            toy.images.append(
+                ToyImage(
+                    path=entry.path,
+                    external_url=entry.external_url,
+                    position=position,
+                    created_at=now,
+                )
+            )
+    await db.flush()
+    # The relationship's order_by only applies to a fresh load, and everything
+    # downstream — the response, the activity log — reads this collection.
+    toy.images.sort(key=lambda image: image.position)
+
+
+def _cover_token(images: Sequence[ToyImage]) -> str | None:
+    return f"id:{images[0].id}" if images else None
 
 
 def _validate_age_range(min_age: int | None, max_age: int | None) -> None:
@@ -425,43 +546,69 @@ async def create_toy(
     condition: ToyCondition | None = Form(None),
     date_added: datetime | None = Form(None),
     tags: list[str] = Form(default=[]),
-    image_file: UploadFile | None = File(None),
+    image_files: list[UploadFile] = File(default=[]),
+    image_urls: list[str] = Form(default=[]),
+    image_order: list[str] = Form(default=[]),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
     _validate_age_range(min_age, max_age)
-    image_path = await save_toy_image(image_file) if image_file is not None else None
+    _validate_image_count(len(image_files) + len(image_urls))
+
     # A brand-new listing counts as both fresh owner activity and — for the
     # purposes of the staleness clock — a fresh start, so neither column starts
     # out null and looking like a toy nobody has touched in years.
     now = datetime.now(tz=UTC)
-    toy = Toy(
-        title=title,
-        description=description,
-        min_age=min_age,
-        max_age=max_age,
-        image_path=image_path,
-        condition=condition,
-        date_added=date_added,
-        last_interest_at=now,
-        last_owner_activity_at=now,
-    )
-    db.add(toy)
-    await db.flush()
-    user_toy = UserToy(
-        user_id=current_user.id,
-        toy_id=toy.id,
-        checked_out_at=datetime.now(tz=UTC),
-        source=UserToySource.created.value,
-    )
-    db.add(user_toy)
-    for raw_tag in tags:
-        normalized = _normalize_tag(raw_tag)
-        if normalized:
-            db.add(ToyTag(toy_id=toy.id, tag=normalized))
-    await db.commit()
+    saved_paths: list[str] = []
+    try:
+        entries = _order_images(
+            await _save_new_images(image_files, image_urls, saved_paths), image_order
+        )
+        toy = Toy(
+            title=title,
+            description=description,
+            min_age=min_age,
+            max_age=max_age,
+            condition=condition,
+            date_added=date_added,
+            last_interest_at=now,
+            last_owner_activity_at=now,
+            images=[
+                ToyImage(
+                    path=entry.path,
+                    external_url=entry.external_url,
+                    position=position,
+                    created_at=now,
+                )
+                for position, entry in enumerate(entries)
+            ],
+        )
+        db.add(toy)
+        await db.flush()
+        user_toy = UserToy(
+            user_id=current_user.id,
+            toy_id=toy.id,
+            checked_out_at=datetime.now(tz=UTC),
+            source=UserToySource.created.value,
+        )
+        db.add(user_toy)
+        for raw_tag in tags:
+            normalized = _normalize_tag(raw_tag)
+            if normalized:
+                db.add(ToyTag(toy_id=toy.id, tag=normalized))
+        await db.commit()
+    except Exception:
+        # Nothing is committed, so the files written above are the only trace
+        # the request would otherwise leave behind.
+        for path in saved_paths:
+            delete_toy_image(path)
+        raise
+
     log_activity(type="ToyCreated", user_id=current_user.id, toy_id=toy.id)
-    background_tasks.add_task(toy_embedding, toy.id)
+    # There is nothing to describe without a cover image, and the embedding task
+    # is the only thing that would have raised over it.
+    if entries:
+        background_tasks.add_task(toy_embedding, toy.id)
     created = (await db.execute(select(Toy).where(Toy.id == toy.id))).scalar_one()
     return await _serialize_toy(db, created, now)
 
@@ -477,8 +624,10 @@ async def update_toy(
     condition: ToyCondition | None = Form(None),
     date_added: datetime | None = Form(None),
     tags: list[str] = Form(default=[]),
-    remove_image: bool = Form(False),
-    image_file: UploadFile | None = File(None),
+    remove_image_ids: list[int] = Form(default=[]),
+    image_files: list[UploadFile] = File(default=[]),
+    image_urls: list[str] = Form(default=[]),
+    image_order: list[str] = Form(default=[]),
     db: AsyncSession = Depends(get_db),
     current_user: User = Depends(get_current_user),
 ):
@@ -497,14 +646,34 @@ async def update_toy(
     if not toy:
         raise HTTPException(status_code=404, detail="Toy not found")
     old = _loggable(toy)
-    old_image_path = toy.image_path
-    new_image_path: str | None = None
-    rerun_embedding = False
+
+    # An id from another toy is a client bug at best, so it is rejected rather
+    # than ignored — silently keeping the image would look like a successful
+    # removal.
+    existing_by_id = {image.id: image for image in toy.images}
+    if any(image_id not in existing_by_id for image_id in remove_image_ids):
+        raise HTTPException(
+            status_code=400,
+            detail="remove_image_ids must all belong to this toy.",
+        )
+    removed_ids = set(remove_image_ids)
+    kept = [image for image in toy.images if image.id not in removed_ids]
+    _validate_image_count(len(kept) + len(image_files) + len(image_urls))
+
+    # Only the cover is described, so only a change at position 0 is worth
+    # paying OpenAI for again.
+    old_cover_token = _cover_token(toy.images)
+    removed_paths = [
+        existing_by_id[image_id].path
+        for image_id in removed_ids
+        if existing_by_id[image_id].path
+    ]
 
     effective_min_age = min_age if min_age is not None else toy.min_age
     effective_max_age = max_age if max_age is not None else toy.max_age
     _validate_age_range(effective_min_age, effective_max_age)
 
+    saved_paths: list[str] = []
     try:
         if title is not None:
             toy.title = title
@@ -519,12 +688,19 @@ async def update_toy(
         if date_added is not None:
             toy.date_added = date_added
 
-        if image_file is not None:
-            rerun_embedding = True
-            new_image_path = await save_toy_image(image_file)
-            toy.image_path = new_image_path
-        elif remove_image:
-            toy.image_path = None
+        now = datetime.now(tz=UTC)
+        entries = _order_images(
+            [_PendingImage(token=f"id:{image.id}", existing=image) for image in kept]
+            + await _save_new_images(image_files, image_urls, saved_paths),
+            image_order,
+        )
+        await _apply_image_positions(db, toy, entries, removed_ids, now)
+        rerun_embedding = bool(entries) and _cover_token(toy.images) != old_cover_token
+        if not entries:
+            # Both columns describe an image that is no longer there, and a
+            # stale embedding would keep the toy turning up in searches for it.
+            toy.ai_description = None
+            toy.embedding = None
 
         await db.execute(delete(ToyTag).where(ToyTag.toy_id == toy.id))
         for raw_tag in tags:
@@ -534,7 +710,7 @@ async def update_toy(
 
         # Editing the listing is owner activity, not outside interest, so this
         # deliberately leaves last_interest_at alone.
-        toy.last_owner_activity_at = datetime.now(tz=UTC)
+        toy.last_owner_activity_at = now
 
         await db.commit()
         log_activity(
@@ -547,12 +723,14 @@ async def update_toy(
         if rerun_embedding:
             background_tasks.add_task(toy_embedding, toy.id)
     except Exception:
-        if new_image_path is not None:
-            delete_toy_image(new_image_path)
+        for path in saved_paths:
+            delete_toy_image(path)
         raise
 
-    if old_image_path and old_image_path != toy.image_path:
-        delete_toy_image(old_image_path)
+    # Only once the removal is committed: a file deleted before that would be
+    # gone for a row that is still there.
+    for path in removed_paths:
+        delete_toy_image(path)
 
     updated = (
         await db.execute(
@@ -605,10 +783,11 @@ async def delete_toy(
     # was rather than the delisted shell it becomes.
     old = _loggable(toy)
 
-    # The ledger is about custody, not the photo: keeping image files for toys
-    # nobody can see costs storage and buys nothing.
-    image_path = toy.image_path
-    toy.image_path = None
+    # The ledger is about custody, not the photos: keeping image files for toys
+    # nobody can see costs storage and buys nothing. External links cost us
+    # nothing either way, but the rows go with them.
+    image_paths = [image.path for image in toy.images if image.path]
+    await db.execute(delete(ToyImage).where(ToyImage.toy_id == toy_id))
 
     deleted_at = datetime.now(tz=UTC)
     toy.deleted_at = deleted_at
@@ -621,7 +800,8 @@ async def delete_toy(
     # should not keep live interest records against it.
     await db.execute(delete(ToyInterest).where(ToyInterest.toy_id == toy_id))
     await db.commit()
-    delete_toy_image(image_path)
+    for image_path in image_paths:
+        delete_toy_image(image_path)
     log_activity(
         type="ToyDeleted",
         user_id=current_user.id,

@@ -285,10 +285,9 @@ export default function ToysPage({ token }: Props) {
           formData={hook.formData}
           formError={hook.formError}
           formLoading={hook.formLoading}
-          imageCompressing={hook.imageCompressing}
+          images={hook.images}
           onClose={hook.closeForm}
           handleFormChange={hook.handleFormChange}
-          handleImageFileChange={hook.handleImageFileChange}
           handleFormSubmit={hook.handleFormSubmit}
         />
       )}

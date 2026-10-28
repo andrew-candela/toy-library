@@ -12,7 +12,7 @@ from datetime import UTC, datetime
 
 from sqlalchemy import select
 
-from app.models.models import Toy, ToyInterest, UserToy
+from app.models.models import Toy, ToyImage, ToyInterest, UserToy
 from tests.factories import make_interest, make_toy, make_toy_with_history, make_user
 
 _NOW = datetime(2026, 1, 1, tzinfo=UTC)
@@ -258,7 +258,7 @@ async def test_deleting_a_toy_removes_its_image_but_keeps_the_row(
 ):
     stored = image_storage_dir / "doomed.png"
     stored.write_bytes(b"data")
-    toy = await make_toy(db_session, owner=user, image_path="/images/doomed.png")
+    toy = await make_toy(db_session, owner=user, images=["/images/doomed.png"])
 
     await _delete(auth_client, toy)
 
@@ -270,4 +270,10 @@ async def test_deleting_a_toy_removes_its_image_but_keeps_the_row(
         )
     ).scalar_one()
     assert not stored.exists()
-    assert reloaded.image_path is None
+    assert reloaded.deleted_at is not None
+    remaining = (
+        (await db_session.execute(select(ToyImage).where(ToyImage.toy_id == toy.id)))
+        .scalars()
+        .all()
+    )
+    assert remaining == []

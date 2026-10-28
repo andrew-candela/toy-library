@@ -5,6 +5,17 @@ interface UseToyImageOptions {
   enabled?: boolean
 }
 
+/**
+ * Where an image comes from. `is_external` means "load `src` directly": true
+ * for a toy's external link, and also for a local `blob:` preview of a file
+ * that has not been uploaded yet. Only uploads already on our server are
+ * fetched through the authenticated endpoint and cached.
+ */
+export interface ToyImageSource {
+  src: string
+  is_external: boolean
+}
+
 interface UseToyImageResult {
   imageSrc: string | null
   loading: boolean
@@ -81,13 +92,16 @@ async function resolveCachedImageUrl(token: string, imagePath: string): Promise<
 
 export function useToyImage(
   token: string,
-  imagePath: string | null | undefined,
+  image: ToyImageSource | null | undefined,
   options: UseToyImageOptions = {},
 ): UseToyImageResult {
-  const [imageSrc, setImageSrc] = useState<string | null>(null)
+  const [fetchedSrc, setImageSrc] = useState<string | null>(null)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState<string | null>(null)
   const enabled = options.enabled ?? true
+  const isDirect = Boolean(image?.is_external)
+  // Uploads only; a direct source never touches fetchImage or the blob cache.
+  const imagePath = image && !isDirect ? image.src : null
 
   useEffect(() => {
     let cancelled = false
@@ -131,5 +145,10 @@ export function useToyImage(
     }
   }, [token, imagePath, enabled])
 
-  return { imageSrc, loading, error }
+  if (isDirect) {
+    // Whether a direct link actually loads is only known to the <img>, so its
+    // onError is what shows the placeholder.
+    return { imageSrc: enabled ? (image?.src ?? null) : null, loading: false, error: null }
+  }
+  return { imageSrc: fetchedSrc, loading, error }
 }

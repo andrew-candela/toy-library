@@ -1,9 +1,8 @@
 // ToyTable.tsx
-import { useEffect, useState } from 'react'
 import { Link } from 'react-router-dom'
 import { type Toy } from '../../api/client'
 import { expiryBadgeLabel, expiryState } from '../../lib/toyExpiration'
-import { useToyImage } from '../useToyImage'
+import { ToyImageView } from '../ToyImageView'
 import { useTheme } from '../../theme/ThemeContext'
 import { useIsCompactLayout } from '../../theme/useIsCompactLayout'
 
@@ -69,6 +68,7 @@ interface ToyThumbnailProps {
   flexShrink?: 0
 }
 
+/** The cover only: list views never show a toy's other photos. */
 function ToyThumbnail({
   token,
   toy,
@@ -78,45 +78,20 @@ function ToyThumbnail({
   placeholderBg,
   flexShrink,
 }: ToyThumbnailProps) {
-  const { imageSrc } = useToyImage(token, toy.image_path ?? null)
-  const [imageFailed, setImageFailed] = useState(false)
-
-  useEffect(() => {
-    setImageFailed(false)
-  }, [imageSrc, toy.image_path])
-
-  const showImage = Boolean(toy.image_path && imageSrc && !imageFailed)
-
   return (
-    <>
-      {showImage ? (
-        <img
-          src={imageSrc ?? undefined}
-          alt={toy.title}
-          onError={() => setImageFailed(true)}
-          style={{
-            width: size,
-            height: size,
-            objectFit: 'cover',
-            borderRadius,
-            border: `1px solid ${borderColor}`,
-            display: 'block',
-            flexShrink,
-          }}
-        />
-      ) : null}
-      <div
-        style={{
-          display: showImage ? 'none' : 'block',
-          width: size,
-          height: size,
-          borderRadius,
-          background: placeholderBg,
-          border: `1px solid ${borderColor}`,
-          flexShrink,
-        }}
-      />
-    </>
+    <ToyImageView
+      token={token}
+      image={toy.images[0]}
+      alt={toy.title}
+      placeholderBg={placeholderBg}
+      style={{
+        width: size,
+        height: size,
+        borderRadius,
+        border: `1px solid ${borderColor}`,
+        flexShrink,
+      }}
+    />
   )
 }
 

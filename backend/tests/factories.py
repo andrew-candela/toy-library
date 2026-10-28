@@ -5,6 +5,7 @@ actually asserting on, so a test reads as "a toy with these tags" rather than as
 a wall of unrelated field assignments.
 """
 
+from collections.abc import Sequence
 from datetime import UTC, datetime, timedelta
 
 from sqlalchemy.ext.asyncio import AsyncSession
@@ -15,6 +16,7 @@ from app.models.models import (
     AllowList,
     Toy,
     ToyCondition,
+    ToyImage,
     ToyInterest,
     ToyTag,
     User,
@@ -65,13 +67,28 @@ async def make_toy(
     max_age: int | None = None,
     tags: list[str] | None = None,
     condition: ToyCondition | None = None,
-    image_path: str | None = None,
+    images: Sequence[str] | None = None,
     date_added: datetime | None = None,
     embedding: list[float] | None = None,
     deleted_at: datetime | None = None,
     last_interest_at: datetime | None = None,
     last_owner_activity_at: datetime | None = None,
 ) -> Toy:
+    # Each `images` entry is either a public upload path or an external https
+    # link, in cover-first order. Which one it is comes from the string itself,
+    # so a test reads as the list of images the toy has rather than as two
+    # parallel lists. Built through the relationship so `toy.images` is usable
+    # straight away, without the lazy load an async test cannot trigger.
+    image_rows = [
+        ToyImage(
+            path=None if image.startswith("https://") else image,
+            external_url=image if image.startswith("https://") else None,
+            position=position,
+            created_at=datetime.now(tz=UTC),
+        )
+        for position, image in enumerate(images or [])
+    ]
+
     # Toys are created without an embedding in production too — it is filled in
     # by a background task. Pass one when the test drives the semantic search
     # path, which orders by cosine distance and gets NULL back without it.
@@ -81,8 +98,8 @@ async def make_toy(
         min_age=min_age,
         max_age=max_age,
         condition=condition,
-        image_path=image_path,
         date_added=date_added,
+        images=image_rows,
         embedding=embedding,
         # Set this to build the state DELETE /toys/{id} never leaves behind: a
         # delisted toy whose user_toys row is still open. It is what the

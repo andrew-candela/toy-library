@@ -119,7 +119,10 @@ export default function HelpPage() {
               </ul>
             </li>
             <li>
-              <strong style={{ color: theme.textPrimary }}>Image</strong> – Add a photo of the toy.
+              <strong style={{ color: theme.textPrimary }}>Photos</strong> – Add up to 3 photos of
+              the toy, either by uploading them or by pasting a public https:// link to an image.
+              The first photo is the cover, which is the one shown in the toy list; use Make cover
+              to choose a different one.
             </li>
           </ul>
           <p style={pStyle}>Once you have completed all the required information, select Save.</p>

@@ -1,11 +1,14 @@
-"""Image path construction, suffix validation, and deletion guards."""
+"""Image path construction, suffix and link validation, deletion guards, and
+what gets sent to OpenAI for each kind of image."""
 
+import base64
 import io
 
 import pytest
 from fastapi import HTTPException, UploadFile
 
 from app.lib import toy_images
+from app.models.models import ToyImage
 
 pytestmark = pytest.mark.unit
 
@@ -120,3 +123,94 @@ def test_delete_tolerates_none_and_missing_files(monkeypatch, tmp_path):
 
     toy_images.delete_toy_image(None)
     toy_images.delete_toy_image("/images/never-existed.jpg")
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "https://cdn.example.com/blocks.jpg",
+        "  https://cdn.example.com/blocks.jpg  ",
+        "https://cdn.example.com/a.jpg?w=400#frag",
+    ],
+)
+def test_external_image_url_accepts_https_links(url):
+    assert toy_images.validate_external_image_url(url) == url.strip()
+
+
+@pytest.mark.parametrize(
+    "url",
+    [
+        "",
+        "   ",
+        "http://cdn.example.com/blocks.jpg",
+        "javascript:alert(1)",
+        "data:image/png;base64,AAAA",
+        "file:///etc/passwd",
+        "https://",
+        "https:///blocks.jpg",
+        "//cdn.example.com/blocks.jpg",
+        "https://cdn.example.com/" + "a" * 2048,
+    ],
+)
+def test_external_image_url_rejects_anything_else(url):
+    with pytest.raises(HTTPException) as excinfo:
+        toy_images.validate_external_image_url(url)
+
+    assert excinfo.value.status_code == 400
+
+
+class _FakeCompletions:
+    def __init__(self):
+        self.calls: list[dict] = []
+
+    async def create(self, **kwargs):
+        self.calls.append(kwargs)
+        message = type("Message", (), {"content": "a red wooden train"})()
+        choice = type("Choice", (), {"message": message})()
+        return type("Response", (), {"choices": [choice]})()
+
+
+@pytest.fixture
+def fake_openai(monkeypatch):
+    completions = _FakeCompletions()
+    chat = type("Chat", (), {"completions": completions})()
+    monkeypatch.setattr(toy_images, "_client", type("Client", (), {"chat": chat})())
+    return completions
+
+
+def _image_part(call: dict) -> dict:
+    return call["messages"][0]["content"][1]
+
+
+async def test_describe_image_passes_an_external_link_straight_to_openai(
+    fake_openai, monkeypatch
+):
+    """The backend must never fetch a user-supplied URL itself — that is the
+    SSRF hole this whole design avoids — so the link goes to OpenAI untouched."""
+
+    def no_file_access(*args, **kwargs):
+        raise AssertionError("an external image must not be read or fetched")
+
+    monkeypatch.setattr(toy_images.anyio, "open_file", no_file_access)
+    image = ToyImage(external_url="https://cdn.example.com/train.jpg", position=0)
+
+    description = await toy_images.describe_image(image)
+
+    assert description == "a red wooden train"
+    assert _image_part(fake_openai.calls[0]) == {
+        "type": "image_url",
+        "image_url": {"url": "https://cdn.example.com/train.jpg"},
+    }
+
+
+async def test_describe_image_inlines_an_upload_as_base64(
+    fake_openai, monkeypatch, tmp_path
+):
+    monkeypatch.setenv(toy_images.TOY_IMAGE_STORAGE_DIR_ENV, str(tmp_path))
+    (tmp_path / "train.jpg").write_bytes(b"jpeg-bytes")
+    image = ToyImage(path="/images/train.jpg", position=0)
+
+    await toy_images.describe_image(image)
+
+    url = _image_part(fake_openai.calls[0])["image_url"]["url"]
+    assert url == "data:image/jpeg;base64," + base64.b64encode(b"jpeg-bytes").decode()
